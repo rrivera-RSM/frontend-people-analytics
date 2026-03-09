@@ -1,0 +1,349 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+}
+
+:root {
+  /* Brand */
+  --brand-blue-dark: oklch(0.209 0.083 259.4);
+  /* #00153d */
+  --brand-blue: oklch(0.657 0.144 237.5);
+  /* #009cde */
+  --brand-green: oklch(0.615 0.166 141.7);
+  /* #3f9c35 */
+  --brand-gray: oklch(0.510 0.013 308.2);
+  /* #68646c */
+
+  --accent-brand: var(--brand-blue);
+  
+    /* selected / hover neutrales (light) */
+  --item-hover: color-mix(in oklab, var(--accent-brand) 6%, white);
+  --selected-bg: color-mix(in oklab, var(--accent-brand) 10%, white);
+  --selected-border: color-mix(in oklab, var(--accent-brand) 22%, white);
+  --selected-ring: color-mix(in oklab, var(--accent-brand) 55%, transparent);
+  --selected-fg: var(--foreground);
+
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+/* Navegador: scrollbars/inputs en dark */
+.dark {
+  color-scheme: dark;
+}
+
+/* Selección */
+::selection {
+  background: var(--selection-bg);
+  color: var(--foreground);
+}
+
+/* Tipografía base (si NO usas next/font todavía) */
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter,
+    "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar (opcional, sutil como el mockup) */
+*::-webkit-scrollbar {
+  width: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 14%);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: oklch(1 0 0 / 20%);
+}
+
+/* Solo durante el cambio de tema */
+.theme-transition,
+.theme-transition * {
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease,
+    fill 250ms ease,
+    stroke 250ms ease,
+    transform 250ms ease,
+    box-shadow 250ms ease !important;
+}
+
+
+
+.dark {
+  /* ---------------------------
+   * Base (mockup-like)
+   * --------------------------- */
+
+  /* hover y selected (dark): overlay azul sobre fondos oscuros */
+  --accent-brand: oklch(0.459 0.117 245.4);
+    /* #005C94 */
+  --item-hover: oklch(1 0 0 / 5%);
+  /* hover neutro tipo mockup */
+  --selected-bg: color-mix(in oklab, var(--accent-brand) 16%, transparent);
+  --selected-border: color-mix(in oklab, var(--accent-brand) 32%, transparent);
+  --selected-ring: color-mix(in oklab, var(--accent-brand) 55%, transparent);
+  --selected-fg: var(--foreground);
+
+  --exec-bg: #0B0E14;
+  --exec-top: #080A0F;
+  --exec-sidebar: #0F1218;
+  --exec-card: #1A1F26;
+  --exec-input: #151921;
+  --exec-border: #2D3642;
+ 
+--exec-employee-view: linear-gradient(
+    180deg,
+    rgba(0, 21, 61, 0.3) 0%,
+    rgba(11, 14, 20, 0.25) 45%,
+    rgba(11, 14, 20, 0.00) 100%
+  );
+
+
+  --background: oklch(0.200 0.017 264.1);
+  /* ~ #12161E */
+  --foreground: oklch(0.975 0.005 258.3);
+  /* texto principal (casi blanco) */
+
+  /* Superficies */
+  --card: oklch(0.212 0.015 261.6);
+  /* ~ #151920 */
+  --card-foreground: oklch(0.975 0.005 258.3);
+
+  --popover: oklch(0.237 0.014 253.1);
+  /* ~ #1A1F25 (elevada) */
+  --popover-foreground: oklch(0.975 0.005 258.3);
+
+  /* ---------------------------
+   * Brand / acción principal (Confirmar)
+   * --------------------------- */
+  --primary: oklch(0.462 0.137 252.6);
+  /* ~ #055A93 */
+  --primary-foreground: oklch(0.975 0.005 258.3);
+  /* texto sobre azul */
+
+  /* Secundarios */
+  --secondary: oklch(0.240 0.012 262.0);
+  --secondary-foreground: oklch(0.948 0.006 255.5);
+
+  /* Muted (para chips, fondos suaves, inputs) */
+  --muted: oklch(0.230 0.012 262.0);
+  --muted-foreground: oklch(0.682 0.008 260.7);
+  /* ~ #96999E */
+
+  /* Accent (hover/selected) ligeramente azulado */
+  --accent: oklch(0.255 0.018 255.0);
+  --accent-foreground: oklch(0.975 0.005 258.3);
+
+  /* Destructive */
+  --destructive: oklch(0.676 0.212 24.8);
+
+  /* Bordes / inputs (alpha suave, muy “SaaS”) */
+  --border: oklch(1 0 0 / 10%);
+  /* borde sutil */
+  --input: oklch(1 0 0 / 14%);
+  /* contorno de input */
+  --ring: oklch(0.462 0.137 252.6 / 55%);
+  /* ring basado en brand */
+
+  /* Charts (puedes ajustar luego, pero ya legibles en dark) */
+  --chart-1: oklch(0.462 0.137 252.6);
+  /* azul brand */
+  --chart-2: oklch(0.732 0.177 156.3);
+  /* verde */
+  --chart-3: oklch(0.720 0.160 70.0);
+  /* amarillo */
+  --chart-4: oklch(0.700 0.180 310.0);
+  /* violeta */
+  --chart-5: oklch(0.676 0.212 24.8);
+  /* rojo */
+
+  /* ---------------------------
+   * Sidebar tokens (mockup: más oscuro que el contenido)
+   * --------------------------- */
+  --sidebar: oklch(0.182 0.015 266.7);
+  /* ~ #0F1219 */
+  --sidebar-foreground: oklch(0.975 0.005 258.3);
+
+  --sidebar-primary: oklch(0.462 0.137 252.6);
+  --sidebar-primary-foreground: oklch(0.975 0.005 258.3);
+
+  --sidebar-accent: oklch(0.212 0.015 261.6);
+  /* hover/selected item */
+  --sidebar-accent-foreground: oklch(0.975 0.005 258.3);
+
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.462 0.137 252.6 / 55%);
+
+  /* ---------------------------
+   * Extras (variantes de texto, selección y elevación)
+   * No rompen nada; solo suman.
+   * --------------------------- */
+  --text-strong: oklch(0.985 0.005 258.3);
+  /* títulos */
+  --text: oklch(0.975 0.005 258.3);
+  /* body */
+  --text-muted: oklch(0.682 0.008 260.7);
+  /* labels/ayudas */
+  --text-subtle: oklch(0.470 0.014 259.8);
+  /* metadata secundaria ~ #565B63 */
+
+  --surface-0: oklch(0.146 0.011 275.8);
+  /* topbar ~ #090A0F */
+  --surface-1: var(--sidebar);
+  /* sidebar */
+  --surface-2: var(--background);
+  /* main bg */
+  --surface-3: var(--card);
+  /* cards */
+  --surface-4: var(--popover);
+  /* elevated */
+
+  --selection-bg: oklch(0.462 0.137 252.6 / 35%);
+  /* selección de texto */
+  --shadow-color: oklch(0 0 0 / 55%);
+  /* sombras más realistas en dark */
+}
+
+/* Recomendado: que el navegador renderice inputs/scrollbars en dark correctamente */
+
+
+/* Tipografía base: si usas next/font, mejor vincular con variables */
+:root {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Selección (como producto real) */
+::selection {
+  background: oklch(0.72 0.16 255 / 35%);
+  color: var(--foreground);
+}
+
+.dark ::selection {
+  background: oklch(0.72 0.16 255 / 40%);
+  color: oklch(0.98 0.005 255);
+}
+
+/* Focus ring consistente */
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+/* Scrollbar sutil (opcional) */
+*::-webkit-scrollbar {
+  width: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: oklch(0.55 0.02 255 / 25%);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+.dark *::-webkit-scrollbar-thumb {
+  background: oklch(0.80 0.02 255 / 20%);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
