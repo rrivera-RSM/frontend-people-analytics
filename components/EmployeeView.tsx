@@ -4,10 +4,11 @@ import type { EmployeeRow } from "@/components/EmployeeCard";
 import EmployeeProgressChart from "@/components/EvaluationGraph";
 import OnaRadarChart from "./ActiveOnaRadarChart";
 import { SalaryProposalForm } from "./SalaryProposalForm";
+import { CompensationSimulationModal } from "./CompensationSimulationModal";
 import { useEffect, useState, useMemo } from "react";
 import { KpiBar } from "./EmployeeKPIs";
-import { computeProposalKpis, type ProposalInputs } from "@/utils/kpis";
-import { set } from "zod";
+import { computeProposalKpis } from "@/types/kpis";
+import type { ProposalDraft, SimulationResult } from "@/types/compensation";
 
 type Props = {
   employee: EmployeeRow | null;
@@ -50,13 +51,18 @@ const fetchApi = async <T,>(url: string): Promise<T | null> => {
   }
 };
 
+const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
 export function EmployeeView({ employee }: Props) {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [monetaryInfo, setMonetaryInfo] = useState<MonetaryInfo | null>(null);
   const [onaData, setOnaData] = useState<OnaData | null>(null);
-  const [proposalInputs, setProposalInputs] = useState<ProposalInputs | null>(
-    null,
-  );
+
+  const [proposalDraft, setProposalDraft] = useState<ProposalDraft | null>(null);
+  const [simulationOpen, setSimulationOpen] = useState(false);
+  const [acceptedSimulation, setAcceptedSimulation] =
+    useState<SimulationResult | null>(null);
+
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -64,11 +70,21 @@ export function EmployeeView({ employee }: Props) {
       setEvaluations([]);
       setMonetaryInfo(null);
       setOnaData(null);
-      setProposalInputs(null);
+      setProposalDraft(null);
+      setAcceptedSimulation(null);
       return;
     }
+
     let isMounted = true;
     setLoading(true);
+
+    // limpiamos para evitar mostrar datos stale al cambiar de empleado
+    setEvaluations([]);
+    setMonetaryInfo(null);
+    setOnaData(null);
+    setProposalDraft(null);
+    setAcceptedSimulation(null);
+
     (async () => {
       const [evaluations, monetary, ona] = await Promise.all([
         fetchApi<Evaluation[]>(`/api/employees/${employee.id}/evaluations`),
@@ -77,6 +93,7 @@ export function EmployeeView({ employee }: Props) {
       ]);
 
       if (!isMounted) return;
+
       setEvaluations(evaluations ?? []);
       setMonetaryInfo(monetary ?? null);
       setOnaData(ona ?? null);
@@ -88,55 +105,126 @@ export function EmployeeView({ employee }: Props) {
     };
   }, [employee?.id]);
 
+  useEffect(() => {
+    if (!employee || !monetaryInfo) {
+      setProposalDraft(null);
+      return;
+    }
+
+    setProposalDraft({
+      salaryCurrent: monetaryInfo.salary,
+      proposedSalary: round2(monetaryInfo.salary * 1.02),
+      bonus: monetaryInfo.bonus,
+      category: employee.category_name ?? "",
+      comments: "",
+    });
+  }, [employee, monetaryInfo]);
+
   const proposalKpis = useMemo(() => {
-    if (!proposalInputs) return null;
-    return computeProposalKpis(proposalInputs, AVG);
-  }, [proposalInputs]);
+    if (!proposalDraft) return null;
+
+    return computeProposalKpis(
+      {
+        salaryCurrent: proposalDraft.salaryCurrent,
+        proposedSalary: proposalDraft.proposedSalary,
+        bonus: proposalDraft.bonus,
+      },
+      AVG,
+    );
+  }, [proposalDraft]);
 
   const fullName = employee
     ? `${employee.first_name} ${employee.last_name}`.trim()
     : "Selecciona un empleado";
+
   return (
-    <section className="min-w-0 flex-1 min-h-0 h-full overflow-y-auto border [background-image:var(--exec-employee-view)]">
-      <div className="h-full min-h-0 p-6 flex flex-col">
-        {/* Header */}
-        <header className="shrink-0">
-          <div className="flex items-start justify-between gap-4">
-            <h1 className="truncate text-base font-semibold">{fullName}</h1>
-            
-          </div>
-
-          {employee && (
-            <KpiBar
-              raiseAmount={proposalKpis?.raiseAmount}
-              salaryVsAvgPct={proposalKpis?.salaryVsAvgPct}
-              bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
-              performanceLabel="Excelente"
-            />
-          )}
-        </header>
-
-        {/* Body */}
-        <div className="mt-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-          {!employee ? (
-            <div className="h-full grid place-items-center text-sm">
-              Selecciona un empleado para ver detalles
+    <>
+      <section className="min-w-0 flex-1 min-h-0 h-full overflow-y-auto border [background-image:var(--exec-employee-view)]">
+        <div className="h-full min-h-0 p-6 flex flex-col">
+          {/* Header */}
+          <header className="shrink-0">
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="truncate text-base font-semibold">{fullName}</h1>
             </div>
-          ) : (
-            <div className="h-full min-h-0 flex flex-col gap-4">
-              <SalaryProposalForm
-                employee={employee}
-                monetaryInfo={monetaryInfo}
-                onValuesChange={setProposalInputs}
-              />
-              <div className="flex-1 min-h-0 h-full grid grid-cols-1 gap-7 lg:grid-cols-2">
-                <EmployeeProgressChart data={evaluations} loading={loading} />
-                <OnaRadarChart data={onaData} loading={loading} />
+
+            {employee && (
+              <>
+                <KpiBar
+                  raiseAmount={proposalKpis?.raiseAmount}
+                  salaryVsAvgPct={proposalKpis?.salaryVsAvgPct}
+                  bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
+                  performanceLabel="Excelente"
+                />
+
+                {acceptedSimulation && (
+                  <div className="mt-2 text-xs text-slate-300">
+                    Última simulación confirmada: attrition estimado{" "}
+                    <span className="font-semibold text-white">
+                      {(acceptedSimulation.attritionProbability * 100).toFixed(1)}%
+                    </span>{" "}
+                    con salario{" "}
+                    <span className="font-semibold text-white">
+                      {new Intl.NumberFormat("es-ES", {
+                        style: "currency",
+                        currency: "EUR",
+                        minimumFractionDigits: 2,
+                      }).format(acceptedSimulation.simulatedSalary)}
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </header>
+
+          {/* Body */}
+          <div className="mt-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+            {!employee ? (
+              <div className="h-full grid place-items-center text-sm">
+                Selecciona un empleado para ver detalles
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="h-full min-h-0 flex flex-col gap-4">
+                <SalaryProposalForm
+                  employee={employee}
+                  monetaryInfo={monetaryInfo}
+                  value={proposalDraft}
+                  onChange={setProposalDraft}
+                  onOpenSimulation={() => setSimulationOpen(true)}
+                />
+
+                <div className="flex-1 min-h-0 h-full grid grid-cols-1 gap-7 lg:grid-cols-2">
+                  <EmployeeProgressChart data={evaluations} loading={loading} />
+                  <OnaRadarChart data={onaData} loading={loading} />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {employee && proposalDraft && (
+        <CompensationSimulationModal
+          open={simulationOpen}
+          onOpenChange={setSimulationOpen}
+          employee={employee}
+          draft={proposalDraft}
+          onConfirm={({ proposedSalary, bonus, simulationResult }) => {
+            setProposalDraft((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    proposedSalary,
+                    bonus,
+                  }
+                : prev,
+            );
+
+            setAcceptedSimulation(simulationResult);
+            setSimulationOpen(false);
+          }}
+        />
+      )}
+    </>
   );
 }
+``
