@@ -61,7 +61,7 @@ export function EmployeesSidebar({
       setError(null);
 
       try {
-        const res = await fetch(`/api/employees/rows?${queryString}`, {
+        const res = await fetch(`/api/employees/manager/my-team`, {
           method: "GET",
           headers: { Accept: "application/json" },
           cache: "no-store",
@@ -273,19 +273,6 @@ function SearchIcon({ className = "" }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M21 21l-4.3-4.3m1.8-5.2a7 7 0 11-14 0 7 7 0 0114 0z"
-      />
-    </svg>
-  );
-}
-
-function CollapseIcon({ collapsed }: { collapsed: boolean }) {
-  return (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d={collapsed ? "M9 18l6-6-6-6" : "M15 18l-6-6 6-6"}
       />
     </svg>
   );

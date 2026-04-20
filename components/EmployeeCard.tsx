@@ -15,6 +15,7 @@ export type EmployeeRow = {
   last_name: string;
   email: string;
   category_name: string;
+  attrition_rate: number;
 };
 
 type Props = {

@@ -1,9 +1,9 @@
+"use client";
+
 import * as React from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-
-import { ProposalInputs } from "@/utils/kpis";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,22 +16,30 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 import { MoneyInput } from "@/components/MoneyInput";
 import { EmployeeRow } from "./EmployeeCard";
 import { MonetaryInfo } from "@/components/EmployeeView";
+import type { ProposalDraft } from "@/types/compensation";
 
 const schema = z.object({
   salaryCurrent: z.number().nonnegative(),
   bonus: z.number().nonnegative(),
-  category: z.string().min(1),
+  category: z.string(),
   proposedSalary: z.number().nonnegative(),
   comments: z.string().max(500).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+const emptyDraft: ProposalDraft = {
+  salaryCurrent: 0,
+  proposedSalary: 0,
+  bonus: 0,
+  category: "",
+  comments: "",
+};
 
 const LoadingSkeleton = () => (
   <Card className="shrink-0 bg-[var(--exec-card)]">
@@ -56,61 +64,139 @@ const LoadingSkeleton = () => (
 type Props = {
   employee: EmployeeRow;
   monetaryInfo: MonetaryInfo | null;
-  onValuesChange?: (values: ProposalInputs) => void;
+  value: ProposalDraft | null;
+  onChange: (value: ProposalDraft) => void;
+  onOpenSimulation: () => void;
 };
+
+function normalizeDraft(draft: Partial<ProposalDraft> | null | undefined): ProposalDraft {
+  return {
+    salaryCurrent: typeof draft?.salaryCurrent === "number" ? draft.salaryCurrent : 0,
+    proposedSalary: typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
+    bonus: typeof draft?.bonus === "number" ? draft.bonus : 0,
+    category: typeof draft?.category === "string" ? draft.category : "",
+    comments: typeof draft?.comments === "string" ? draft.comments : "",
+  };
+}
+
+function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
+  if (!a || !b) return false;
+
+  return (
+    a.salaryCurrent === b.salaryCurrent &&
+    a.proposedSalary === b.proposedSalary &&
+    a.bonus === b.bonus &&
+    a.category === b.category &&
+    (a.comments ?? "") === (b.comments ?? "")
+  );
+}
 
 export function SalaryProposalForm({
   employee,
   monetaryInfo,
-  onValuesChange,
+  value,
+  onChange,
+  onOpenSimulation,
 }: Props) {
-  if (!monetaryInfo) return <LoadingSkeleton />;
-
-  const defaultProposed = round2(monetaryInfo.salary * 1.02);
-  const defaultValues: FormValues = {
-    salaryCurrent: monetaryInfo.salary,
-    bonus: monetaryInfo.bonus,
-    category: employee.category_name ?? "",
-    proposedSalary: defaultProposed,
-    comments: "",
-  };
-
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues,
+    defaultValues: value ?? emptyDraft,
     mode: "onChange",
   });
 
-  React.useEffect(() => {
-    form.reset(defaultValues);
+  // Flag para evitar eco cuando reseteamos desde props externas
+  const syncingFromParentRef = React.useRef(false);
 
-    onValuesChange?.({
-      salaryCurrent: defaultValues.salaryCurrent,
-      proposedSalary: defaultValues.proposedSalary,
-      bonus: defaultValues.bonus,
-    });
-  }, [employee.category_name, monetaryInfo.salary, monetaryInfo.bonus, form]);
-
+  // Watchs por campo (mejor que observar todo el objeto)
   const salaryCurrent = useWatch({
     control: form.control,
     name: "salaryCurrent",
   });
+
   const proposedSalary = useWatch({
     control: form.control,
     name: "proposedSalary",
   });
-  const bonus = useWatch({ control: form.control, name: "bonus" });
 
+  const bonus = useWatch({
+    control: form.control,
+    name: "bonus",
+  });
+
+  const category = useWatch({
+    control: form.control,
+    name: "category",
+  });
+
+  const comments = useWatch({
+    control: form.control,
+    name: "comments",
+  });
+
+  // -----------------------------
+  // Padre -> form
+  // -----------------------------
   React.useEffect(() => {
-    if (!onValuesChange) return;
+    if (!value) return;
 
-    // Aseguramos números (por si viniera undefined en algún caso)
-    const sc = typeof salaryCurrent === "number" ? salaryCurrent : 0;
-    const ps = typeof proposedSalary === "number" ? proposedSalary : 0;
-    const b = typeof bonus === "number" ? bonus : 0;
+    const normalizedValue = normalizeDraft(value);
+    const currentForm = normalizeDraft(form.getValues());
 
-    onValuesChange({ salaryCurrent: sc, proposedSalary: ps, bonus: b });
-  }, [salaryCurrent, proposedSalary, bonus, onValuesChange]);
+    if (sameDraft(currentForm, normalizedValue)) return;
+
+    syncingFromParentRef.current = true;
+    form.reset(normalizedValue);
+
+    // Soltamos el flag en microtask para dejar que RHF termine el reset
+    queueMicrotask(() => {
+      syncingFromParentRef.current = false;
+    });
+  }, [
+    value?.salaryCurrent,
+    value?.proposedSalary,
+    value?.bonus,
+    value?.category,
+    value?.comments,
+    form,
+  ]);
+
+  // -----------------------------
+  // Form -> padre
+  // -----------------------------
+  React.useEffect(() => {
+    if (!value) return;
+    if (syncingFromParentRef.current) return;
+
+    const nextDraft = normalizeDraft({
+      salaryCurrent,
+      proposedSalary,
+      bonus,
+      category,
+      comments,
+    });
+
+    const normalizedValue = normalizeDraft(value);
+
+    if (sameDraft(nextDraft, normalizedValue)) return;
+
+    onChange(nextDraft);
+  }, [
+    salaryCurrent,
+    proposedSalary,
+    bonus,
+    category,
+    comments,
+    value?.salaryCurrent,
+    value?.proposedSalary,
+    value?.bonus,
+    value?.category,
+    value?.comments,
+    onChange,
+  ]);
+
+  if (!monetaryInfo || !value) {
+    return <LoadingSkeleton />;
+  }
 
   return (
     <Card className="py-3 bg-[var(--exec-card)]">
@@ -120,7 +206,7 @@ export function SalaryProposalForm({
 
       <CardContent className="pt-0 pb-2">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((values) => console.log(values))}>
+          <form onSubmit={form.handleSubmit(() => undefined)}>
             <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
               {/* Left column */}
               <div className="space-y-2">
@@ -148,10 +234,14 @@ export function SalaryProposalForm({
                         </FormLabel>
                         <FormControl>
                           {name === "category" ? (
-                            <Input {...field} readOnly />
+                            <Input
+                              value={(field.value as string) ?? ""}
+                              onChange={field.onChange}
+                              readOnly
+                            />
                           ) : (
                             <MoneyInput
-                              value={field.value as number}
+                              value={typeof field.value === "number" ? field.value : 0}
                               onChange={field.onChange}
                               readOnly={readOnly}
                               onBlur={field.onBlur}
@@ -177,9 +267,8 @@ export function SalaryProposalForm({
                       </FormLabel>
                       <FormControl>
                         <MoneyInput
-                          value={field.value}
+                          value={typeof field.value === "number" ? field.value : 0}
                           onChange={field.onChange}
-                          placeholder={defaultProposed.toString()}
                           onBlur={field.onBlur}
                         />
                       </FormControl>
@@ -188,6 +277,16 @@ export function SalaryProposalForm({
                   )}
                 />
               </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <Button
+                type="button"
+                className="min-w-[120px]"
+                onClick={onOpenSimulation}
+              >
+                Simulate
+              </Button>
             </div>
           </form>
         </Form>
