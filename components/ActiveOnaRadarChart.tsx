@@ -3,8 +3,10 @@
 import dynamic from "next/dynamic";
 import React, { useMemo, useRef, useLayoutEffect, useState } from "react";
 import type { ApexOptions } from "apexcharts";
-import { OnaData } from "./EmployeeView";
+import type { OnaData } from "./EmployeeView";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import type { EmployeeInsightViewModel } from "@/types/employee-insights";
+import { InsightChipsInline } from "./employee-insights/InsightChipsInline";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -14,6 +16,7 @@ type Props = {
   color?: string;
   fillColor?: string;
   loading?: boolean;
+  insights?: EmployeeInsightViewModel[];
 };
 
 const LABELS = [
@@ -28,29 +31,32 @@ function clamp0to100(n: number) {
   return Math.max(0, Math.min(100, n));
 }
 
+function clamp(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, n));
+}
+
 export default function OnaRadarChart({
   data,
+  title = "Analisis Organizacional de Empresas (ONA)",
   color = "#00153d",
   fillColor = "#009cde",
-  loading,
+  loading = false,
+  insights = [],
 }: Props) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [containerWidth, setContainerWidth] = useState(0);
 
   useLayoutEffect(() => {
     if (!wrapRef.current) return;
+
     const el = wrapRef.current;
 
     const ro = new ResizeObserver((entries) => {
       const cr = entries[0]?.contentRect;
       if (!cr) return;
 
-      const w = Math.floor(cr.width);
-      const h = Math.floor(cr.height);
-
-      setSize((prev) =>
-        prev.width === w && prev.height === h ? prev : { width: w, height: h },
-      );
+      const nextWidth = Math.floor(cr.width);
+      setContainerWidth((prev) => (prev === nextWidth ? prev : nextWidth));
     });
 
     ro.observe(el);
@@ -59,6 +65,7 @@ export default function OnaRadarChart({
 
   const values = useMemo(() => {
     if (!data) return [0, 0, 0, 0];
+
     return [
       clamp0to100(data.percentile_1),
       clamp0to100(data.percentile_2),
@@ -69,16 +76,32 @@ export default function OnaRadarChart({
 
   const series = useMemo(() => [{ name: "Percentil", data: values }], [values]);
 
-  // 👉 Lado cuadrado: el radar se ve MUCHO mejor así
-  const side = useMemo(() => {
-    if (size.width === 0 || size.height === 0) return 0;
+  /**
+   * Tamaño objetivo:
+   * - responsive
+   * - más contenido “alrededor”
+   * - capado para que no se coma la card
+   */
+  const chartSide = useMemo(() => {
+    if (!containerWidth) return 220;
 
-    // “aire” para labels + datalabels:
-    const reserve = size.width < 360 ? 54 : 70;
+    // Queremos que no use todo el ancho disponible
+    const desired = Math.floor(containerWidth * 0.5);
 
-    const s = Math.min(size.width, size.height) - reserve;
-    return Math.max(180, Math.floor(s)); // mínimo razonable
-  }, [size.width, size.height]);
+    // Lo capamos para no deformar layouts con cards vecinas
+    return clamp(desired, 190, 300);
+  }, [containerWidth]);
+
+  /**
+   * Tamaño interno del radar:
+   * deja margen para labels y datalabels
+   */
+  const radarSize = useMemo(() => {
+    return clamp(chartSide - 120, 100, 90);
+  }, [chartSide]);
+
+  const labelFontSize = chartSide < 220 ? "10px" : "11px";
+  const valueFontSize = chartSide < 220 ? "10px" : "11px";
 
   const options: ApexOptions = useMemo(
     () => ({
@@ -88,19 +111,21 @@ export default function OnaRadarChart({
         animations: { enabled: true },
         redrawOnWindowResize: true,
         redrawOnParentResize: true,
-
-        // 🔑 evita offsets raros en layouts flex/grid
-
-        // Si todavía lo ves algo abajo, prueba con -10 / -15
       },
       grid: {
-        // 🔑 reduce el “margen” interno que a veces empuja el radar
+        padding: {
+          top: -18,
+          bottom: -10,
+          left: -8,
+          right: -8,
+        },
       },
       xaxis: {
         categories: LABELS,
         labels: {
-          style: { fontSize: side < 240 ? "10px" : "12px" },
-          // Ajuste fino para subir un pelín las etiquetas si hace falta
+          style: {
+            fontSize: labelFontSize,
+          },
           offsetY: -2,
         },
       },
@@ -108,84 +133,123 @@ export default function OnaRadarChart({
         min: 0,
         max: 100,
         tickAmount: 4,
-        labels: { formatter: (val) => `${Math.round(val)}` },
+        labels: {
+          formatter: (val) => `${Math.round(val)}`,
+          style: {
+            fontSize: "10px",
+          },
+        },
       },
-      stroke: { width: 2, colors: [color] },
-      fill: { type: "solid", opacity: 0.25, colors: [fillColor] },
+      stroke: {
+        width: 2,
+        colors: [color],
+      },
+      fill: {
+        type: "solid",
+        opacity: 0.22,
+        colors: [fillColor],
+      },
       markers: {
-        size: 4,
+        size: 3,
         colors: [color],
         strokeColors: "#fff",
         strokeWidth: 2,
-        hover: { size: 6 },
+        hover: { size: 5 },
       },
       dataLabels: {
         enabled: true,
-        background: { enabled: true, borderRadius: 4 },
+        style: {
+          fontSize: valueFontSize,
+          fontWeight: 600,
+        },
+        background: {
+          enabled: true,
+          borderRadius: 4,
+          padding: 2,
+        },
       },
-      tooltip: { y: { formatter: (val) => `${val.toFixed(1)}%` } },
+      tooltip: {
+        y: {
+          formatter: (val) => `${val.toFixed(1)}%`,
+        },
+      },
       plotOptions: {
         radar: {
+          size: radarSize,
           polygons: {
             strokeColors: "#e5e7eb",
-            fill: { colors: ["#f9fafb", "#ffffff"] },
+            fill: {
+              colors: ["#f9fafb", "#ffffff"],
+            },
           },
         },
       },
     }),
-    [color, fillColor, side],
+    [color, fillColor, labelFontSize, valueFontSize, radarSize],
   );
 
-  if (!data) {
-    return (
-      <div ref={wrapRef} className="w-full h-full grid place-items-center">
-        <div className="flex items-center gap-2">
-          <span className="text-[#68646c]">Sin valores de ONA activo</span>
-          <div className="group relative inline-block">
-        <svg
-          className="w-5 h-5 text-gray-400 cursor-help"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fillRule="evenodd"
-            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-            clipRule="evenodd"
-          />
-        </svg>
-        <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 hidden group-hover:block bg-gray-800 text-white text-sm rounded-md p-3 w-48 z-10">
-          Este empleado no tiene valores para ONA activo, es posible que esto se deba a una reciente incorporación posterior a las encuestas de clima de RSM. Si crees que este empleado deberia tener valores de ONA activo, ponte en contacto con People
-        </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <Card className="py-3 bg-[var(--exec-card)]">
-      <CardHeader>
-        <CardTitle className="py-1">
-          {" "}
-          Analisis Organizacional de Empresas (ONA){" "}
-        </CardTitle>
+    <Card className="overflow-hidden py-2 bg-[var(--exec-card)]">
+      <CardHeader className="px-4 py-2 space-y-3">
+        <CardTitle className="text-base leading-tight">{title}</CardTitle>
+
+        {insights.length > 0 && <InsightChipsInline insights={insights} />}
       </CardHeader>
 
-      <CardContent className="pt-0 pb-2">
-        {loading ? (
-          <div className="h-full grid place-items-center text-sm">
+      <CardContent className="px-3 pt-0 pb-3">
+        {!data ? (
+          <div className="min-h-[180px] grid place-items-center">
+            <div className="flex items-center gap-2 text-center">
+              <span className="text-[#68646c] text-sm">
+                Sin valores de ONA activo
+              </span>
+
+              <div className="group relative inline-block">
+                <svg
+                  className="w-5 h-5 text-gray-400 cursor-help"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+
+                <div className="absolute left-full top-1/2 z-10 ml-2 hidden w-56 -translate-y-1/2 rounded-md bg-gray-800 p-3 text-sm text-white group-hover:block">
+                  Este empleado no tiene valores para ONA activo. Es posible que
+                  se deba a una incorporación reciente posterior a las encuestas
+                  de clima de RSM. Si crees que este empleado debería tener
+                  valores de ONA activo, ponte en contacto con People.
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : loading ? (
+          <div className="min-h-[180px] grid place-items-center text-sm">
             Cargando…
           </div>
         ) : (
-          <Chart
-            options={options}
-            series={series}
-            type="radar"
-            height={side}
-            width={side}
-          />
+          <div
+            ref={wrapRef}
+            className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_220px]"
+          >
+            <div className="w-full overflow-hidden">
+              <div className="mx-auto flex w-full justify-center overflow-hidden">
+                <Chart
+                  options={options}
+                  series={series}
+                  type="radar"
+                  width={chartSide} // deja margen para labels y datalabels
+                  height={chartSide}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
   );
-};
+}
+``;

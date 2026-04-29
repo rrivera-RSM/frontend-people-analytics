@@ -4,6 +4,8 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ApexOptions } from "apexcharts";
 import { Card, CardTitle, CardContent, CardHeader } from "./ui/card";
+import { InsightChipsInline } from "./employee-insights/InsightChipsInline";
+import type { EmployeeInsightViewModel } from "@/types/employee-insights";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -17,6 +19,7 @@ type Evaluation = {
 type Props = {
   data: Evaluation[];
   loading: boolean;
+  insights?: EmployeeInsightViewModel[];
 };
 
 type XYPoint = {
@@ -30,7 +33,6 @@ function toYear(iso: string) {
   return new Date(iso).getUTCFullYear();
 }
 
-// ✅ Mejor fuera del componente si lo usas en useMemo([])
 const TOKENS = {
   muted: "#64748B",
   grid: "#E8EEF6",
@@ -40,11 +42,14 @@ const TOKENS = {
   tooltipBg: "#0B5FFF",
 };
 
-export default function EvaluationGraph({ data, loading }: Props) {
+export default function EvaluationGraph({
+  data,
+  loading,
+  insights = [],
+}: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [height, setHeight] = useState(220); // fallback real
+  const [height, setHeight] = useState(220);
 
-  // Observa el alto del contenedor
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -69,7 +74,6 @@ export default function EvaluationGraph({ data, loading }: Props) {
       .sort((a, b) => a.year - b.year);
   }, [data]);
 
-  // ✅ Hooks SIEMPRE se ejecutan (aunque points esté vacío)
   const series = useMemo(() => {
     if (!points.length) return [];
 
@@ -190,13 +194,16 @@ export default function EvaluationGraph({ data, loading }: Props) {
 
   return (
     <Card className="py-3 bg-[var(--exec-card)]">
-      <CardHeader>
+      <CardHeader className="space-y-3">
         <CardTitle className="py-1">Impacto vs Desempeño</CardTitle>
+
+        <InsightChipsInline
+          insights={insights}
+        />
       </CardHeader>
 
-      {/* ✅ Contenedor observado: SIEMPRE existe */}
       <CardContent className="pt-0 pb-2">
-        <div ref={containerRef} className="w-full h-[260px] min-h-[220px]">
+        <div ref={containerRef} className="w-full h-[200px] min-h-[180px]">
           {loading ? (
             <div className="h-full grid place-items-center text-sm">Cargando…</div>
           ) : showEmpty ? (
@@ -206,7 +213,7 @@ export default function EvaluationGraph({ data, loading }: Props) {
               options={options}
               series={series as any}
               type="line"
-              height={height}   // ✅ altura numérica real (responsive al contenedor)
+              height={height}
               width="100%"
             />
           )}
@@ -215,3 +222,4 @@ export default function EvaluationGraph({ data, loading }: Props) {
     </Card>
   );
 }
+``

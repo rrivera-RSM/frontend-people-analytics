@@ -28,7 +28,6 @@ const schema = z.object({
   bonus: z.number().nonnegative(),
   category: z.string(),
   proposedSalary: z.number().nonnegative(),
-  comments: z.string().max(500).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -38,7 +37,6 @@ const emptyDraft: ProposalDraft = {
   proposedSalary: 0,
   bonus: 0,
   category: "",
-  comments: "",
 };
 
 const LoadingSkeleton = () => (
@@ -75,7 +73,6 @@ function normalizeDraft(draft: Partial<ProposalDraft> | null | undefined): Propo
     proposedSalary: typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
     bonus: typeof draft?.bonus === "number" ? draft.bonus : 0,
     category: typeof draft?.category === "string" ? draft.category : "",
-    comments: typeof draft?.comments === "string" ? draft.comments : "",
   };
 }
 
@@ -86,8 +83,7 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
     a.salaryCurrent === b.salaryCurrent &&
     a.proposedSalary === b.proposedSalary &&
     a.bonus === b.bonus &&
-    a.category === b.category &&
-    (a.comments ?? "") === (b.comments ?? "")
+    a.category === b.category
   );
 }
 
@@ -128,11 +124,6 @@ export function SalaryProposalForm({
     name: "category",
   });
 
-  const comments = useWatch({
-    control: form.control,
-    name: "comments",
-  });
-
   // -----------------------------
   // Padre -> form
   // -----------------------------
@@ -156,7 +147,6 @@ export function SalaryProposalForm({
     value?.proposedSalary,
     value?.bonus,
     value?.category,
-    value?.comments,
     form,
   ]);
 
@@ -172,7 +162,6 @@ export function SalaryProposalForm({
       proposedSalary,
       bonus,
       category,
-      comments,
     });
 
     const normalizedValue = normalizeDraft(value);
@@ -185,12 +174,10 @@ export function SalaryProposalForm({
     proposedSalary,
     bonus,
     category,
-    comments,
     value?.salaryCurrent,
     value?.proposedSalary,
     value?.bonus,
     value?.category,
-    value?.comments,
     onChange,
   ]);
 
@@ -207,7 +194,7 @@ export function SalaryProposalForm({
       <CardContent className="pt-0 pb-2">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-2">
               {/* Left column */}
               <div className="space-y-2">
                 {[
