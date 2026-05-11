@@ -3,7 +3,6 @@ export type ProposalDraft = {
   proposedSalary: number;
   bonus: number;
   category: string;
-  comments?: string;
 };
 
 export type SimulationResult = {

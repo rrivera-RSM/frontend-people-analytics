@@ -30,7 +30,6 @@ export default function EmployeesPage() {
           " h-[calc(100dvh-2rem)] w-full", // ocupa viewport menos padding del main
         ].join(" ")}
       >
-        <ThemeToggle></ThemeToggle>
         <div className="flex h-full min-h-0 overflow-hidden">
           {/* Sidebar column */}
           <aside className="relative flex">

@@ -185,19 +185,19 @@ function Header({
         {!collapsed ? (
           <label className="relative mt-2 block">
             <span className="sr-only">Buscar</span>
-            <SearchIcon className="pointer-events-none absolute inset-y-0 left-3 flex items-center" />
+            <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
             <input
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Buscar por email, nombre o DNI…"
-              className="w-full rounded-xl border bg-[var(--exec-input)] py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border bg-[var(--exec-input)] py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-900/20"
             />
           </label>
         ) : (
           <button
             type="button"
             onClick={() => onToggleCollapse?.(!collapsed)}
-            className="mt-2 w-full inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-[var(--exec-input)] hover:bg-slate-200"
+            className="mt-2 w-full inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-[var(--exec-input)] hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
             aria-label="Expandir para buscar"
             title="Expandir para buscar"
           >
@@ -218,7 +218,7 @@ function Header({
               <button
                 type="button"
                 onClick={() => onQueryChange("")}
-                className="rounded-lg px-2 py-1 hover:bg-slate-100"
+                className="rounded-lg px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Limpiar
               </button>
@@ -227,7 +227,10 @@ function Header({
         )}
 
         {!collapsed && (
-          <div className="px-3 pb-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2 pb-3">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+              Filtros
+            </span>
             <Chip active>Todos</Chip>
             <Chip>Alto riesgo</Chip>
             <Chip>Junior</Chip>
@@ -250,8 +253,8 @@ function Chip({
       type="button"
       className={`rounded-full px-3 py-1 text-xs font-medium border ${
         active
-          ? "border-blue-200 bg-blue-50 text-blue-700"
-          : "border-slate-200 hover:bg-slate-50"
+          ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
+          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       }`}
     >
       {children}
@@ -262,7 +265,7 @@ function Chip({
 function SearchIcon({ className = "" }: { className?: string }) {
   return (
     <svg
-      className={`h-4 w-4 bg-[var(--exec-)] ${className}`}
+      className={`h-4 w-4 ${className}`}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"

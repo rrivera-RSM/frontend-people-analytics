@@ -4,6 +4,7 @@ import * as React from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { cn } from "@/lib/utils";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,7 +29,6 @@ const schema = z.object({
   bonus: z.number().nonnegative(),
   category: z.string(),
   proposedSalary: z.number().nonnegative(),
-  comments: z.string().max(500).optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -38,7 +38,6 @@ const emptyDraft: ProposalDraft = {
   proposedSalary: 0,
   bonus: 0,
   category: "",
-  comments: "",
 };
 
 const LoadingSkeleton = () => (
@@ -65,17 +64,21 @@ type Props = {
   employee: EmployeeRow;
   monetaryInfo: MonetaryInfo | null;
   value: ProposalDraft | null;
+  hasInsights: boolean;
   onChange: (value: ProposalDraft) => void;
   onOpenSimulation: () => void;
 };
 
-function normalizeDraft(draft: Partial<ProposalDraft> | null | undefined): ProposalDraft {
+function normalizeDraft(
+  draft: Partial<ProposalDraft> | null | undefined,
+): ProposalDraft {
   return {
-    salaryCurrent: typeof draft?.salaryCurrent === "number" ? draft.salaryCurrent : 0,
-    proposedSalary: typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
+    salaryCurrent:
+      typeof draft?.salaryCurrent === "number" ? draft.salaryCurrent : 0,
+    proposedSalary:
+      typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
     bonus: typeof draft?.bonus === "number" ? draft.bonus : 0,
     category: typeof draft?.category === "string" ? draft.category : "",
-    comments: typeof draft?.comments === "string" ? draft.comments : "",
   };
 }
 
@@ -86,8 +89,7 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
     a.salaryCurrent === b.salaryCurrent &&
     a.proposedSalary === b.proposedSalary &&
     a.bonus === b.bonus &&
-    a.category === b.category &&
-    (a.comments ?? "") === (b.comments ?? "")
+    a.category === b.category
   );
 }
 
@@ -97,6 +99,7 @@ export function SalaryProposalForm({
   value,
   onChange,
   onOpenSimulation,
+  hasInsights,
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -128,11 +131,6 @@ export function SalaryProposalForm({
     name: "category",
   });
 
-  const comments = useWatch({
-    control: form.control,
-    name: "comments",
-  });
-
   // -----------------------------
   // Padre -> form
   // -----------------------------
@@ -156,7 +154,6 @@ export function SalaryProposalForm({
     value?.proposedSalary,
     value?.bonus,
     value?.category,
-    value?.comments,
     form,
   ]);
 
@@ -172,7 +169,6 @@ export function SalaryProposalForm({
       proposedSalary,
       bonus,
       category,
-      comments,
     });
 
     const normalizedValue = normalizeDraft(value);
@@ -185,12 +181,10 @@ export function SalaryProposalForm({
     proposedSalary,
     bonus,
     category,
-    comments,
     value?.salaryCurrent,
     value?.proposedSalary,
     value?.bonus,
     value?.category,
-    value?.comments,
     onChange,
   ]);
 
@@ -207,7 +201,7 @@ export function SalaryProposalForm({
       <CardContent className="pt-0 pb-2">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(() => undefined)}>
-            <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-2">
               {/* Left column */}
               <div className="space-y-2">
                 {[
@@ -241,7 +235,11 @@ export function SalaryProposalForm({
                             />
                           ) : (
                             <MoneyInput
-                              value={typeof field.value === "number" ? field.value : 0}
+                              value={
+                                typeof field.value === "number"
+                                  ? field.value
+                                  : 0
+                              }
                               onChange={field.onChange}
                               readOnly={readOnly}
                               onBlur={field.onBlur}
@@ -263,11 +261,13 @@ export function SalaryProposalForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-xs text-slate-300">
-                        Propuesta salarial
+                        Propuesta salarial FY 2026-2027
                       </FormLabel>
                       <FormControl>
                         <MoneyInput
-                          value={typeof field.value === "number" ? field.value : 0}
+                          value={
+                            typeof field.value === "number" ? field.value : 0
+                          }
                           onChange={field.onChange}
                           onBlur={field.onBlur}
                         />
@@ -282,10 +282,15 @@ export function SalaryProposalForm({
             <div className="mt-4 flex justify-end">
               <Button
                 type="button"
-                className="min-w-[120px]"
+                className={cn(
+                  "min-w-[120px] transition-all duration-200",
+                  hasInsights 
+                    ? "border-[var(--brand-green)] bg-[var(--brand-green)] text-white hover:brightness-110 shadow-[0_8px_24px_rgba(63,156,53,0.22)]"
+                    : "",
+                )}
                 onClick={onOpenSimulation}
               >
-                Simulate
+                Decision Intelligence
               </Button>
             </div>
           </form>

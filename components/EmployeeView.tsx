@@ -10,6 +10,12 @@ import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type { ProposalDraft, SimulationResult } from "@/types/compensation";
 
+import type {
+  EmployeeInsightsResponseApi,
+  EmployeeInsightCode,
+} from "@/types/employee-insights";
+import { mapInsightsToViewModels } from "@/lib/employee-insights";
+
 type Props = {
   employee: EmployeeRow | null;
 };
@@ -53,10 +59,28 @@ const fetchApi = async <T,>(url: string): Promise<T | null> => {
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
+const PERFORMANCE_CHART_CODES = new Set<EmployeeInsightCode>([
+  "high_solid_performance",
+  "hidden_risk",
+  "potential",
+  "stagnant",
+  "recovery",
+  "critical",
+]);
+
+const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
+  "active_influence_ci",
+  "active_influence_at",
+  "active_influence_ap",
+  "active_influence_in",
+]);
+
 export function EmployeeView({ employee }: Props) {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
   const [monetaryInfo, setMonetaryInfo] = useState<MonetaryInfo | null>(null);
   const [onaData, setOnaData] = useState<OnaData | null>(null);
+  const [insightsData, setInsightsData] =
+    useState<EmployeeInsightsResponseApi | null>(null);
 
   const [proposalDraft, setProposalDraft] = useState<ProposalDraft | null>(null);
   const [simulationOpen, setSimulationOpen] = useState(false);
@@ -70,6 +94,7 @@ export function EmployeeView({ employee }: Props) {
       setEvaluations([]);
       setMonetaryInfo(null);
       setOnaData(null);
+      setInsightsData(null);
       setProposalDraft(null);
       setAcceptedSimulation(null);
       return;
@@ -82,14 +107,18 @@ export function EmployeeView({ employee }: Props) {
     setEvaluations([]);
     setMonetaryInfo(null);
     setOnaData(null);
+    setInsightsData(null);
     setProposalDraft(null);
     setAcceptedSimulation(null);
 
     (async () => {
-      const [evaluations, monetary, ona] = await Promise.all([
+      const [evaluations, monetary, ona, insights] = await Promise.all([
         fetchApi<Evaluation[]>(`/api/employees/${employee.id}/evaluations`),
         fetchApi<MonetaryInfo>(`/api/employees/${employee.id}/monetary-info`),
         fetchApi<OnaData>(`/api/ona/${employee.id}/active`),
+        fetchApi<EmployeeInsightsResponseApi>(
+          `/api/employees/${employee.id}/insights`,
+        ),
       ]);
 
       if (!isMounted) return;
@@ -97,6 +126,7 @@ export function EmployeeView({ employee }: Props) {
       setEvaluations(evaluations ?? []);
       setMonetaryInfo(monetary ?? null);
       setOnaData(ona ?? null);
+      setInsightsData(insights ?? null);
       setLoading(false);
     })();
 
@@ -133,6 +163,30 @@ export function EmployeeView({ employee }: Props) {
     );
   }, [proposalDraft]);
 
+  const insightViewModels = useMemo(() => {
+    return insightsData ? mapInsightsToViewModels(insightsData.insights) : [];
+  }, [insightsData]);
+
+  const performanceInsights = useMemo(() => {
+    return insightViewModels.filter((insight) =>
+      PERFORMANCE_CHART_CODES.has(insight.code),
+    );
+  }, [insightViewModels]);
+
+  const onaInsights = useMemo(() => {
+    return insightViewModels.filter((insight) =>
+      ONA_CHART_CODES.has(insight.code),
+    );
+  }, [insightViewModels]);
+
+  const modalInsights = useMemo(() => {
+    return insightViewModels.filter(
+      (insight) =>
+        !PERFORMANCE_CHART_CODES.has(insight.code) &&
+        !ONA_CHART_CODES.has(insight.code),
+    );
+  }, [insightViewModels]);
+
   const fullName = employee
     ? `${employee.first_name} ${employee.last_name}`.trim()
     : "Selecciona un empleado";
@@ -140,7 +194,7 @@ export function EmployeeView({ employee }: Props) {
   return (
     <>
       <section className="min-w-0 flex-1 min-h-0 h-full overflow-y-auto border [background-image:var(--exec-employee-view)]">
-        <div className="h-full min-h-0 p-6 flex flex-col">
+        <div className="h-full min-h-0 p-4 flex flex-col">
           {/* Header */}
           <header className="shrink-0">
             <div className="flex items-start justify-between gap-4">
@@ -153,7 +207,7 @@ export function EmployeeView({ employee }: Props) {
                   raiseAmount={proposalKpis?.raiseAmount}
                   salaryVsAvgPct={proposalKpis?.salaryVsAvgPct}
                   bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
-                  performanceLabel="Excelente"
+                  attritionRate={employee.attrition_rate}
                 />
 
                 {acceptedSimulation && (
@@ -177,24 +231,33 @@ export function EmployeeView({ employee }: Props) {
           </header>
 
           {/* Body */}
-          <div className="mt-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
+          <div className="mt-2 flex-1 min-h-0 overflow-x-hidden">
             {!employee ? (
               <div className="h-full grid place-items-center text-sm">
                 Selecciona un empleado para ver detalles
               </div>
             ) : (
-              <div className="h-full min-h-0 flex flex-col gap-4">
+              <div className="h-full min-h-0 flex flex-col gap-2">
                 <SalaryProposalForm
                   employee={employee}
                   monetaryInfo={monetaryInfo}
                   value={proposalDraft}
                   onChange={setProposalDraft}
+                  hasInsights={modalInsights.length > 0}
                   onOpenSimulation={() => setSimulationOpen(true)}
                 />
 
-                <div className="flex-1 min-h-0 h-full grid grid-cols-1 gap-7 lg:grid-cols-2">
-                  <EmployeeProgressChart data={evaluations} loading={loading} />
-                  <OnaRadarChart data={onaData} loading={loading} />
+                <div className="flex-1 min-h-0 h-full grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  <EmployeeProgressChart
+                    employeeId={employee?.id}
+                    insights={performanceInsights}
+                  />
+
+                  <OnaRadarChart
+                    data={onaData}
+                    loading={loading}
+                    insights={onaInsights}
+                  />
                 </div>
               </div>
             )}
@@ -208,6 +271,7 @@ export function EmployeeView({ employee }: Props) {
           onOpenChange={setSimulationOpen}
           employee={employee}
           draft={proposalDraft}
+          insights={modalInsights}
           onConfirm={({ proposedSalary, bonus, simulationResult }) => {
             setProposalDraft((prev) =>
               prev
@@ -227,4 +291,3 @@ export function EmployeeView({ employee }: Props) {
     </>
   );
 }
-``

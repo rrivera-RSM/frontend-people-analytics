@@ -16,6 +16,14 @@ export type EmployeeRow = {
   email: string;
   category_name: string;
   attrition_rate: number;
+  dni?: string;
+  office_id?: number;
+  office_name?: string;
+  department_id?: number;
+  department_name?: string;
+  society_id?: number;
+  society_name?: string;
+  joined_at?: string;
 };
 
 type Props = {
@@ -50,6 +58,20 @@ export function EmployeeCard({
     [employee.id],
   );
 
+  
+  const isAttritionLow = employee.attrition_rate < 0.3414;
+  const attritionRateClasses = [
+    "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1",
+    isAttritionLow
+    ? "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-700"
+    : "bg-rose-50 text-rose-800 ring-rose-200 dark:bg-rose-950 dark:text-rose-200 dark:ring-rose-700",
+  ].join(" ");
+  
+  const attritionRateLabel = isAttritionLow ? "Bajo riesgo" : "Alto riesgo";
+  const extraInfoLabel = [employee.department_name, employee.office_name, employee.category_name]
+    .filter(Boolean)
+    .join(" · ");
+
   useEffect(() => {
     setPhotoOk(true);
   }, [employee.id]);
@@ -71,7 +93,7 @@ export function EmployeeCard({
 
                 selected
                   ? "bg-[var(--selected-bg)] border-[var(--selected-border)] text-[var(--selected-fg)] shadow-[0_0_15px_rgba(0,92,148,0.12)]"
-                  : "bg-transparent border-transparent hover:bg-[var(--item-hover)]",
+                  : "bg-transparent border-transparent hover:bg-[var(--item-hover)] dark:hover:bg-slate-800",
 
                 "focus-visible:outline-none focus-visible:ring-2",
                 "focus-visible:ring-[var(--selected-ring)]",
@@ -96,7 +118,7 @@ export function EmployeeCard({
                     onError={() => setPhotoOk(false)}
                   />
                 )}
-                <AvatarFallback className="bg-slate-100 text-xs">
+                <AvatarFallback className="bg-slate-100 text-xs dark:bg-slate-700 dark:text-slate-200">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -105,8 +127,18 @@ export function EmployeeCard({
 
           <TooltipContent side="right" className="max-w-[240px]">
             <div className="text-sm font-semibold">{fullName}</div>
-            <div className="text-xs text-slate-500">{employee.email}</div>
-            <div className="mt-1 text-[11px]">{employee.category_name}</div>
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <div className="truncate text-xs text-slate-500">{employee.email}</div>
+              <div className={attritionRateClasses}>{attritionRateLabel}</div>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+              <span className="inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-700">
+                {employee.category_name}
+              </span>
+              {extraInfoLabel ? (
+                <span className="truncate text-[11px] text-slate-500">{extraInfoLabel}</span>
+              ) : null}
+            </div>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -126,7 +158,7 @@ export function EmployeeCard({
         "transition-colors",
         selected
           ? "bg-[var(--selected-bg)] border-[var(--selected-border)] text-[var(--selected-fg)]"
-          : " border-transparent hover:bg-[var(--item-hover)]",
+          : " border-transparent hover:bg-[var(--item-hover)] dark:hover:bg-slate-800",
 
         "focus-visible:outline-none focus-visible:ring-2",
         "focus-visible:ring-[var(--selected-ring)]",
@@ -146,7 +178,7 @@ export function EmployeeCard({
         className={[
           "h-9 w-9 shrink-0",
           "border",
-          selected ? "border-blue-200" : "border-slate-200",
+          selected ? "border-blue-200" : "border-slate-200 dark:border-slate-700",
         ].join(" ")}
       >
         {photoOk && (
@@ -163,12 +195,18 @@ export function EmployeeCard({
       </Avatar>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm">{fullName}</div>
-        <div className="truncate text-xs">{employee.email}</div>
-
-        <div className="mt-1 inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-medium">
-          {employee.category_name}
+        <div className="truncate text-sm font-semibold">{fullName}</div>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <div className="truncate text-xs text-slate-500">{employee.email}</div>
+          <div className={attritionRateClasses}>{attritionRateLabel}</div>
         </div>
+
+        {extraInfoLabel ? (
+          <div className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">
+            {extraInfoLabel}
+          </div>
+        ) : null}
+
       </div>
     </button>
   );
