@@ -58,24 +58,16 @@ export function EmployeeCard({
     [employee.id],
   );
 
-  const attritionRateLabel = useMemo(
-    () =>
-      new Intl.NumberFormat("es-ES", {
-        style: "percent",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(employee.attrition_rate),
-    [employee.attrition_rate],
-  );
-
-  const isAttritionLow = employee.attrition_rate < 0.3046;
+  
+  const isAttritionLow = employee.attrition_rate < 0.3414;
   const attritionRateClasses = [
     "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1",
     isAttritionLow
-      ? "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-700"
-      : "bg-rose-50 text-rose-800 ring-rose-200 dark:bg-rose-950 dark:text-rose-200 dark:ring-rose-700",
+    ? "bg-emerald-50 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-700"
+    : "bg-rose-50 text-rose-800 ring-rose-200 dark:bg-rose-950 dark:text-rose-200 dark:ring-rose-700",
   ].join(" ");
-
+  
+  const attritionRateLabel = isAttritionLow ? "Bajo riesgo" : "Alto riesgo";
   const extraInfoLabel = [employee.department_name, employee.office_name, employee.category_name]
     .filter(Boolean)
     .join(" · ");

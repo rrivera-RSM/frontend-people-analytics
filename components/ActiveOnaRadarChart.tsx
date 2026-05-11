@@ -3,10 +3,18 @@
 import dynamic from "next/dynamic";
 import React, { useMemo, useRef, useLayoutEffect, useState } from "react";
 import type { ApexOptions } from "apexcharts";
+import { Info } from "lucide-react";
+
 import type { OnaData } from "./EmployeeView";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import type { EmployeeInsightViewModel } from "@/types/employee-insights";
 import { InsightChipsInline } from "./employee-insights/InsightChipsInline";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
@@ -19,11 +27,37 @@ type Props = {
   insights?: EmployeeInsightViewModel[];
 };
 
-const LABELS = [
-  "Compartir información",
-  "Apoyo técnico",
-  "Apoyo personal",
-  "Inspiración",
+const LABELS = ["CI", "AT", "AP", "IN"];
+
+const ONA_LABEL_HELP = [
+  {
+    short: "CI",
+    full: "Compartir información",
+    colorClass: "bg-sky-400",
+    description:
+      "Mide hasta qué punto esta persona es percibida como una fuente útil para compartir y mover información dentro de la organización.",
+  },
+  {
+    short: "AT",
+    full: "Apoyo técnico",
+    colorClass: "bg-cyan-400",
+    description:
+      "Refleja el reconocimiento de esta persona como apoyo experto o referente para resolver dudas técnicas o profesionales.",
+  },
+  {
+    short: "AP",
+    full: "Apoyo personal",
+    colorClass: "bg-violet-400",
+    description:
+      "Indica el nivel de confianza o cercanía percibida para apoyar a otras personas en situaciones personales o relacionales.",
+  },
+  {
+    short: "IN",
+    full: "Inspiración",
+    colorClass: "bg-amber-400",
+    description:
+      "Representa la capacidad de inspirar, influir o movilizar a otras personas dentro de la organización.",
+  },
 ];
 
 function clamp0to100(n: number) {
@@ -38,7 +72,7 @@ function clamp(n: number, min: number, max: number) {
 export default function OnaRadarChart({
   data,
   title = "Analisis Organizacional de Empresas (ONA)",
-  color = "#00153d",
+  color = "#67e8f9",
   fillColor = "#009cde",
   loading = false,
   insights = [],
@@ -74,34 +108,38 @@ export default function OnaRadarChart({
     ];
   }, [data]);
 
-  const series = useMemo(() => [{ name: "Percentil", data: values }], [values]);
+  const series = useMemo(
+    () => [{ name: "Percentil", data: values }],
+    [values],
+  );
 
   /**
-   * Tamaño objetivo:
-   * - responsive
-   * - más contenido “alrededor”
-   * - capado para que no se coma la card
+   * Hacemos que el chart use realmente el ancho útil de la card,
+   * en vez de caparlo a 290.
    */
-  const chartSide = useMemo(() => {
-    if (!containerWidth) return 220;
-
-    // Queremos que no use todo el ancho disponible
-    const desired = Math.floor(containerWidth * 0.5);
-
-    // Lo capamos para no deformar layouts con cards vecinas
-    return clamp(desired, 190, 300);
+  const chartWidth = useMemo(() => {
+    if (!containerWidth) return 380;
+    return clamp(containerWidth - 8, 260, 520);
   }, [containerWidth]);
 
   /**
-   * Tamaño interno del radar:
-   * deja margen para labels y datalabels
+   * Altura algo menor que el ancho, pero ya mucho más generosa.
+   */
+  const chartHeight = useMemo(() => {
+    return clamp(Math.round(chartWidth * 2.5), 360, 410);
+  }, [chartWidth]);
+
+  /**
+   * Radar considerablemente mayor dentro del chart.
+   * Este es el cambio clave para “llenar” mejor la card.
    */
   const radarSize = useMemo(() => {
-    return clamp(chartSide - 120, 100, 90);
-  }, [chartSide]);
+    return clamp(Math.round(chartWidth * 0.5), 105, 155);
+  }, [chartWidth]);
 
-  const labelFontSize = chartSide < 220 ? "10px" : "11px";
-  const valueFontSize = chartSide < 220 ? "10px" : "11px";
+  const compact = chartWidth < 240;
+  const labelFontSize = compact ? "11px" : "12px";
+  const valueFontSize = compact ? "10px" : "11px";
 
   const options: ApexOptions = useMemo(
     () => ({
@@ -111,13 +149,15 @@ export default function OnaRadarChart({
         animations: { enabled: true },
         redrawOnWindowResize: true,
         redrawOnParentResize: true,
+        background: "transparent",
+        foreColor: "#94a3b8",
       },
       grid: {
         padding: {
-          top: -18,
-          bottom: -10,
-          left: -8,
-          right: -8,
+          top: compact ? 10 : 14,
+          bottom: compact ? 6 : 10,
+          left: compact ? 6 : 12,
+          right: compact ? 6 : 12,
         },
       },
       xaxis: {
@@ -125,8 +165,10 @@ export default function OnaRadarChart({
         labels: {
           style: {
             fontSize: labelFontSize,
+            fontWeight: 600,
+            colors: ["#cbd5e1", "#cbd5e1", "#cbd5e1", "#cbd5e1"],
           },
-          offsetY: -2,
+          offsetY: 0,
         },
       },
       yaxis: {
@@ -134,38 +176,43 @@ export default function OnaRadarChart({
         max: 100,
         tickAmount: 4,
         labels: {
-          formatter: (val) => `${Math.round(val)}`,
-          style: {
-            fontSize: "10px",
-          },
+          show: false,
         },
       },
       stroke: {
-        width: 2,
+        width: 2.2,
         colors: [color],
       },
       fill: {
         type: "solid",
-        opacity: 0.22,
+        opacity: 0.18,
         colors: [fillColor],
       },
       markers: {
-        size: 3,
+        size: compact ? 3 : 3.5,
         colors: [color],
-        strokeColors: "#fff",
+        strokeColors: "#e2e8f0",
         strokeWidth: 2,
-        hover: { size: 5 },
+        hover: { size: compact ? 5 : 6 },
       },
       dataLabels: {
         enabled: true,
         style: {
           fontSize: valueFontSize,
           fontWeight: 600,
+          colors: ["#e2e8f0"],
         },
         background: {
           enabled: true,
           borderRadius: 4,
-          padding: 2,
+          padding: 3,
+          opacity: 0.74,
+          foreColor: "#e2e8f0",
+          borderWidth: 0,
+          backgroundColor: "rgba(15, 23, 42, 0.76)",
+        },
+        dropShadow: {
+          enabled: false,
         },
       },
       tooltip: {
@@ -177,21 +224,106 @@ export default function OnaRadarChart({
         radar: {
           size: radarSize,
           polygons: {
-            strokeColors: "#e5e7eb",
+            strokeColors: "rgba(148, 163, 184, 0.18)",
+            connectorColors: "rgba(148, 163, 184, 0.18)",
             fill: {
-              colors: ["#f9fafb", "#ffffff"],
+              colors: [
+                "rgba(148, 163, 184, 0.05)",
+                "rgba(148, 163, 184, 0.02)",
+              ],
             },
           },
         },
       },
     }),
-    [color, fillColor, labelFontSize, valueFontSize, radarSize],
+    [color, compact, fillColor, labelFontSize, radarSize, valueFontSize],
   );
 
   return (
     <Card className="overflow-hidden py-2 bg-[var(--exec-card)]">
       <CardHeader className="px-4 py-2 space-y-3">
-        <CardTitle className="text-base leading-tight">{title}</CardTitle>
+        <div className="flex items-center justify-between gap-3">
+          <CardTitle className="text-base leading-tight">{title}</CardTitle>
+
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Explicación de siglas ONA"
+                  className="
+                    inline-flex h-7 w-7 items-center justify-center
+                    rounded-full border border-white/6
+                    bg-white/[0.03]
+                    text-slate-400
+                    transition-colors
+                    hover:bg-white/[0.07] hover:text-slate-200
+                    dark:text-slate-500 dark:hover:text-slate-100
+                  "
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+
+              <TooltipContent
+                side="left"
+                align="start"
+                className="
+                  max-w-[320px]
+                  rounded-2xl
+                  border border-white/10
+                  bg-slate-950/95
+                  p-4
+                  text-slate-50
+                  shadow-[0_16px_40px_rgba(0,0,0,0.35)]
+                  backdrop-blur-md
+                "
+              >
+                <div className="space-y-3">
+                  <div>
+                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                      Dimensiones ONA
+                    </div>
+                    <div className="mt-1 text-[11px] leading-5 text-slate-400">
+                      Las siglas del radar representan cuatro dimensiones de
+                      relación y reconocimiento dentro de la organización.
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {ONA_LABEL_HELP.map((item) => (
+                      <div
+                        key={item.short}
+                        className="
+                          rounded-xl
+                          border border-white/6
+                          bg-white/[0.03]
+                          p-3
+                        "
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`h-2.5 w-2.5 rounded-full ${item.colorClass}`}
+                          />
+                          <span className="min-w-[24px] text-sm font-semibold text-slate-100">
+                            {item.short}
+                          </span>
+                          <span className="text-sm font-medium text-slate-200">
+                            {item.full}
+                          </span>
+                        </div>
+
+                        <p className="mt-2 text-[12px] leading-5 text-slate-400">
+                          {item.description}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
 
         {insights.length > 0 && <InsightChipsInline insights={insights} />}
       </CardHeader>
@@ -231,20 +363,15 @@ export default function OnaRadarChart({
             Cargando…
           </div>
         ) : (
-          <div
-            ref={wrapRef}
-            className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_220px]"
-          >
-            <div className="w-full overflow-hidden">
-              <div className="mx-auto flex w-full justify-center overflow-hidden">
-                <Chart
-                  options={options}
-                  series={series}
-                  type="radar"
-                  width={chartSide} // deja margen para labels y datalabels
-                  height={chartSide}
-                />
-              </div>
+          <div ref={wrapRef} className="w-full overflow-hidden">
+            <div className="mx-auto flex w-full justify-center overflow-hidden">
+              <Chart
+                options={options}
+                series={series}
+                type="radar" 
+                width={chartWidth * 1.02} // pequeño extra para evitar recortes
+                height={chartHeight}
+              />
             </div>
           </div>
         )}
@@ -252,4 +379,3 @@ export default function OnaRadarChart({
     </Card>
   );
 }
-``;

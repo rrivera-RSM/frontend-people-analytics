@@ -10,7 +10,8 @@ export type InsightTone =
 export type KnownEmployeeInsightCode =
   | "high_talent"
   | "high_potential"
-  | "high_performance"
+  | "high_underrecognized"
+  | "high_performer"
   | "sustained_high_performance"
   | "performance_growth"
   | "performance_decline"
@@ -84,6 +85,7 @@ export type EmployeeInsightDefinition = {
   chipLabel: string;
   title: string;
   description: string;
+  formulaDescription?: string;
 
   chipClassName: string;
   chipDotClassName?: string;

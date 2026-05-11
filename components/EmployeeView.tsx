@@ -10,11 +10,11 @@ import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type { ProposalDraft, SimulationResult } from "@/types/compensation";
 
-import type { EmployeeInsightsResponseApi } from "@/types/employee-insights";
-import {
-  mapInsightsToViewModels,
-  getTopInsightsByFamily,
-} from "@/lib/employee-insights";
+import type {
+  EmployeeInsightsResponseApi,
+  EmployeeInsightCode,
+} from "@/types/employee-insights";
+import { mapInsightsToViewModels } from "@/lib/employee-insights";
 
 type Props = {
   employee: EmployeeRow | null;
@@ -58,6 +58,22 @@ const fetchApi = async <T,>(url: string): Promise<T | null> => {
 };
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const PERFORMANCE_CHART_CODES = new Set<EmployeeInsightCode>([
+  "high_solid_performance",
+  "hidden_risk",
+  "potential",
+  "stagnant",
+  "recovery",
+  "critical",
+]);
+
+const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
+  "active_influence_ci",
+  "active_influence_at",
+  "active_influence_ap",
+  "active_influence_in",
+]);
 
 export function EmployeeView({ employee }: Props) {
   const [evaluations, setEvaluations] = useState<Evaluation[]>([]);
@@ -152,11 +168,23 @@ export function EmployeeView({ employee }: Props) {
   }, [insightsData]);
 
   const performanceInsights = useMemo(() => {
-    return getTopInsightsByFamily(insightViewModels, "performance", 3);
+    return insightViewModels.filter((insight) =>
+      PERFORMANCE_CHART_CODES.has(insight.code),
+    );
   }, [insightViewModels]);
 
   const onaInsights = useMemo(() => {
-    return getTopInsightsByFamily(insightViewModels, "ona", 3);
+    return insightViewModels.filter((insight) =>
+      ONA_CHART_CODES.has(insight.code),
+    );
+  }, [insightViewModels]);
+
+  const modalInsights = useMemo(() => {
+    return insightViewModels.filter(
+      (insight) =>
+        !PERFORMANCE_CHART_CODES.has(insight.code) &&
+        !ONA_CHART_CODES.has(insight.code),
+    );
   }, [insightViewModels]);
 
   const fullName = employee
@@ -179,7 +207,7 @@ export function EmployeeView({ employee }: Props) {
                   raiseAmount={proposalKpis?.raiseAmount}
                   salaryVsAvgPct={proposalKpis?.salaryVsAvgPct}
                   bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
-                  performanceLabel="Excelente"
+                  attritionRate={employee.attrition_rate}
                 />
 
                 {acceptedSimulation && (
@@ -215,13 +243,13 @@ export function EmployeeView({ employee }: Props) {
                   monetaryInfo={monetaryInfo}
                   value={proposalDraft}
                   onChange={setProposalDraft}
+                  hasInsights={modalInsights.length > 0}
                   onOpenSimulation={() => setSimulationOpen(true)}
                 />
 
                 <div className="flex-1 min-h-0 h-full grid grid-cols-1 gap-4 lg:grid-cols-2">
                   <EmployeeProgressChart
-                    data={evaluations}
-                    loading={loading}
+                    employeeId={employee?.id}
                     insights={performanceInsights}
                   />
 
@@ -243,6 +271,7 @@ export function EmployeeView({ employee }: Props) {
           onOpenChange={setSimulationOpen}
           employee={employee}
           draft={proposalDraft}
+          insights={modalInsights}
           onConfirm={({ proposedSalary, bonus, simulationResult }) => {
             setProposalDraft((prev) =>
               prev
@@ -262,4 +291,3 @@ export function EmployeeView({ employee }: Props) {
     </>
   );
 }
-``
