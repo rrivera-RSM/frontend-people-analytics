@@ -12,17 +12,29 @@ export type KnownEmployeeInsightCode =
   | "high_potential"
   | "high_underrecognized"
   | "high_performer"
-  | "sustained_high_performance"
-  | "performance_growth"
-  | "performance_decline"
-  | "performance_stable"
+  | "high_solid_performance"
+  | "hidden_risk"
+  | "potential"
+  | "stagnant"
+  | "recovery"
+  | "critical"
   | "team_connector"
   | "organizational_connector"
   | "influential_profile"
   | "well_connected_profile"
   | "cross_functional_leader"
   | "peer_reference"
-  | "upward_visibility";
+  | "upward_visibility"
+  | "strong_transversal_leadership"
+  | "transversal_influence"
+  | "lateral_influence"
+  | "upward_influence"
+  | "bridge_person"
+  | "high_team_trust"
+  | "active_influence_ci"
+  | "active_influence_at"
+  | "active_influence_ap"
+  | "active_influence_in";
 
 export type EmployeeInsightCode = KnownEmployeeInsightCode | (string & {});
 
@@ -105,6 +117,7 @@ export type EmployeeInsightViewModel = {
   chipLabel: string;
   title: string;
   description: string;
+  formulaDescription?: string;
 
   priority: number;
   evidence: Record<string, unknown>;
@@ -115,5 +128,5 @@ export type EmployeeInsightViewModel = {
   badgeClassName: string;
 
   visibleEvidenceKeys: string[];
+  sortOrder?: number;
 };
-``

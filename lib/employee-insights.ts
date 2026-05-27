@@ -50,7 +50,8 @@ export function getEmployeeInsightDefinition(
   family: InsightFamily,
 ): Omit<EmployeeInsightDefinition, "code"> {
   if (isKnownInsightCode(code)) {
-    const { code: _code, ...definition } = EMPLOYEE_INSIGHT_DEFINITIONS[code];
+    const { code: omittedCode, ...definition } = EMPLOYEE_INSIGHT_DEFINITIONS[code];
+    void omittedCode;
     return definition;
   }
 
@@ -68,8 +69,9 @@ export function mapInsightToViewModel(
     tone: definition.tone,
     shortCode: definition.shortCode,
     chipLabel: definition.chipLabel,
-    title: item.title ?? definition.title,
-    description: item.description ?? definition.description,
+    title: definition.title,
+    description: definition.description,
+    formulaDescription: definition.formulaDescription,
     priority: item.priority,
     evidence: item.evidence ?? {},
     chipClassName: definition.chipClassName,
@@ -77,6 +79,7 @@ export function mapInsightToViewModel(
     cardClassName: definition.cardClassName,
     badgeClassName: definition.badgeClassName,
     visibleEvidenceKeys: definition.visibleEvidenceKeys ?? [],
+    sortOrder: definition.sortOrder,
   };
 }
 

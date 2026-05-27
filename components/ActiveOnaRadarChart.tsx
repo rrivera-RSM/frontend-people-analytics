@@ -71,7 +71,7 @@ function clamp(n: number, min: number, max: number) {
 
 export default function OnaRadarChart({
   data,
-  title = "Analisis Organizacional de Empresas (ONA)",
+  title = "Análisis de Red Organizacional (ONA)",
   color = "#67e8f9",
   fillColor = "#009cde",
   loading = false,

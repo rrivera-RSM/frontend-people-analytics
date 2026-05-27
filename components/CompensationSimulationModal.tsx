@@ -296,7 +296,8 @@ export function CompensationSimulationModal({
                   <>
                     <AttritionGauge
                       probability={displayedProbability}
-                      size={350}
+                      minSize={350}
+                      maxSize={350}
                       label={
                         isSimulated
                           ? "Riesgo estimado tras simulación"
