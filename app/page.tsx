@@ -22,7 +22,7 @@ export default function EmployeesPage() {
   }, [status]);
 
   return (
-    <main className="h-screen flex flex-col bg-[#0b1322] text-slate-100">
+    <main className="h-screen flex flex-col bg-[var(--exec-bg)] text-slate-900 dark:text-slate-100">
       {/* App frame */}
       <div
         className={[

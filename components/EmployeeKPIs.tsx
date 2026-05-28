@@ -18,11 +18,11 @@ function MetricCard({
   compact = false,
 }: MetricCardProps) {
   const valueToneClasses: Record<DeltaTone, string> = {
-    up: "text-cyan-300",
+    up: "text-cyan-700 dark:text-cyan-300",
     down: "text-rose-600 dark:text-rose-400",
-    success: "text-emerald-300",
+    success: "text-emerald-700 dark:text-emerald-300",
     danger: "text-rose-600 dark:text-rose-400",
-    neutral: "text-slate-50",
+    neutral: "text-slate-900 dark:text-slate-50",
   };
 
   const helperToneClasses: Record<DeltaTone, string> = {
@@ -30,7 +30,7 @@ function MetricCard({
     down: "text-rose-600/80 dark:text-rose-400/80",
     success: "text-emerald-600/80 dark:text-emerald-400/80",
     danger: "text-rose-600/80 dark:text-rose-400/80",
-    neutral: "text-slate-400",
+    neutral: "text-slate-500 dark:text-slate-400",
   };
 
   return (
@@ -38,10 +38,10 @@ function MetricCard({
       className={
         compact
           ? "min-w-0"
-          : "rounded-lg border border-slate-700/80 bg-slate-950/50 p-4 shadow-sm"
+          : "rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/50"
       }
     >
-      <div className="text-xs font-medium text-slate-400">
+      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
         {label}
       </div>
 
@@ -129,9 +129,9 @@ export function KpiBar({
 
   if (variant === "summary") {
     return (
-      <section className="rounded-xl border border-slate-700/90 bg-slate-900/35 shadow-sm">
+      <section className="rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
         <div className="border-l-4 border-cyan-400 px-6 py-5">
-          <div className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-slate-400">
+          <div className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
             <Zap className="h-4 w-4 text-cyan-300" />
             Executive Summary
           </div>

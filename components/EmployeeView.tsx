@@ -374,10 +374,10 @@ export function EmployeeView({ employee }: Props) {
 
   return (
     <>
-      <section className="min-w-0 flex-1 min-h-0 h-full overflow-y-auto border-l border-slate-700/80 bg-[#0b1322] [background-image:var(--exec-employee-view)]">
+      <section className="min-w-0 flex-1 min-h-0 h-full overflow-y-auto border-l border-slate-200 bg-[var(--exec-bg)] [background-image:var(--exec-employee-view)] dark:border-slate-700/80">
         <div className="min-h-full flex flex-col">
           {/* Header */}
-          <header className="shrink-0 border-b border-slate-700/80 bg-[#0f1728] px-6 py-5 shadow-sm">
+          <header className="shrink-0 border-b border-slate-200 bg-[var(--exec-top)] px-6 py-5 shadow-sm dark:border-slate-700/80 dark:bg-[#0f1728]">
             {!employee ? (
               <div className="flex min-h-[92px] items-center">
                 <div>
@@ -392,7 +392,7 @@ export function EmployeeView({ employee }: Props) {
             ) : (
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
-                  <Avatar className="h-16 w-16 border-2 border-slate-700 bg-cyan-500 shadow-[0_0_0_3px_rgba(34,211,238,0.12)]">
+                  <Avatar className="h-16 w-16 border-2 border-slate-300 bg-cyan-500 shadow-[0_0_0_3px_rgba(34,211,238,0.12)] dark:border-slate-700">
                     <AvatarImage
                       src={`/api/employees/${employee.id}/photo`}
                       alt={`${fullName} avatar`}
@@ -403,20 +403,20 @@ export function EmployeeView({ employee }: Props) {
                   </Avatar>
 
                   <div className="min-w-0">
-                    <h1 className="truncate text-3xl font-bold tracking-tight text-slate-50">
+                    <h1 className="truncate text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
                       {fullName}
                     </h1>
-                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-400">
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
                       {employeeMeta.map((item) => (
                         <span
                           key={item}
-                          className="border-r border-slate-700 pr-3 last:border-r-0"
+                          className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700"
                         >
                           {item}
                         </span>
                       ))}
                       {tenureLabel && (
-                        <span className="border-r border-slate-700 pr-3 last:border-r-0">
+                        <span className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700">
                           Seniority: {tenureLabel.replace(" en la firma", "")}
                         </span>
                       )}
@@ -430,8 +430,8 @@ export function EmployeeView({ employee }: Props) {
                       className={[
                         "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
                         attritionIsHigh
-                          ? "border-red-500/30 bg-red-500/10 text-red-300"
-                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
+                          ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
+                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
                       ].join(" ")}
                     >
                       Riesgo de fuga {attritionPct.toFixed(1)}%
@@ -441,14 +441,14 @@ export function EmployeeView({ employee }: Props) {
                   <button
                     type="button"
                     aria-label="Descargar informe"
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-700 bg-slate-800/70 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   >
                     <Download className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
                     aria-label="Más acciones"
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-700 bg-slate-800/70 text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   >
                     <MoreVertical className="h-5 w-5" />
                   </button>
@@ -460,7 +460,7 @@ export function EmployeeView({ employee }: Props) {
           {/* Body */}
           <div className="flex-1 min-h-0 overflow-x-hidden p-6">
             {!employee ? (
-              <div className="min-h-[360px] grid place-items-center rounded-xl border border-dashed border-slate-700 bg-slate-900/40 text-sm text-slate-400">
+              <div className="grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-white/80 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
                 Selecciona un empleado para ver detalles
               </div>
             ) : (
@@ -476,8 +476,8 @@ export function EmployeeView({ employee }: Props) {
                 </section>
 
                 {executiveInsightCards.length > 0 && (
-                  <section className="rounded-xl border border-slate-700/90 bg-slate-900/35 p-4 shadow-sm">
-                    <div className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-400">
+                  <section className="rounded-xl border border-slate-200 bg-white/85 p-4 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
+                    <div className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
                       Main insights
                     </div>
                     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -522,16 +522,16 @@ export function EmployeeView({ employee }: Props) {
                     onOpenSimulation={() => setActiveTab("decision-intelligence")}
                   />
 
-                  <div className="min-w-0 overflow-hidden rounded-xl border border-slate-700/90 bg-slate-800/60 shadow-sm">
-                    <div className="flex border-b border-slate-700/90 bg-slate-900/35">
+                  <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/60">
+                    <div className="flex border-b border-slate-200 bg-slate-50/75 dark:border-slate-700/90 dark:bg-slate-900/35">
                       <button
                         type="button"
                         onClick={() => setActiveTab("decision-intelligence")}
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "decision-intelligence"
-                            ? "border-b-2 border-cyan-400 font-semibold text-slate-100"
-                            : "font-medium text-slate-400",
+                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
                         Decision intelligence
@@ -542,8 +542,8 @@ export function EmployeeView({ employee }: Props) {
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "ona"
-                            ? "border-b-2 border-cyan-400 font-semibold text-slate-100"
-                            : "font-medium text-slate-400",
+                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
                         ONA
@@ -554,8 +554,8 @@ export function EmployeeView({ employee }: Props) {
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "desempeno"
-                            ? "border-b-2 border-cyan-400 font-semibold text-slate-100"
-                            : "font-medium text-slate-400",
+                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
                         Desempeño
@@ -566,15 +566,15 @@ export function EmployeeView({ employee }: Props) {
                       {activeTab === "decision-intelligence" && proposalDraft && (
                         <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.02fr_0.98fr]">
                           <div className="space-y-4">
-                            <Card className="bg-slate-900/40">
+                            <Card className="bg-slate-50 dark:bg-slate-900/40">
                               <CardContent className="space-y-4 p-4">
                                 <div className="space-y-1">
-                                  <div className="text-sm text-slate-400">Categoría</div>
+                                  <div className="text-sm text-slate-500 dark:text-slate-400">Categoría</div>
                                   <div className="font-medium">{proposalDraft.category || "-"}</div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                   <div className="space-y-1">
-                                    <div className="text-sm text-slate-400">Salario actual</div>
+                                    <div className="text-sm text-slate-500 dark:text-slate-400">Salario actual</div>
                                     <div className="font-medium">
                                       {new Intl.NumberFormat("es-ES", {
                                         style: "currency",
@@ -584,19 +584,19 @@ export function EmployeeView({ employee }: Props) {
                                     </div>
                                   </div>
                                   <div className="space-y-1">
-                                    <div className="text-sm text-slate-400">Incremento porcentual</div>
-                                    <div className="font-medium text-cyan-300">
+                                    <div className="text-sm text-slate-500 dark:text-slate-400">Incremento porcentual</div>
+                                    <div className="font-medium text-cyan-700 dark:text-cyan-300">
                                       {raisePct >= 0 ? "+" : ""}
                                       {raisePct}%
                                     </div>
                                   </div>
                                 </div>
                                 <div className="space-y-2">
-                                  <div className="text-sm text-slate-400">Nuevo salario bruto anual</div>
+                                  <div className="text-sm text-slate-500 dark:text-slate-400">Nuevo salario bruto anual</div>
                                   <MoneyInput value={localSalary} onChange={setLocalSalary} />
                                 </div>
                                 <div className="space-y-2">
-                                  <div className="text-sm text-slate-400">Cuantía del bonus (target anual)</div>
+                                  <div className="text-sm text-slate-500 dark:text-slate-400">Cuantía del bonus (target anual)</div>
                                   <MoneyInput value={localBonus} onChange={setLocalBonus} />
                                 </div>
                               </CardContent>
@@ -629,7 +629,7 @@ export function EmployeeView({ employee }: Props) {
                           </div>
 
                           <div className="space-y-4">
-                            <Card className="bg-slate-900/40">
+                            <Card className="bg-slate-50 dark:bg-slate-900/40">
                               <CardContent className="space-y-4 p-4">
                                 {simulationError && (
                                   <div className="rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
@@ -689,7 +689,7 @@ export function EmployeeView({ employee }: Props) {
                 </section>
 
                 {acceptedSimulation && (
-                  <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3 text-xs text-emerald-100">
+                  <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-100">
                     Última simulación confirmada: riesgo estimado{" "}
                     <span className="font-semibold">
                       {(acceptedSimulation.attritionProbability * 100).toFixed(1)}%

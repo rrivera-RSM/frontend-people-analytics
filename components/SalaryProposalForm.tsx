@@ -207,48 +207,48 @@ export function SalaryProposalForm({
       : 0;
 
   return (
-    <Card className="min-h-[640px] border-slate-700/90 bg-slate-800/80 py-0 shadow-sm">
-      <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-700/80 px-5 py-5">
+    <Card className="min-h-[640px] border-slate-200 bg-white/90 py-0 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/80">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-700/80">
         <div className="flex items-center gap-3">
-          <Banknote className="h-5 w-5 text-cyan-300" />
-          <CardTitle className="text-xl text-slate-50">Compensación</CardTitle>
+          <Banknote className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
+          <CardTitle className="text-xl text-slate-900 dark:text-slate-50">Compensación</CardTitle>
         </div>
 
         <button
           type="button"
           aria-label="Ajustes de compensación"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-100"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
         >
           <SlidersHorizontal className="h-4 w-4" />
         </button>
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col px-5 py-5">
-        <div className="mb-5 rounded-lg border border-slate-700 bg-slate-950/45 p-4">
-          <div className="text-xs font-medium text-slate-400">
+        <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/45">
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
             Referencia Comparativa
           </div>
-          <div className="mt-2 flex h-10 items-center justify-between rounded-md border border-slate-700 bg-slate-800 px-3 text-sm font-semibold text-slate-100">
+          <div className="mt-2 flex h-10 items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
             <span className="truncate">RSM Spain · People & Culture · Barcelona</span>
             <span className="text-slate-500">⌄</span>
           </div>
         </div>
 
         <div className="mb-6 grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-slate-700 bg-slate-950/45 p-4">
-            <div className="text-xs text-slate-400">% vs salario prom.</div>
-            <div className="mt-2 flex items-center gap-2 text-xl font-bold text-slate-50">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/45">
+            <div className="text-xs text-slate-500 dark:text-slate-400">% vs salario prom.</div>
+            <div className="mt-2 flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-slate-50">
               {salaryVsAvgPct >= 0 ? "+" : ""}
               {salaryVsAvgPct.toFixed(1)}%
-              <TrendingUp className="h-4 w-4 text-emerald-300" />
+              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
             </div>
           </div>
-          <div className="rounded-lg border border-slate-700 bg-slate-950/45 p-4">
-            <div className="text-xs text-slate-400">% vs bonus prom.</div>
-            <div className="mt-2 flex items-center gap-2 text-xl font-bold text-slate-50">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/45">
+            <div className="text-xs text-slate-500 dark:text-slate-400">% vs bonus prom.</div>
+            <div className="mt-2 flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-slate-50">
               {bonusVsAvgPct >= 0 ? "+" : ""}
               {bonusVsAvgPct.toFixed(1)}%
-              <TrendingUp className="h-4 w-4 text-emerald-300" />
+              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
             </div>
           </div>
         </div>
@@ -258,7 +258,7 @@ export function SalaryProposalForm({
             onSubmit={form.handleSubmit(() => undefined)}
             className="flex flex-1 flex-col"
           >
-            <div className="mb-4 border-b border-slate-700 pb-3 text-base font-semibold text-slate-50">
+            <div className="mb-4 border-b border-slate-200 pb-3 text-base font-semibold text-slate-900 dark:border-slate-700 dark:text-slate-50">
               Propuesta Salarial
             </div>
 
@@ -284,7 +284,7 @@ export function SalaryProposalForm({
                     name={name}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs text-slate-400">
+                        <FormLabel className="text-xs text-slate-500 dark:text-slate-400">
                           {label}
                         </FormLabel>
                         <FormControl>
@@ -321,7 +321,7 @@ export function SalaryProposalForm({
                   name="proposedSalary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-cyan-300">
+                      <FormLabel className="text-xs text-cyan-700 dark:text-cyan-300">
                         Propuesta salarial FY 2026-2027
                       </FormLabel>
                       <FormControl>
@@ -338,9 +338,9 @@ export function SalaryProposalForm({
                   )}
                 />
 
-                <div className="flex items-center justify-between text-xs text-slate-400">
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>Aumento: {raiseAmount.toLocaleString("es-ES")} €</span>
-                  <span className="text-cyan-300">
+                  <span className="text-cyan-700 dark:text-cyan-300">
                     {raisePct >= 0 ? "+" : ""}
                     {raisePct.toFixed(1)}%
                   </span>
@@ -348,7 +348,7 @@ export function SalaryProposalForm({
               </div>
             </div>
 
-            <div className="mt-auto border-t border-slate-700 pt-5">
+            <div className="mt-auto border-t border-slate-200 pt-5 dark:border-slate-700">
               <Button
                 type="button"
                 className={cn(

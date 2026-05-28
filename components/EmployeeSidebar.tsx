@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { EmployeeCard, type EmployeeRow } from "./EmployeeCard";
 import { useDebounce } from "./hooks/useDebounce";
+import { ThemeToggle } from "./ThemeToggle";
 
 type Props = {
   office: string;
@@ -19,7 +20,7 @@ type CallStatus = "idle" | "loading" | "success" | "error";
 type RiskFilter = "all" | "high";
 
 const SIDEBAR_CLASSES = {
-  base: "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-700/80 bg-[#0b1322]",
+  base: "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]",
   expanded: "w-[320px]",
   collapsed: "w-[76px]",
 } as const;
@@ -158,7 +159,7 @@ export function EmployeesSidebar({
         )}
 
         {status === "success" && visibleEmployees.length === 0 && !collapsed && (
-          <div className="rounded-xl border border-slate-700 bg-slate-900/60 p-3 text-sm text-slate-400">
+          <div className="rounded-xl border border-slate-200 bg-white/80 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
             {isSearching
               ? `No hay resultados para "${debouncedQuery}".`
               : "No hay empleados para estos filtros."}
@@ -212,17 +213,34 @@ function Header({
   onRiskFilterChange: (filter: RiskFilter) => void;
 }) {
   return (
-    <div className="sticky top-0 z-10 border-b border-slate-700/80 bg-[#0b1322]">
-      <div className={`p-4 ${collapsed ? "pb-2" : "pb-4"}`}>
+    <div className="sticky top-0 z-10 border-b border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]">
+      <div className={`px-4 pt-5 ${collapsed ? "pb-2" : "pb-4"}`}>
+        {!collapsed ? (
+          <div className="mb-6 flex items-start justify-between">
+            <div className="flex flex-col items-start gap-1.5">
+              <CompanyMark className="h-3.5 w-auto" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
+                People Analytics
+              </span>
+            </div>
+            <ThemeToggle />
+          </div>
+        ) : (
+          <div className="mb-3 flex flex-col items-center gap-2">
+            <CompanyMark className="h-3.5 w-auto" />
+            <ThemeToggle />
+          </div>
+        )}
+
         {!collapsed && (
           <div className="mb-5">
             <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
               Contexto
             </div>
-            <div className="mt-3 text-sm font-semibold text-slate-100">
+            <div className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-100">
               Estás viendo:
             </div>
-            <div className="mt-1 text-sm font-semibold text-cyan-300">
+            <div className="mt-1 text-sm font-semibold text-cyan-700 dark:text-cyan-300">
               {department} · {office}
             </div>
           </div>
@@ -245,14 +263,14 @@ function Header({
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Buscar por email, nombre..."
-              className="w-full rounded-lg border border-slate-700 bg-slate-800/80 py-2 pl-9 pr-3 text-sm text-slate-100 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15"
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
             />
           </label>
         ) : (
           <button
             type="button"
             onClick={() => onToggleCollapse?.(!collapsed)}
-            className="mt-2 w-full inline-flex h-10 items-center justify-center rounded-lg border border-slate-700 bg-slate-800/80 text-slate-300 hover:bg-slate-800"
+            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800"
             aria-label="Expandir para buscar"
             title="Expandir para buscar"
           >
@@ -281,7 +299,7 @@ function Header({
         )}
 
         {!collapsed && (
-          <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+          <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>
               {status === "loading"
                 ? "Buscando…"
@@ -293,7 +311,7 @@ function Header({
               <button
                 type="button"
                 onClick={() => onQueryChange("")}
-                className="rounded-lg px-2 py-1 hover:bg-slate-800"
+                className="rounded-lg px-2 py-1 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Limpiar
               </button>
@@ -322,7 +340,7 @@ function Chip({
       className={`rounded-md px-3 py-1 text-xs font-medium border transition-colors ${
         active
           ? "border-blue-500 bg-blue-500 text-white"
-          : "border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700"
+          : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       }`}
     >
       {children}
@@ -346,5 +364,34 @@ function SearchIcon({ className = "" }: { className?: string }) {
         d="M21 21l-4.3-4.3m1.8-5.2a7 7 0 11-14 0 7 7 0 0114 0z"
       />
     </svg>
+  );
+}
+
+function CompanyMark({ className = "" }: { className?: string }) {
+  return (
+    <div className={className} aria-label="Logotipo de la empresa" role="img">
+      <svg
+        viewBox="0 0 336 44"
+        className="h-full w-full"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <rect x="0" y="0" width="32" height="44" fill="#8f9398" />
+        <rect x="44" y="0" width="78" height="44" fill="#45a339" />
+        <rect x="136" y="0" width="200" height="44" fill="#1a96cf" />
+        <text
+          x="236"
+          y="29"
+          fill="#ffffff"
+          fontSize="18"
+          fontWeight="700"
+          textAnchor="middle"
+          fontFamily="var(--font-sans)"
+          letterSpacing="0.6"
+        >
+          RSM
+        </text>
+      </svg>
+    </div>
   );
 }

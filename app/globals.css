@@ -58,6 +58,7 @@
   /* #68646c */
 
   --accent-brand: var(--brand-blue);
+  color-scheme: light;
   
     /* selected / hover neutrales (light) */
   --item-hover: color-mix(in oklab, var(--accent-brand) 6%, white);
@@ -65,6 +66,20 @@
   --selected-border: color-mix(in oklab, var(--accent-brand) 22%, white);
   --selected-ring: color-mix(in oklab, var(--accent-brand) 55%, transparent);
   --selected-fg: var(--foreground);
+  --selection-bg: oklch(0.72 0.16 255 / 28%);
+
+  /* Light preset: soft-paper */
+  --exec-bg: #eff3f8;
+  --exec-top: #f7fafc;
+  --exec-sidebar: #f4f8fc;
+  --exec-card: #f7fafc;
+  --exec-input: #ffffff;
+  --exec-border: #d6dee8;
+  --exec-employee-view: linear-gradient(
+    180deg,
+    rgba(0, 156, 222, 0.06) 0%,
+    rgba(239, 243, 248, 0) 52%
+  );
 
   --radius: 0.625rem;
   --background: oklch(1 0 0);
@@ -98,6 +113,21 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* Light preset: slate-mist (set in <html data-light-preset="slate-mist">) */
+:root[data-light-preset="slate-mist"]:not(.dark) {
+  --exec-bg: #e8eef5;
+  --exec-top: #eef3f8;
+  --exec-sidebar: #e3eaf3;
+  --exec-card: #f1f5f9;
+  --exec-input: #f8fafc;
+  --exec-border: #c9d4e0;
+  --exec-employee-view: linear-gradient(
+    180deg,
+    rgba(14, 116, 144, 0.08) 0%,
+    rgba(232, 238, 245, 0) 52%
+  );
 }
 /* Navegador: scrollbars/inputs en dark */
 .dark {
@@ -159,6 +189,7 @@ body {
   /* ---------------------------
    * Base (mockup-like)
    * --------------------------- */
+  color-scheme: dark;
 
   /* hover y selected (dark): overlay azul sobre fondos oscuros */
   --accent-brand: oklch(0.459 0.117 245.4);

@@ -64,8 +64,8 @@ export function EmployeeCard({
   const attritionRateClasses = [
     "inline-flex shrink-0 items-center rounded px-2 py-0.5 text-[11px] font-medium ring-1",
     isAttritionLow
-    ? "bg-emerald-500/15 text-emerald-300 ring-emerald-500/35"
-    : "bg-rose-500/15 text-rose-300 ring-rose-500/35",
+    ? "bg-emerald-500/15 text-emerald-700 ring-emerald-500/35 dark:text-emerald-300"
+    : "bg-rose-500/15 text-rose-700 ring-rose-500/35 dark:text-rose-300",
   ].join(" ");
   
   const attritionRateLabel = isAttritionLow ? "Bajo riesgo" : "Alto riesgo";
@@ -89,8 +89,8 @@ export function EmployeeCard({
                 "rounded-xl p-2 transition-colors",
 
                 selected
-                  ? "bg-slate-800 border border-cyan-400 text-slate-50 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
-                  : "border border-transparent bg-transparent text-slate-300 hover:bg-slate-800/70",
+                  ? "border border-cyan-400 bg-cyan-50 text-slate-900 shadow-[0_0_0_1px_rgba(34,211,238,0.25)] dark:bg-slate-800 dark:text-slate-50"
+                  : "border border-transparent bg-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/70",
 
                 "focus-visible:outline-none focus-visible:ring-2",
                 "focus-visible:ring-[var(--selected-ring)]",
@@ -104,7 +104,7 @@ export function EmployeeCard({
                   "border",
                   selected
                     ? "border-cyan-300 ring-2 ring-cyan-400/30"
-                    : "border-slate-700",
+                    : "border-slate-300 dark:border-slate-700",
                 ].join(" ")}
               >
                 {photoOk && (
@@ -154,8 +154,8 @@ export function EmployeeCard({
         "rounded-lg border px-3 py-3",
         "transition-colors",
         selected
-          ? "border-cyan-400 bg-slate-800/90 text-slate-50 shadow-[0_0_0_1px_rgba(34,211,238,0.25)]"
-          : "border-transparent bg-transparent text-slate-300 hover:bg-slate-800/70",
+          ? "border-cyan-400 bg-cyan-50 text-slate-900 shadow-[0_0_0_1px_rgba(34,211,238,0.25)] dark:bg-slate-800/90 dark:text-slate-50"
+          : "border-transparent bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/70",
 
         "focus-visible:outline-none focus-visible:ring-2",
         "focus-visible:ring-[var(--selected-ring)]",
@@ -175,7 +175,7 @@ export function EmployeeCard({
         className={[
           "h-9 w-9 shrink-0",
           "border",
-          selected ? "border-cyan-300" : "border-slate-700",
+          selected ? "border-cyan-300" : "border-slate-300 dark:border-slate-700",
         ].join(" ")}
       >
         {photoOk && (
@@ -186,20 +186,20 @@ export function EmployeeCard({
             onError={() => setFailedPhotoId(employee.id)}
           />
         )}
-        <AvatarFallback className="bg-slate-600 text-xs font-semibold text-slate-100">
+        <AvatarFallback className="bg-slate-200 text-xs font-semibold text-slate-700 dark:bg-slate-600 dark:text-slate-100">
           {initials}
         </AvatarFallback>
       </Avatar>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-slate-100">{fullName}</div>
+        <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{fullName}</div>
         <div className="mt-1 flex items-center justify-between gap-3">
-          <div className="truncate text-xs text-slate-400">{employee.email}</div>
+          <div className="truncate text-xs text-slate-500 dark:text-slate-400">{employee.email}</div>
           <div className={attritionRateClasses}>{attritionRateLabel}</div>
         </div>
 
         {extraInfoLabel ? (
-          <div className="mt-1 truncate text-[11px] text-slate-400">
+          <div className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">
             {extraInfoLabel}
           </div>
         ) : null}
