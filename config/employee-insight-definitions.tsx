@@ -26,7 +26,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-emerald-500/40 bg-emerald-500/20 text-emerald-900 hover:bg-emerald-500/25 dark:border-emerald-400/40 dark:bg-emerald-400/20 dark:text-emerald-100 dark:hover:bg-emerald-400/25",
     chipDotClassName: "bg-emerald-400 dark:bg-emerald-300",
     cardClassName:
-      "border-emerald-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-emerald-400/35 dark:bg-emerald-950/75 dark:text-slate-50",
+      "border-emerald-500/30 bg-emerald-50/90 text-slate-900 backdrop-blur-md dark:border-emerald-400/35 dark:bg-emerald-950/75 dark:text-slate-50",
     badgeClassName:
       "border-emerald-500/40 bg-emerald-500/20 text-emerald-900 dark:border-emerald-400/40 dark:bg-emerald-400/20 dark:text-emerald-100",
     visibleEvidenceKeys: ["current_score_normalized", "ona_percentile_3"],
@@ -48,7 +48,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-violet-500/40 bg-violet-500/20 text-violet-900 hover:bg-violet-500/25 dark:border-violet-400/40 dark:bg-violet-400/20 dark:text-violet-100 dark:hover:bg-violet-400/25",
     chipDotClassName: "bg-violet-400 dark:bg-violet-300",
     cardClassName:
-      "border-violet-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-violet-400/35 dark:bg-violet-950/75 dark:text-slate-50",
+      "border-violet-500/30 bg-violet-50/90 text-slate-900 backdrop-blur-md dark:border-violet-400/35 dark:bg-violet-950/75 dark:text-slate-50",
     badgeClassName:
       "border-violet-500/40 bg-violet-500/20 text-violet-900 dark:border-violet-400/40 dark:bg-violet-400/20 dark:text-violet-100",
     visibleEvidenceKeys: ["performance_delta_normalized"],
@@ -70,7 +70,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-amber-500/40 bg-amber-500/20 text-amber-900 hover:bg-amber-500/25 dark:border-amber-400/40 dark:bg-amber-400/20 dark:text-amber-100 dark:hover:bg-amber-400/25",
     chipDotClassName: "bg-amber-400 dark:bg-amber-300",
     cardClassName:
-      "border-amber-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-amber-400/35 dark:bg-amber-950/75 dark:text-slate-50",
+      "border-amber-500/30 bg-amber-50/90 text-slate-900 backdrop-blur-md dark:border-amber-400/35 dark:bg-amber-950/75 dark:text-slate-50",
     badgeClassName:
       "border-amber-500/40 bg-amber-500/20 text-amber-900 dark:border-amber-400/40 dark:bg-amber-400/20 dark:text-amber-100",
     visibleEvidenceKeys: ["current_score_normalized", "ona_primary_category"],
@@ -92,7 +92,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-blue-500/40 bg-blue-500/20 text-blue-900 hover:bg-blue-500/25 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-400/25",
     chipDotClassName: "bg-blue-400 dark:bg-blue-300",
     cardClassName:
-      "border-blue-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
+      "border-blue-500/30 bg-blue-50/90 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
     badgeClassName:
       "border-blue-500/40 bg-blue-500/20 text-blue-900 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100",
     visibleEvidenceKeys: ["current_score_normalized", "ona_primary_category"],
@@ -118,7 +118,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-emerald-600/40 bg-emerald-600/20 text-emerald-950 hover:bg-emerald-600/25 dark:border-emerald-400/40 dark:bg-emerald-400/20 dark:text-emerald-100 dark:hover:bg-emerald-400/25",
     chipDotClassName: "bg-emerald-500 dark:bg-emerald-300",
     cardClassName:
-      "border-emerald-600/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-emerald-400/35 dark:bg-emerald-950/75 dark:text-slate-50",
+      "border-emerald-600/30 bg-emerald-50/90 text-slate-900 backdrop-blur-md dark:border-emerald-400/35 dark:bg-emerald-950/75 dark:text-slate-50",
     badgeClassName:
       "border-emerald-600/40 bg-emerald-600/20 text-emerald-950 dark:border-emerald-400/40 dark:bg-emerald-400/20 dark:text-emerald-100",
     visibleEvidenceKeys: [
@@ -144,7 +144,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-rose-500/40 bg-rose-500/20 text-rose-950 hover:bg-rose-500/25 dark:border-rose-400/40 dark:bg-rose-400/20 dark:text-rose-100 dark:hover:bg-rose-400/25",
     chipDotClassName: "bg-rose-400 dark:bg-rose-300",
     cardClassName:
-      "border-rose-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-rose-400/35 dark:bg-rose-950/75 dark:text-slate-50",
+      "border-rose-500/30 bg-rose-50/90 text-slate-900 backdrop-blur-md dark:border-rose-400/35 dark:bg-rose-950/75 dark:text-slate-50",
     badgeClassName:
       "border-rose-500/40 bg-rose-500/20 text-rose-950 dark:border-rose-400/40 dark:bg-rose-400/20 dark:text-rose-100",
     visibleEvidenceKeys: [
@@ -170,7 +170,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-cyan-500/40 bg-cyan-500/20 text-cyan-950 hover:bg-cyan-500/25 dark:border-cyan-400/40 dark:bg-cyan-400/20 dark:text-cyan-100 dark:hover:bg-cyan-400/25",
     chipDotClassName: "bg-cyan-400 dark:bg-cyan-300",
     cardClassName:
-      "border-cyan-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-cyan-400/35 dark:bg-cyan-950/75 dark:text-slate-50",
+      "border-cyan-500/30 bg-cyan-50/90 text-slate-900 backdrop-blur-md dark:border-cyan-400/35 dark:bg-cyan-950/75 dark:text-slate-50",
     badgeClassName:
       "border-cyan-500/40 bg-cyan-500/20 text-cyan-950 dark:border-cyan-400/40 dark:bg-cyan-400/20 dark:text-cyan-100",
     visibleEvidenceKeys: [
@@ -196,7 +196,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-slate-500/40 bg-slate-500/20 text-slate-800 hover:bg-slate-500/25 dark:border-slate-400/40 dark:bg-slate-400/20 dark:text-slate-100 dark:hover:bg-slate-400/25",
     chipDotClassName: "bg-slate-400 dark:bg-slate-300",
     cardClassName:
-      "border-slate-500/25 bg-white/88 text-slate-900 backdrop-blur-md dark:border-slate-400/30 dark:bg-slate-950/75 dark:text-slate-50",
+      "border-slate-500/25 bg-slate-100/90 text-slate-900 backdrop-blur-md dark:border-slate-400/30 dark:bg-slate-950/75 dark:text-slate-50",
     badgeClassName:
       "border-slate-500/40 bg-slate-500/20 text-slate-800 dark:border-slate-400/40 dark:bg-slate-400/20 dark:text-slate-100",
     visibleEvidenceKeys: [
@@ -222,7 +222,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-lime-500/40 bg-lime-500/20 text-lime-950 hover:bg-lime-500/25 dark:border-lime-400/40 dark:bg-lime-400/20 dark:text-lime-100 dark:hover:bg-lime-400/25",
     chipDotClassName: "bg-lime-400 dark:bg-lime-300",
     cardClassName:
-      "border-lime-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-lime-400/35 dark:bg-lime-950/75 dark:text-slate-50",
+      "border-lime-500/30 bg-lime-50/90 text-slate-900 backdrop-blur-md dark:border-lime-400/35 dark:bg-lime-950/75 dark:text-slate-50",
     badgeClassName:
       "border-lime-500/40 bg-lime-500/20 text-lime-950 dark:border-lime-400/40 dark:bg-lime-400/20 dark:text-lime-100",
     visibleEvidenceKeys: [
@@ -248,7 +248,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-red-500/40 bg-red-500/20 text-red-950 hover:bg-red-500/25 dark:border-red-400/40 dark:bg-red-400/20 dark:text-red-100 dark:hover:bg-red-400/25",
     chipDotClassName: "bg-red-400 dark:bg-red-300",
     cardClassName:
-      "border-red-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-red-400/35 dark:bg-red-950/75 dark:text-slate-50",
+      "border-red-500/30 bg-red-50/90 text-slate-900 backdrop-blur-md dark:border-red-400/35 dark:bg-red-950/75 dark:text-slate-50",
     badgeClassName:
       "border-red-500/40 bg-red-500/20 text-red-950 dark:border-red-400/40 dark:bg-red-400/20 dark:text-red-100",
     visibleEvidenceKeys: [
@@ -278,7 +278,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-blue-500/40 bg-blue-500/20 text-blue-900 hover:bg-blue-500/25 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-400/25",
     chipDotClassName: "bg-blue-400 dark:bg-blue-300",
     cardClassName:
-      "border-blue-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
+      "border-blue-500/30 bg-blue-50/90 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
     badgeClassName:
       "border-blue-500/40 bg-blue-500/20 text-blue-900 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100",
     visibleEvidenceKeys: ["ona_percentile_1", "unique_relations"],
@@ -300,7 +300,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-indigo-500/40 bg-indigo-500/20 text-indigo-900 hover:bg-indigo-500/25 dark:border-indigo-400/40 dark:bg-indigo-400/20 dark:text-indigo-100 dark:hover:bg-indigo-400/25",
     chipDotClassName: "bg-indigo-400 dark:bg-indigo-300",
     cardClassName:
-      "border-indigo-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-indigo-400/35 dark:bg-indigo-950/75 dark:text-slate-50",
+      "border-indigo-500/30 bg-indigo-50/90 text-slate-900 backdrop-blur-md dark:border-indigo-400/35 dark:bg-indigo-950/75 dark:text-slate-50",
     badgeClassName:
       "border-indigo-500/40 bg-indigo-500/20 text-indigo-900 dark:border-indigo-400/40 dark:bg-indigo-400/20 dark:text-indigo-100",
     visibleEvidenceKeys: ["ona_percentile_2", "betweenness_centrality"],
@@ -322,7 +322,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-fuchsia-500/40 bg-fuchsia-500/20 text-fuchsia-900 hover:bg-fuchsia-500/25 dark:border-fuchsia-400/40 dark:bg-fuchsia-400/20 dark:text-fuchsia-100 dark:hover:bg-fuchsia-400/25",
     chipDotClassName: "bg-fuchsia-400 dark:bg-fuchsia-300",
     cardClassName:
-      "border-fuchsia-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-fuchsia-400/35 dark:bg-fuchsia-950/75 dark:text-slate-50",
+      "border-fuchsia-500/30 bg-fuchsia-50/90 text-slate-900 backdrop-blur-md dark:border-fuchsia-400/35 dark:bg-fuchsia-950/75 dark:text-slate-50",
     badgeClassName:
       "border-fuchsia-500/40 bg-fuchsia-500/20 text-fuchsia-900 dark:border-fuchsia-400/40 dark:bg-fuchsia-400/20 dark:text-fuchsia-100",
     visibleEvidenceKeys: ["ona_percentile_3", "eigenvector_centrality"],
@@ -344,7 +344,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-orange-500/40 bg-orange-500/20 text-orange-900 hover:bg-orange-500/25 dark:border-orange-400/40 dark:bg-orange-400/20 dark:text-orange-100 dark:hover:bg-orange-400/25",
     chipDotClassName: "bg-orange-400 dark:bg-orange-300",
     cardClassName:
-      "border-orange-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-orange-400/35 dark:bg-orange-950/75 dark:text-slate-50",
+      "border-orange-500/30 bg-orange-50/90 text-slate-900 backdrop-blur-md dark:border-orange-400/35 dark:bg-orange-950/75 dark:text-slate-50",
     badgeClassName:
       "border-orange-500/40 bg-orange-500/20 text-orange-900 dark:border-orange-400/40 dark:bg-orange-400/20 dark:text-orange-100",
     visibleEvidenceKeys: ["ona_percentile_4", "closeness_centrality"],
@@ -366,7 +366,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-violet-500/40 bg-violet-500/20 text-violet-900 hover:bg-violet-500/25 dark:border-violet-400/40 dark:bg-violet-400/20 dark:text-violet-100 dark:hover:bg-violet-400/25",
     chipDotClassName: "bg-violet-400 dark:bg-violet-300",
     cardClassName:
-      "border-violet-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-violet-400/35 dark:bg-violet-950/75 dark:text-slate-50",
+      "border-violet-500/30 bg-violet-50/90 text-slate-900 backdrop-blur-md dark:border-violet-400/35 dark:bg-violet-950/75 dark:text-slate-50",
     badgeClassName:
       "border-violet-500/40 bg-violet-500/20 text-violet-900 dark:border-violet-400/40 dark:bg-violet-400/20 dark:text-violet-100",
     visibleEvidenceKeys: ["ona_percentile_2", "ona_percentile_3"],
@@ -388,7 +388,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-cyan-500/40 bg-cyan-500/20 text-cyan-900 hover:bg-cyan-500/25 dark:border-cyan-400/40 dark:bg-cyan-400/20 dark:text-cyan-100 dark:hover:bg-cyan-400/25",
     chipDotClassName: "bg-cyan-400 dark:bg-cyan-300",
     cardClassName:
-      "border-cyan-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-cyan-400/35 dark:bg-cyan-950/75 dark:text-slate-50",
+      "border-cyan-500/30 bg-cyan-50/90 text-slate-900 backdrop-blur-md dark:border-cyan-400/35 dark:bg-cyan-950/75 dark:text-slate-50",
     badgeClassName:
       "border-cyan-500/40 bg-cyan-500/20 text-cyan-900 dark:border-cyan-400/40 dark:bg-cyan-400/20 dark:text-cyan-100",
     visibleEvidenceKeys: ["ona_percentile_3"],
@@ -410,7 +410,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-purple-500/40 bg-purple-500/20 text-purple-900 hover:bg-purple-500/25 dark:border-purple-400/40 dark:bg-purple-400/20 dark:text-purple-100 dark:hover:bg-purple-400/25",
     chipDotClassName: "bg-purple-400 dark:bg-purple-300",
     cardClassName:
-      "border-purple-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-purple-400/35 dark:bg-purple-950/75 dark:text-slate-50",
+      "border-purple-500/30 bg-purple-50/90 text-slate-900 backdrop-blur-md dark:border-purple-400/35 dark:bg-purple-950/75 dark:text-slate-50",
     badgeClassName:
       "border-purple-500/40 bg-purple-500/20 text-purple-900 dark:border-purple-400/40 dark:bg-purple-400/20 dark:text-purple-100",
     visibleEvidenceKeys: ["ona_percentile_4"],
@@ -436,7 +436,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-violet-600/40 bg-violet-600/20 text-violet-950 hover:bg-violet-600/25 dark:border-violet-400/40 dark:bg-violet-400/20 dark:text-violet-100 dark:hover:bg-violet-400/25",
     chipDotClassName: "bg-violet-500 dark:bg-violet-300",
     cardClassName:
-      "border-violet-600/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-violet-400/35 dark:bg-violet-950/75 dark:text-slate-50",
+      "border-violet-600/30 bg-violet-50/90 text-slate-900 backdrop-blur-md dark:border-violet-400/35 dark:bg-violet-950/75 dark:text-slate-50",
     badgeClassName:
       "border-violet-600/40 bg-violet-600/20 text-violet-950 dark:border-violet-400/40 dark:bg-violet-400/20 dark:text-violet-100",
     visibleEvidenceKeys: ["n_different_categories_in", "threshold"],
@@ -458,7 +458,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-indigo-500/40 bg-indigo-500/20 text-indigo-950 hover:bg-indigo-500/25 dark:border-indigo-400/40 dark:bg-indigo-400/20 dark:text-indigo-100 dark:hover:bg-indigo-400/25",
     chipDotClassName: "bg-indigo-400 dark:bg-indigo-300",
     cardClassName:
-      "border-indigo-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-indigo-400/35 dark:bg-indigo-950/75 dark:text-slate-50",
+      "border-indigo-500/30 bg-indigo-50/90 text-slate-900 backdrop-blur-md dark:border-indigo-400/35 dark:bg-indigo-950/75 dark:text-slate-50",
     badgeClassName:
       "border-indigo-500/40 bg-indigo-500/20 text-indigo-950 dark:border-indigo-400/40 dark:bg-indigo-400/20 dark:text-indigo-100",
     visibleEvidenceKeys: ["n_different_categories_in", "threshold"],
@@ -480,7 +480,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-cyan-500/40 bg-cyan-500/20 text-cyan-950 hover:bg-cyan-500/25 dark:border-cyan-400/40 dark:bg-cyan-400/20 dark:text-cyan-100 dark:hover:bg-cyan-400/25",
     chipDotClassName: "bg-cyan-400 dark:bg-cyan-300",
     cardClassName:
-      "border-cyan-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-cyan-400/35 dark:bg-cyan-950/75 dark:text-slate-50",
+      "border-cyan-500/30 bg-cyan-50/90 text-slate-900 backdrop-blur-md dark:border-cyan-400/35 dark:bg-cyan-950/75 dark:text-slate-50",
     badgeClassName:
       "border-cyan-500/40 bg-cyan-500/20 text-cyan-950 dark:border-cyan-400/40 dark:bg-cyan-400/20 dark:text-cyan-100",
     visibleEvidenceKeys: ["n_same_category_in", "threshold"],
@@ -502,7 +502,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-purple-500/40 bg-purple-500/20 text-purple-950 hover:bg-purple-500/25 dark:border-purple-400/40 dark:bg-purple-400/20 dark:text-purple-100 dark:hover:bg-purple-400/25",
     chipDotClassName: "bg-purple-400 dark:bg-purple-300",
     cardClassName:
-      "border-purple-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-purple-400/35 dark:bg-purple-950/75 dark:text-slate-50",
+      "border-purple-500/30 bg-purple-50/90 text-slate-900 backdrop-blur-md dark:border-purple-400/35 dark:bg-purple-950/75 dark:text-slate-50",
     badgeClassName:
       "border-purple-500/40 bg-purple-500/20 text-purple-950 dark:border-purple-400/40 dark:bg-purple-400/20 dark:text-purple-100",
     visibleEvidenceKeys: ["n_upper_categories_in", "threshold"],
@@ -524,7 +524,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-blue-600/40 bg-blue-600/20 text-blue-950 hover:bg-blue-600/25 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-400/25",
     chipDotClassName: "bg-blue-500 dark:bg-blue-300",
     cardClassName:
-      "border-blue-600/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
+      "border-blue-600/30 bg-blue-50/90 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
     badgeClassName:
       "border-blue-600/40 bg-blue-600/20 text-blue-950 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100",
     visibleEvidenceKeys: ["n_different_departments_in", "threshold"],
@@ -546,7 +546,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-teal-500/40 bg-teal-500/20 text-teal-950 hover:bg-teal-500/25 dark:border-teal-400/40 dark:bg-teal-400/20 dark:text-teal-100 dark:hover:bg-teal-400/25",
     chipDotClassName: "bg-teal-400 dark:bg-teal-300",
     cardClassName:
-      "border-teal-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-teal-400/35 dark:bg-teal-950/75 dark:text-slate-50",
+      "border-teal-500/30 bg-teal-50/90 text-slate-900 backdrop-blur-md dark:border-teal-400/35 dark:bg-teal-950/75 dark:text-slate-50",
     badgeClassName:
       "border-teal-500/40 bg-teal-500/20 text-teal-950 dark:border-teal-400/40 dark:bg-teal-400/20 dark:text-teal-100",
     visibleEvidenceKeys: ["n_total_votes_in", "percentile_80_votes_dpt_office"],
@@ -572,7 +572,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-blue-500/40 bg-blue-500/20 text-blue-900 hover:bg-blue-500/25 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100 dark:hover:bg-blue-400/25",
     chipDotClassName: "bg-blue-400 dark:bg-blue-300",
     cardClassName:
-      "border-blue-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
+      "border-blue-500/30 bg-blue-50/90 text-slate-900 backdrop-blur-md dark:border-blue-400/35 dark:bg-blue-950/75 dark:text-slate-50",
     badgeClassName:
       "border-blue-500/40 bg-blue-500/20 text-blue-900 dark:border-blue-400/40 dark:bg-blue-400/20 dark:text-blue-100",
     visibleEvidenceKeys: ["ona_percentile_1", "threshold"],
@@ -594,7 +594,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-indigo-500/40 bg-indigo-500/20 text-indigo-900 hover:bg-indigo-500/25 dark:border-indigo-400/40 dark:bg-indigo-400/20 dark:text-indigo-100 dark:hover:bg-indigo-400/25",
     chipDotClassName: "bg-indigo-400 dark:bg-indigo-300",
     cardClassName:
-      "border-indigo-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-indigo-400/35 dark:bg-indigo-950/75 dark:text-slate-50",
+      "border-indigo-500/30 bg-indigo-50/90 text-slate-900 backdrop-blur-md dark:border-indigo-400/35 dark:bg-indigo-950/75 dark:text-slate-50",
     badgeClassName:
       "border-indigo-500/40 bg-indigo-500/20 text-indigo-900 dark:border-indigo-400/40 dark:bg-indigo-400/20 dark:text-indigo-100",
     visibleEvidenceKeys: ["ona_percentile_2", "threshold"],
@@ -616,7 +616,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-fuchsia-500/40 bg-fuchsia-500/20 text-fuchsia-900 hover:bg-fuchsia-500/25 dark:border-fuchsia-400/40 dark:bg-fuchsia-400/20 dark:text-fuchsia-100 dark:hover:bg-fuchsia-400/25",
     chipDotClassName: "bg-fuchsia-400 dark:bg-fuchsia-300",
     cardClassName:
-      "border-fuchsia-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-fuchsia-400/35 dark:bg-fuchsia-950/75 dark:text-slate-50",
+      "border-fuchsia-500/30 bg-fuchsia-50/90 text-slate-900 backdrop-blur-md dark:border-fuchsia-400/35 dark:bg-fuchsia-950/75 dark:text-slate-50",
     badgeClassName:
       "border-fuchsia-500/40 bg-fuchsia-500/20 text-fuchsia-900 dark:border-fuchsia-400/40 dark:bg-fuchsia-400/20 dark:text-fuchsia-100",
     visibleEvidenceKeys: ["ona_percentile_3", "threshold"],
@@ -638,7 +638,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "border-orange-500/40 bg-orange-500/20 text-orange-900 hover:bg-orange-500/25 dark:border-orange-400/40 dark:bg-orange-400/20 dark:text-orange-100 dark:hover:bg-orange-400/25",
     chipDotClassName: "bg-orange-400 dark:bg-orange-300",
     cardClassName:
-      "border-orange-500/30 bg-white/88 text-slate-900 backdrop-blur-md dark:border-orange-400/35 dark:bg-orange-950/75 dark:text-slate-50",
+      "border-orange-500/30 bg-orange-50/90 text-slate-900 backdrop-blur-md dark:border-orange-400/35 dark:bg-orange-950/75 dark:text-slate-50",
     badgeClassName:
       "border-orange-500/40 bg-orange-500/20 text-orange-900 dark:border-orange-400/40 dark:bg-orange-400/20 dark:text-orange-100",
     visibleEvidenceKeys: ["ona_percentile_4", "threshold"],

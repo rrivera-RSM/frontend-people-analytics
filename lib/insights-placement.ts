@@ -1,7 +1,5 @@
 // lib/insight-placement.ts
-import { EmployeeInsightsResponseApi } from "@/types/employee-insights";
-
-
+import type { EmployeeInsightItemApi } from "@/types/employee-insights";
 
 export type InsightPlacement =
   | "ona_chart"
@@ -9,7 +7,7 @@ export type InsightPlacement =
   | "compensation_modal";
 
 export function getInsightPlacement(
-  insight: EmployeeInsightsResponseApi,
+  insight: EmployeeInsightItemApi,
 ): InsightPlacement {
   switch (insight.code) {
     // --- ONA RADAR ---
@@ -33,4 +31,3 @@ export function getInsightPlacement(
       return "compensation_modal";
   }
 }
-``

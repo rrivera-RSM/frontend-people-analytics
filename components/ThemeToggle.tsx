@@ -1,38 +1,38 @@
-// components/theme-toggle.tsx
 "use client";
 
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
-  const { theme, setTheme, systemTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+type Props = {
+  className?: string;
+};
 
-  useEffect(() => setMounted(true), []);
-
-  // Evita mismatch SSR/CSR
-  if (!mounted) return null;
-
-  const current = theme === "system" ? systemTheme : theme;
-  const isDark = current === "dark";
+export function ThemeToggle({ className }: Props) {
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   function withThemeTransition(fn: () => void) {
-  const root = document.documentElement;
-  root.classList.add("theme-transition");
-  fn();
-  window.setTimeout(() => root.classList.remove("theme-transition"), 100);
-}
+    const root = document.documentElement;
+    root.classList.add("theme-transition");
+    fn();
+    window.setTimeout(() => root.classList.remove("theme-transition"), 120);
+  }
 
   return (
     <button
       type="button"
-      onClick={() => withThemeTransition(() => setTheme(isDark ? "light" : "dark"))}
-      className="h-9 w-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50
-                 dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
+      onClick={() =>
+        withThemeTransition(() => setTheme(isDark ? "light" : "dark"))
+      }
+      className={cn(
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 bg-white/85 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900",
+        "dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100",
+        className,
+      )}
       aria-label={isDark ? "Activar modo claro" : "Activar modo oscuro"}
       title={isDark ? "Modo claro" : "Modo oscuro"}
     >
-      <span className="text-base">{isDark ? "☀️" : "🌙"}</span>
     </button>
   );
 }

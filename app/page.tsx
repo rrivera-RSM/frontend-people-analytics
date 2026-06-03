@@ -6,7 +6,6 @@ import type { EmployeeRow } from "@/components/EmployeeCard";
 import { useSession, signIn } from "next-auth/react";
 import { EmployeeView } from "@/components/EmployeeView";
 import { SidebarCollapseToggle } from "@/components/SidebarCollapseToggle";
-import { ThemeToggle } from "@/components/ThemeToggle";
 
 export default function EmployeesPage() {
   const [selected, setSelected] = useState<EmployeeRow | null>(null);
@@ -23,11 +22,11 @@ export default function EmployeesPage() {
   }, [status]);
 
   return (
-    <main className="h-screen flex flex-col">
+    <main className="h-screen flex flex-col bg-[var(--exec-bg)] text-slate-900 dark:text-slate-100">
       {/* App frame */}
       <div
         className={[
-          " h-[calc(100dvh-2rem)] w-full", // ocupa viewport menos padding del main
+          "h-dvh w-full",
         ].join(" ")}
       >
         <div className="flex h-full min-h-0 overflow-hidden">

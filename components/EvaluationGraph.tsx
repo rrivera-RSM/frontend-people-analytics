@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ApexOptions } from "apexcharts";
+import type { ApexAxisChartSeries, ApexOptions } from "apexcharts";
 
 import { Card, CardTitle, CardContent, CardHeader } from "@/components/ui/card";
 import { InsightChipsInline } from "@/components/employee-insights/InsightChipsInline";
@@ -136,8 +136,8 @@ export default function EvaluationGraph({
       isValidNumber(selectedPoint.overall_percentile)
         ? [
             {
-              x: selectedPoint.overall_percentile as number,
-              y: selectedPoint.final_score,
+              x: selectedPoint.final_score,
+              y: selectedPoint.overall_percentile as number,
               employee_id: selectedPoint.employee_id,
               society_id: selectedPoint.society_id,
               department_id: selectedPoint.department_id,
@@ -217,9 +217,8 @@ export default function EvaluationGraph({
           colors: TOKENS.axis,
         },
         markers: {
-          width: 8,
-          height: 8,
-          radius: 99,
+          size: 8,
+          shape: "circle",
         },
       },
       colors: [
@@ -400,7 +399,7 @@ export default function EvaluationGraph({
             <>
               <ReactApexChart
                 options={options}
-                series={series as any}
+                series={series as ApexAxisChartSeries}
                 type="scatter"
                 height={height}
                 width="100%"

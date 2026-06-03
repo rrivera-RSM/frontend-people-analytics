@@ -1,3 +1,5 @@
+import { ArrowDownRight, ArrowUpRight, Zap } from "lucide-react";
+
 type DeltaTone = "up" | "down" | "neutral" | "danger" | "success";
 
 type MetricCardProps = {
@@ -5,6 +7,7 @@ type MetricCardProps = {
   value: string;
   valueTone?: DeltaTone;
   helperText?: string;
+  compact?: boolean;
 };
 
 function MetricCard({
@@ -12,13 +15,14 @@ function MetricCard({
   value,
   valueTone = "neutral",
   helperText,
+  compact = false,
 }: MetricCardProps) {
   const valueToneClasses: Record<DeltaTone, string> = {
-    up: "text-emerald-600 dark:text-emerald-400",
+    up: "text-cyan-700 dark:text-cyan-300",
     down: "text-rose-600 dark:text-rose-400",
-    success: "text-emerald-600 dark:text-emerald-400",
+    success: "text-emerald-700 dark:text-emerald-300",
     danger: "text-rose-600 dark:text-rose-400",
-    neutral: "text-foreground",
+    neutral: "text-slate-900 dark:text-slate-50",
   };
 
   const helperToneClasses: Record<DeltaTone, string> = {
@@ -26,23 +30,43 @@ function MetricCard({
     down: "text-rose-600/80 dark:text-rose-400/80",
     success: "text-emerald-600/80 dark:text-emerald-400/80",
     danger: "text-rose-600/80 dark:text-rose-400/80",
-    neutral: "text-muted-foreground",
+    neutral: "text-slate-500 dark:text-slate-400",
   };
 
+  const trendIcon =
+    valueTone === "up" ? (
+      <ArrowUpRight className={compact ? "h-4 w-4" : "h-4 w-4"} />
+    ) : valueTone === "down" || valueTone === "danger" ? (
+      <ArrowDownRight className={compact ? "h-4 w-4" : "h-4 w-4"} />
+    ) : null;
+
   return (
-    <div className="rounded-xl border bg-[var(--exec-card)] p-4 shadow-sm">
-      <div className="text-xs font-medium text-muted-foreground">
+    <div
+      className={
+        compact
+          ? "min-w-0"
+          : "rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/50"
+      }
+    >
+      <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
         {label}
       </div>
 
       <div
-        className={`mt-1 text-lg font-semibold tracking-tight ${valueToneClasses[valueTone]}`}
+        className={`mt-1 flex items-center gap-1 font-semibold tracking-tight ${
+          compact ? "text-xl" : "text-lg"
+        } ${valueToneClasses[valueTone]}`}
       >
-        {value}
+        {trendIcon}
+        <span>{value}</span>
       </div>
 
       {helperText && (
-        <div className={`mt-1 text-xs font-medium ${helperToneClasses[valueTone]}`}>
+        <div
+          className={`mt-1 text-xs font-medium ${
+            compact ? "line-clamp-2 max-w-[260px] leading-5" : ""
+          } ${helperToneClasses[valueTone]}`}
+        >
           {helperText}
         </div>
       )}
@@ -56,6 +80,7 @@ export type KpiBarProps = {
   bonusVsAvgPct?: number | null;
   performanceLabel?: string;
   attritionRate?: number | null;
+  variant?: "summary" | "cards";
 };
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -94,7 +119,9 @@ const getAttritionTone = (pct: number): DeltaTone => {
 };
 
 const getAttritionHelperText = (pct: number): string => {
-  return pct >= ATTRITION_THRESHOLD_PCT ? "Riesgo alto" : "Riesgo controlado";
+  return pct >= ATTRITION_THRESHOLD_PCT
+    ? "Por encima del umbral de atención"
+    : "Por debajo del umbral de atención";
 };
 
 export function KpiBar({
@@ -102,16 +129,94 @@ export function KpiBar({
   salaryVsAvgPct,
   bonusVsAvgPct,
   attritionRate,
+  variant = "cards",
 }: KpiBarProps) {
   const normalizedAttritionPct = isNum(attritionRate)
     ? normalizeAttritionRate(attritionRate)
     : null;
 
+  if (variant === "summary") {
+    return (
+      <section className="rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
+        <div className="border-l-4 border-cyan-400 px-6 py-5">
+          <div className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+            <Zap className="h-4 w-4 text-cyan-300" />
+            Executive Summary
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <MetricCard
+              compact
+              label="Probabilidad de fuga"
+              value={
+                isNum(normalizedAttritionPct)
+                  ? fmtPlainPct(normalizedAttritionPct)
+                  : "-"
+              }
+              valueTone={
+                isNum(normalizedAttritionPct)
+                  ? getAttritionTone(normalizedAttritionPct)
+                  : "neutral"
+              }
+              helperText={
+                isNum(normalizedAttritionPct)
+                  ? normalizedAttritionPct >= ATTRITION_THRESHOLD_PCT
+                    ? "Alta"
+                    : "Baja"
+                  : undefined
+              }
+            />
+
+            <MetricCard
+              compact
+              label="Brecha Salarial (Mercado)"
+              value={isNum(salaryVsAvgPct) ? fmtPct(salaryVsAvgPct) : "-"}
+              valueTone={
+                isNum(salaryVsAvgPct)
+                  ? salaryVsAvgPct < 0
+                    ? "down"
+                    : "up"
+                  : "neutral"
+              }
+              helperText={
+                isNum(raiseAmount)
+                  ? `Aumento propuesto: ${eur.format(raiseAmount)}`
+                  : undefined
+              }
+            />
+
+            <MetricCard
+              compact
+              label="% vs Bonus Promedio"
+              value={isNum(bonusVsAvgPct) ? fmtPct(bonusVsAvgPct) : "-"}
+              valueTone={
+                isNum(bonusVsAvgPct)
+                  ? bonusVsAvgPct < 0
+                    ? "down"
+                    : "up"
+                  : "neutral"
+              }
+              helperText="Comparado con la referencia de bonus"
+            />
+
+            <MetricCard
+              compact
+              label="Aumento Propuesto"
+              value={isNum(raiseAmount) ? eur.format(raiseAmount) : "-"}
+              helperText="Diferencia frente al salario actual"
+            />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <MetricCard
         label="Aumento propuesto"
         value={isNum(raiseAmount) ? eur.format(raiseAmount) : "—"}
+        helperText="Diferencia frente al salario actual"
       />
 
       <MetricCard
@@ -120,6 +225,7 @@ export function KpiBar({
         valueTone={
           isNum(salaryVsAvgPct) ? toneFromNumber(salaryVsAvgPct) : "neutral"
         }
+        helperText="Comparado con la referencia salarial"
       />
 
       <MetricCard
@@ -128,6 +234,7 @@ export function KpiBar({
         valueTone={
           isNum(bonusVsAvgPct) ? toneFromNumber(bonusVsAvgPct) : "neutral"
         }
+        helperText="Comparado con la referencia de bonus"
       />
 
       <MetricCard
@@ -142,7 +249,11 @@ export function KpiBar({
             ? getAttritionTone(normalizedAttritionPct)
             : "neutral"
         }
-        
+        helperText={
+          isNum(normalizedAttritionPct)
+            ? getAttritionHelperText(normalizedAttritionPct)
+            : undefined
+        }
       />
     </div>
   );

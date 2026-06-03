@@ -25,12 +25,12 @@ function SummaryItem({
   helper?: string;
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-      <div className="text-[11px] uppercase tracking-wide text-slate-400">
+    <div className="rounded-xl border border-slate-200 bg-slate-50/90 p-3 dark:border-white/10 dark:bg-black/20">
+      <div className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {label}
       </div>
-      <div className="mt-1 text-lg font-semibold text-white">{value}</div>
-      {helper && <div className="mt-1 text-xs text-slate-400">{helper}</div>}
+      <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{value}</div>
+      {helper && <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helper}</div>}
     </div>
   );
 }

@@ -34,12 +34,12 @@ function buildFallbackDefinition(
     title: String(code),
     description: "",
     chipClassName:
-      "border-slate-400/30 bg-slate-400/10 text-slate-200 hover:bg-slate-400/15",
+      "border-slate-400/30 bg-slate-200/80 text-slate-700 hover:bg-slate-200 dark:bg-slate-400/10 dark:text-slate-200 dark:hover:bg-slate-400/15",
     chipDotClassName: "bg-slate-300",
     cardClassName:
-      "border-slate-400/20 bg-slate-500/10 text-slate-50",
+      "border-slate-400/20 bg-slate-100/90 text-slate-900 dark:bg-slate-500/10 dark:text-slate-50",
     badgeClassName:
-      "border-slate-400/30 bg-slate-400/10 text-slate-200",
+      "border-slate-400/30 bg-slate-200/80 text-slate-700 dark:bg-slate-400/10 dark:text-slate-200",
     visibleEvidenceKeys: [],
     sortOrder: 999,
   };
@@ -50,7 +50,8 @@ export function getEmployeeInsightDefinition(
   family: InsightFamily,
 ): Omit<EmployeeInsightDefinition, "code"> {
   if (isKnownInsightCode(code)) {
-    const { code: _code, ...definition } = EMPLOYEE_INSIGHT_DEFINITIONS[code];
+    const { code: omittedCode, ...definition } = EMPLOYEE_INSIGHT_DEFINITIONS[code];
+    void omittedCode;
     return definition;
   }
 
@@ -68,8 +69,9 @@ export function mapInsightToViewModel(
     tone: definition.tone,
     shortCode: definition.shortCode,
     chipLabel: definition.chipLabel,
-    title: item.title ?? definition.title,
-    description: item.description ?? definition.description,
+    title: definition.title,
+    description: definition.description,
+    formulaDescription: definition.formulaDescription,
     priority: item.priority,
     evidence: item.evidence ?? {},
     chipClassName: definition.chipClassName,
@@ -77,6 +79,7 @@ export function mapInsightToViewModel(
     cardClassName: definition.cardClassName,
     badgeClassName: definition.badgeClassName,
     visibleEvidenceKeys: definition.visibleEvidenceKeys ?? [],
+    sortOrder: definition.sortOrder,
   };
 }
 

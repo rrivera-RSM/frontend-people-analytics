@@ -1,8 +1,9 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { EmployeeCard, type EmployeeRow } from "./EmployeeCard";
-import { useDebounce } from "./hooks/useDebounce";
+import { ThemeToggle } from "./ThemeToggle";
 
 type Props = {
   office: string;
@@ -16,9 +17,10 @@ type Props = {
 };
 
 type CallStatus = "idle" | "loading" | "success" | "error";
+type RiskFilter = "all" | "high";
 
 const SIDEBAR_CLASSES = {
-  base: "relative flex h-full shrink-0 flex-col overflow-hidden border",
+  base: "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]",
   expanded: "w-[320px]",
   collapsed: "w-[76px]",
 } as const;
@@ -38,20 +40,7 @@ export function EmployeesSidebar({
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
-
-  const debouncedQuery = useDebounce(query, 300);
-
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams({
-      office,
-      department,
-      society,
-      limit: String(limit),
-      offset: String(offset),
-      ...(debouncedQuery.trim() && { q: debouncedQuery.trim() }),
-    });
-    return params.toString();
-  }, [office, department, society, limit, offset, debouncedQuery]);
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -61,12 +50,23 @@ export function EmployeesSidebar({
       setError(null);
 
       try {
-        const res = await fetch(`/api/employees/manager/my-team`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-          signal: controller.signal,
+        const params = new URLSearchParams({
+          office,
+          department,
+          society,
+          limit: String(limit),
+          offset: String(offset),
         });
+
+        const res = await fetch(
+          `/api/employees/manager/my-team?${params.toString()}`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
 
         if (!res.ok) {
           throw new Error(`${res.status} ${res.statusText}\n${await res.text()}`);
@@ -85,9 +85,9 @@ export function EmployeesSidebar({
           onSelectEmployee?.(null);
         }
         setStatus("success");
-      } catch (e: any) {
-        if (e?.name !== "AbortError") {
-          setError(e?.message ?? "Unknown error");
+      } catch (e: unknown) {
+        if (!(e instanceof DOMException && e.name === "AbortError")) {
+          setError(e instanceof Error ? e.message : "Unknown error");
           setStatus("error");
         }
       }
@@ -96,9 +96,33 @@ export function EmployeesSidebar({
     void load();
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryString]);
+  }, [office, department, society, limit, offset]);
 
-  const isSearching = debouncedQuery.trim().length > 0;
+  const normalizedQuery = query.trim().toLowerCase();
+  const isSearching = normalizedQuery.length > 0;
+
+  const visibleEmployees = useMemo(() => {
+    const filteredByQuery = isSearching
+      ? employees.filter((employee) => {
+          const fullName = `${employee.first_name} ${employee.last_name}`
+            .trim()
+            .toLowerCase();
+          const email = employee.email.toLowerCase();
+
+          return (
+            fullName.includes(normalizedQuery) || email.includes(normalizedQuery)
+          );
+        })
+      : employees;
+
+    if (riskFilter === "high") {
+      return filteredByQuery.filter(
+        (employee) => employee.attrition_rate >= 0.3414,
+      );
+    }
+
+    return filteredByQuery;
+  }, [employees, isSearching, normalizedQuery, riskFilter]);
 
   return (
     <aside
@@ -113,8 +137,12 @@ export function EmployeesSidebar({
         onQueryChange={setQuery}
         onToggleCollapse={onToggleCollapse}
         status={status}
-        count={employees.length}
+        count={visibleEmployees.length}
         isSearching={isSearching}
+        office={office}
+        department={department}
+        riskFilter={riskFilter}
+        onRiskFilterChange={setRiskFilter}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
@@ -124,16 +152,16 @@ export function EmployeesSidebar({
           </pre>
         )}
 
-        {status === "success" && employees.length === 0 && !collapsed && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+        {status === "success" && visibleEmployees.length === 0 && !collapsed && (
+          <div className="rounded-xl border border-slate-200 bg-white/80 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
             {isSearching
-              ? `No hay resultados para "${debouncedQuery}".`
+              ? `No hay resultados para "${query.trim()}".`
               : "No hay empleados para estos filtros."}
           </div>
         )}
 
-        <div className={`flex flex-col gap-${collapsed ? "1" : "1.5"} bg-[var(--exec-)]`}>
-          {employees.map((emp) => (
+        <div className={`flex flex-col gap-${collapsed ? "1" : "1.5"}`}>
+          {visibleEmployees.map((emp) => (
             <EmployeeCard
               key={emp.id}
               employee={emp}
@@ -161,6 +189,10 @@ function Header({
   status,
   count,
   isSearching,
+  office,
+  department,
+  riskFilter,
+  onRiskFilterChange,
 }: {
   collapsed: boolean;
   query: string;
@@ -169,13 +201,48 @@ function Header({
   status: CallStatus;
   count: number;
   isSearching: boolean;
+  office: string;
+  department: string;
+  riskFilter: RiskFilter;
+  onRiskFilterChange: (filter: RiskFilter) => void;
 }) {
   return (
-    <div className="sticky top-0 z-10 border-b bg-[var(--exec-)]">
-      <div className={`p-3 ${collapsed ? "pb-2" : "pb-3"}`}>
+    <div className="sticky top-0 z-10 border-b border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]">
+      <div className={`px-4 pt-5 ${collapsed ? "pb-2" : "pb-4"}`}>
+        {!collapsed ? (
+          <div className="mb-6 flex items-start justify-between">
+            <div className="flex flex-col items-start gap-1.5">
+              <CompanyMark className="h-10 w-auto" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
+                People Analytics
+              </span>
+            </div>
+            <ThemeToggle />
+          </div>
+        ) : (
+          <div className="mb-3 flex flex-col items-center gap-2">
+            <CompanyMark className="h-8 w-auto" />
+            <ThemeToggle />
+          </div>
+        )}
+
+        {!collapsed && (
+          <div className="mb-5">
+            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
+              Contexto
+            </div>
+            <div className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-100">
+              Estás viendo:
+            </div>
+            <div className="mt-1 text-sm font-semibold text-cyan-700 dark:text-cyan-300">
+              {department} · {office}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-2">
           {!collapsed && (
-            <div className="text-xs font-semibold tracking-wide">
+            <div className="sr-only">
               Buscar empleado
             </div>
           )}
@@ -189,15 +256,15 @@ function Header({
             <input
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Buscar por email, nombre o DNI…"
-              className="w-full rounded-xl border bg-[var(--exec-input)] py-2 pl-9 pr-3 text-sm outline-none focus:border-blue-300 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-900/20"
+              placeholder="Buscar por email, nombre..."
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
             />
           </label>
         ) : (
           <button
             type="button"
             onClick={() => onToggleCollapse?.(!collapsed)}
-            className="mt-2 w-full inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-[var(--exec-input)] hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800"
+            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800"
             aria-label="Expandir para buscar"
             title="Expandir para buscar"
           >
@@ -206,10 +273,30 @@ function Header({
         )}
 
         {!collapsed && (
-          <div className="mt-2 flex items-center justify-between text-xs">
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">
+              Filtros
+            </span>
+            <Chip
+              active={riskFilter === "all"}
+              onClick={() => onRiskFilterChange("all")}
+            >
+              Todos
+            </Chip>
+            <Chip
+              active={riskFilter === "high"}
+              onClick={() => onRiskFilterChange("high")}
+            >
+              Alto riesgo
+            </Chip>
+          </div>
+        )}
+
+        {!collapsed && (
+          <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>
               {status === "loading"
-                ? "Buscando…"
+                ? "Cargando…"
                 : isSearching
                 ? `Resultados: ${count}`
                 : `Empleados: ${count}`}
@@ -226,16 +313,6 @@ function Header({
           </div>
         )}
 
-        {!collapsed && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 pb-3">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-              Filtros
-            </span>
-            <Chip active>Todos</Chip>
-            <Chip>Alto riesgo</Chip>
-            <Chip>Junior</Chip>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -244,17 +321,20 @@ function Header({
 function Chip({
   children,
   active,
+  onClick,
 }: {
   children: React.ReactNode;
   active?: boolean;
+  onClick?: () => void;
 }) {
   return (
     <button
       type="button"
-      className={`rounded-full px-3 py-1 text-xs font-medium border ${
+      onClick={onClick}
+      className={`rounded-md px-3 py-1 text-xs font-medium border transition-colors ${
         active
-          ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950 dark:text-blue-300"
-          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          ? "border-blue-500 bg-blue-500 text-white"
+          : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       }`}
     >
       {children}
@@ -278,5 +358,28 @@ function SearchIcon({ className = "" }: { className?: string }) {
         d="M21 21l-4.3-4.3m1.8-5.2a7 7 0 11-14 0 7 7 0 0114 0z"
       />
     </svg>
+  );
+}
+
+function CompanyMark({ className = "" }: { className?: string }) {
+  return (
+    <div className={className} aria-label="Logotipo de la empresa" role="img">
+      <Image
+        src="/logos/corporate/logo_light.svg.svg"
+        alt="RSM logo"
+        width={336}
+        height={44}
+        className="h-full w-full dark:hidden"
+        priority
+      />
+      <Image
+        src="/logos/corporate/logo_dark.svg.svg"
+        alt="RSM logo"
+        width={336}
+        height={44}
+        className="hidden h-full w-full dark:block"
+        priority
+      />
+    </div>
   );
 }

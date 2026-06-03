@@ -14,6 +14,11 @@ type Props = {
   className?: string;
 };
 
+type InsightNarrative = {
+  text: string | null;
+  consumedKeys: string[];
+};
+
 function formatEvidenceValue(value: unknown): string {
   if (value == null) return "—";
 
@@ -47,6 +52,94 @@ function prettifyKey(key: string) {
   return key.replaceAll("_", " ");
 }
 
+function readNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function isChartInsight(code: EmployeeInsightViewModel["code"]) {
+  return (
+    code === "high_solid_performance" ||
+    code === "hidden_risk" ||
+    code === "potential" ||
+    code === "stagnant" ||
+    code === "recovery" ||
+    code === "critical" ||
+    code === "active_influence_ci" ||
+    code === "active_influence_at" ||
+    code === "active_influence_ap" ||
+    code === "active_influence_in"
+  );
+}
+
+function buildInsightNarrative(insight: EmployeeInsightViewModel): InsightNarrative {
+  const evidence = insight.evidence;
+
+  switch (insight.code) {
+    case "active_influence_ci":
+    case "active_influence_at":
+    case "active_influence_ap":
+    case "active_influence_in": {
+      const percentileKey = {
+        active_influence_ci: "ona_percentile_1",
+        active_influence_at: "ona_percentile_2",
+        active_influence_ap: "ona_percentile_3",
+        active_influence_in: "ona_percentile_4",
+      }[insight.code];
+      const percentile = readNumber(evidence[percentileKey]);
+      if (percentile == null) break;
+      return {
+        text: `Se ha identificado al situarse en un percentil de ${formatEvidenceValue(percentile)}, dentro del tramo alto de esta dimension de ONA activo.`,
+        consumedKeys: ["threshold", percentileKey],
+      };
+    }
+    case "high_solid_performance":
+    case "hidden_risk":
+    case "potential":
+    case "stagnant":
+    case "recovery":
+    case "critical": {
+      const score = readNumber(evidence.current_score_normalized);
+      const delta = readNumber(evidence.delta);
+      const highThreshold = readNumber(evidence.high_threshold);
+      const mediumThreshold = readNumber(evidence.medium_threshold);
+      if (score == null || highThreshold == null || mediumThreshold == null) break;
+
+      const bandText =
+        score >= highThreshold
+          ? "en el tramo alto"
+          : score >= mediumThreshold
+            ? "en el tramo medio"
+            : "en el tramo bajo";
+      const deltaText =
+        delta == null
+          ? ""
+          : delta > 0
+            ? ` y una mejora de ${formatEvidenceValue(delta)} puntos`
+            : delta < 0
+              ? ` y una caida de ${formatEvidenceValue(Math.abs(delta))} puntos`
+              : " y una evolucion estable";
+
+      return {
+        text: `Se ha identificado al situarse con un score de ${formatEvidenceValue(score)} ${bandText}${deltaText}.`,
+        consumedKeys: [
+          "current_score_normalized",
+          "previous_score_normalized",
+          "delta",
+          "performance_band",
+          "performance_trend",
+          "high_threshold",
+          "medium_threshold",
+          "trend_threshold",
+        ],
+      };
+    }
+    default:
+      break;
+  }
+
+  return { text: null, consumedKeys: [] };
+}
+
 function InsightChip({
   insight,
   maxVisibleEvidence = 3,
@@ -54,12 +147,18 @@ function InsightChip({
   insight: EmployeeInsightViewModel;
   maxVisibleEvidence?: number;
 }) {
+  const narrative = buildInsightNarrative(insight);
+  const useNarrativeAsDescription = isChartInsight(insight.code) && Boolean(narrative.text);
+  const hiddenEvidenceKeys = new Set([...narrative.consumedKeys, "formula_description"]);
   const preferredEntries =
     insight.visibleEvidenceKeys.length > 0
       ? insight.visibleEvidenceKeys
-          .filter((key) => key in insight.evidence)
+          .filter((key) => key in insight.evidence && !hiddenEvidenceKeys.has(key))
           .map((key) => [key, insight.evidence[key]] as const)
-      : Object.entries(insight.evidence).slice(0, maxVisibleEvidence);
+          .slice(0, maxVisibleEvidence)
+      : Object.entries(insight.evidence)
+          .filter(([key]) => !hiddenEvidenceKeys.has(key))
+          .slice(0, maxVisibleEvidence);
 
   return (
     <HoverCard openDelay={120} closeDelay={80}>
@@ -88,26 +187,26 @@ function InsightChip({
             Insight {insight.family.toUpperCase()}
           </div>
 
-          <div className="rounded-lg bg-black/10 px-2 py-1 text-[11px] font-semibold">
+          <div className="rounded-lg bg-slate-950/8 px-2 py-1 text-[11px] font-semibold text-slate-700 dark:bg-white/10 dark:text-slate-100">
             {insight.shortCode}
           </div>
         </div>
 
         <h4 className="mt-4 text-lg font-semibold">{insight.title}</h4>
 
-        <p className="mt-2 text-sm leading-6 text-white/85">
-          {insight.description}
+        <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200">
+          {useNarrativeAsDescription ? narrative.text : insight.description}
         </p>
 
         {preferredEntries.length > 0 && (
-          <dl className="mt-4 space-y-2 rounded-xl bg-black/10 p-3">
+          <dl className="mt-4 space-y-2 rounded-xl bg-slate-950/5 p-3 dark:bg-white/5">
             {preferredEntries.map(([key, value]) => (
               <div
                 key={key}
                 className="flex items-center justify-between gap-4 text-sm"
               >
-                <dt className="text-white/70">{prettifyKey(key)}</dt>
-                <dd className="font-semibold text-white">
+                <dt className="text-slate-500 dark:text-slate-400">{prettifyKey(key)}</dt>
+                <dd className="font-semibold text-slate-900 dark:text-slate-50">
                   {formatEvidenceValue(value)}
                 </dd>
               </div>

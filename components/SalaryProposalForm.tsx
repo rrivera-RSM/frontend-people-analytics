@@ -13,15 +13,17 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  Banknote,
+  FlaskConical,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import { MoneyInput } from "@/components/MoneyInput";
-import { EmployeeRow } from "./EmployeeCard";
-import { MonetaryInfo } from "@/components/EmployeeView";
 import type { ProposalDraft } from "@/types/compensation";
 
 const schema = z.object({
@@ -61,10 +63,7 @@ const LoadingSkeleton = () => (
 );
 
 type Props = {
-  employee: EmployeeRow;
-  monetaryInfo: MonetaryInfo | null;
   value: ProposalDraft | null;
-  hasInsights: boolean;
   onChange: (value: ProposalDraft) => void;
   onOpenSimulation: () => void;
 };
@@ -94,12 +93,9 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
 }
 
 export function SalaryProposalForm({
-  employee,
-  monetaryInfo,
   value,
   onChange,
   onOpenSimulation,
-  hasInsights,
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -111,11 +107,6 @@ export function SalaryProposalForm({
   const syncingFromParentRef = React.useRef(false);
 
   // Watchs por campo (mejor que observar todo el objeto)
-  const salaryCurrent = useWatch({
-    control: form.control,
-    name: "salaryCurrent",
-  });
-
   const proposedSalary = useWatch({
     control: form.control,
     name: "proposedSalary",
@@ -149,13 +140,7 @@ export function SalaryProposalForm({
     queueMicrotask(() => {
       syncingFromParentRef.current = false;
     });
-  }, [
-    value?.salaryCurrent,
-    value?.proposedSalary,
-    value?.bonus,
-    value?.category,
-    form,
-  ]);
+  }, [value, form]);
 
   // -----------------------------
   // Form -> padre
@@ -165,7 +150,7 @@ export function SalaryProposalForm({
     if (syncingFromParentRef.current) return;
 
     const nextDraft = normalizeDraft({
-      salaryCurrent,
+      salaryCurrent: value.salaryCurrent,
       proposedSalary,
       bonus,
       category,
@@ -176,93 +161,53 @@ export function SalaryProposalForm({
     if (sameDraft(nextDraft, normalizedValue)) return;
 
     onChange(nextDraft);
-  }, [
-    salaryCurrent,
-    proposedSalary,
-    bonus,
-    category,
-    value?.salaryCurrent,
-    value?.proposedSalary,
-    value?.bonus,
-    value?.category,
-    onChange,
-  ]);
+  }, [proposedSalary, bonus, category, value, onChange]);
 
-  if (!monetaryInfo || !value) {
+  if (!value) {
     return <LoadingSkeleton />;
   }
 
+  const raiseAmount = proposedSalary - value.salaryCurrent;
+  const raisePct =
+    value.salaryCurrent > 0 ? (raiseAmount / value.salaryCurrent) * 100 : 0;
+
   return (
-    <Card className="py-3 bg-[var(--exec-card)]">
-      <CardHeader>
-        <CardTitle className="pt-1">Propuesta salarial</CardTitle>
+    <Card className="min-h-[640px] border-slate-200 bg-white/90 py-0 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/80">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-700/80">
+        <div className="flex items-center gap-3">
+          <Banknote className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
+          <CardTitle className="text-xl text-slate-900 dark:text-slate-50">Nueva propuesta</CardTitle>
+        </div>
+
+        <button
+          type="button"
+          aria-label="Ajustes de compensación"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+        </button>
       </CardHeader>
 
-      <CardContent className="pt-0 pb-2">
+      <CardContent className="flex flex-1 flex-col px-5 py-5">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(() => undefined)}>
-            <div className="grid grid-cols-1 gap-1.5 lg:grid-cols-2">
-              {/* Left column */}
-              <div className="space-y-2">
-                {[
-                  {
-                    name: "salaryCurrent" as const,
-                    label: "Salario actual",
-                    readOnly: true,
-                  },
-                  { name: "bonus" as const, label: "Bonus" },
-                  {
-                    name: "category" as const,
-                    label: "Categoría",
-                    readOnly: true,
-                  },
-                ].map(({ name, label, readOnly }) => (
-                  <FormField
-                    key={name}
-                    control={form.control}
-                    name={name}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs text-slate-300">
-                          {label}
-                        </FormLabel>
-                        <FormControl>
-                          {name === "category" ? (
-                            <Input
-                              value={(field.value as string) ?? ""}
-                              onChange={field.onChange}
-                              readOnly
-                            />
-                          ) : (
-                            <MoneyInput
-                              value={
-                                typeof field.value === "number"
-                                  ? field.value
-                                  : 0
-                              }
-                              onChange={field.onChange}
-                              readOnly={readOnly}
-                              onBlur={field.onBlur}
-                            />
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
-              </div>
+          <form
+            onSubmit={form.handleSubmit(() => undefined)}
+            className="flex flex-1 flex-col"
+          >
+            <div className="mb-5 rounded-lg border border-cyan-500/15 bg-cyan-500/5 px-4 py-3 text-sm text-cyan-900 dark:text-cyan-200">
+              Define solo las condiciones nuevas que quieres simular para el empleado.
+            </div>
 
-              {/* Right column */}
-              <div className="space-y-2">
+            <div className="space-y-5">
+              <div className="space-y-2.5">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Propuesta nuevo salario
+                </div>
                 <FormField
                   control={form.control}
                   name="proposedSalary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-slate-300">
-                        Propuesta salarial FY 2026-2027
-                      </FormLabel>
                       <FormControl>
                         <MoneyInput
                           value={
@@ -276,21 +221,85 @@ export function SalaryProposalForm({
                     </FormItem>
                   )}
                 />
+                <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                  <span>Variación propuesta</span>
+                  <span className="font-medium text-cyan-700 dark:text-cyan-300">
+                    {raiseAmount >= 0 ? "+" : ""}
+                    {new Intl.NumberFormat("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      minimumFractionDigits: 2,
+                    }).format(raiseAmount)}
+                    {" · "}
+                    {raisePct >= 0 ? "+" : ""}
+                    {raisePct.toFixed(1)}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2.5 border-t border-slate-200 pt-5 dark:border-slate-700">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Nueva categoría
+                </div>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          value={(field.value as string) ?? ""}
+                          onChange={field.onChange}
+                          placeholder="Mantener categoría actual o indicar nueva"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2.5 border-t border-slate-200 pt-5 dark:border-slate-700">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Importe bonus desempeño
+                </div>
+                <FormField
+                  control={form.control}
+                  name="bonus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <MoneyInput
+                          value={
+                            typeof field.value === "number"
+                              ? field.value
+                              : 0
+                          }
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  El flujo actual solo soporta un bonus agregado para simulación. Si más adelante añadimos bonus por tipo o mes de pago, lo conectamos aquí.
+                </p>
               </div>
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="mt-auto border-t border-slate-200 pt-5 dark:border-slate-700">
               <Button
                 type="button"
                 className={cn(
-                  "min-w-[120px] transition-all duration-200",
-                  hasInsights 
-                    ? "border-[var(--brand-green)] bg-[var(--brand-green)] text-white hover:brightness-110 shadow-[0_8px_24px_rgba(63,156,53,0.22)]"
-                    : "",
+                  "h-12 w-full gap-2 rounded-lg bg-blue-500 text-base font-semibold text-white transition-all duration-200 hover:bg-blue-400",
+                  "shadow-[0_8px_24px_rgba(59,130,246,0.28)]",
                 )}
                 onClick={onOpenSimulation}
               >
-                Decision Intelligence
+                <FlaskConical className="h-4 w-4" />
+                Simular impacto
               </Button>
             </div>
           </form>

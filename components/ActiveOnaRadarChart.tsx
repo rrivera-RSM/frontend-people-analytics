@@ -71,7 +71,7 @@ function clamp(n: number, min: number, max: number) {
 
 export default function OnaRadarChart({
   data,
-  title = "Analisis Organizacional de Empresas (ONA)",
+  title = "Análisis de Red Organizacional (ONA)",
   color = "#67e8f9",
   fillColor = "#009cde",
   loading = false,
@@ -110,6 +110,15 @@ export default function OnaRadarChart({
 
   const series = useMemo(
     () => [{ name: "Percentil", data: values }],
+    [values],
+  );
+
+  const onaItemsWithValue = useMemo(
+    () =>
+      ONA_LABEL_HELP.map((item, index) => ({
+        ...item,
+        value: values[index] ?? 0,
+      })),
     [values],
   );
 
@@ -279,45 +288,12 @@ export default function OnaRadarChart({
                   backdrop-blur-md
                 "
               >
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
-                      Dimensiones ONA
-                    </div>
-                    <div className="mt-1 text-[11px] leading-5 text-slate-400">
-                      Las siglas del radar representan cuatro dimensiones de
-                      relación y reconocimiento dentro de la organización.
-                    </div>
+                <div className="space-y-1.5">
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-300">
+                    Dimensiones ONA
                   </div>
-
-                  <div className="space-y-2.5">
-                    {ONA_LABEL_HELP.map((item) => (
-                      <div
-                        key={item.short}
-                        className="
-                          rounded-xl
-                          border border-white/6
-                          bg-white/[0.03]
-                          p-3
-                        "
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`h-2.5 w-2.5 rounded-full ${item.colorClass}`}
-                          />
-                          <span className="min-w-[24px] text-sm font-semibold text-slate-100">
-                            {item.short}
-                          </span>
-                          <span className="text-sm font-medium text-slate-200">
-                            {item.full}
-                          </span>
-                        </div>
-
-                        <p className="mt-2 text-[12px] leading-5 text-slate-400">
-                          {item.description}
-                        </p>
-                      </div>
-                    ))}
+                  <div className="text-[11px] leading-5 text-slate-400">
+                    La descripción completa está disponible en el panel derecho.
                   </div>
                 </div>
               </TooltipContent>
@@ -363,15 +339,49 @@ export default function OnaRadarChart({
             Cargando…
           </div>
         ) : (
-          <div ref={wrapRef} className="w-full overflow-hidden">
-            <div className="mx-auto flex w-full justify-center overflow-hidden">
-              <Chart
-                options={options}
-                series={series}
-                type="radar" 
-                width={chartWidth * 1.02} // pequeño extra para evitar recortes
-                height={chartHeight}
-              />
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
+            <div ref={wrapRef} className="w-full overflow-hidden rounded-xl border border-slate-200/70 bg-slate-50/45 p-2 dark:border-slate-800/80 dark:bg-slate-900/25">
+              <div className="mx-auto flex w-full justify-center overflow-hidden">
+                <Chart
+                  options={options}
+                  series={series}
+                  type="radar"
+                  width={chartWidth * 1.02}
+                  height={chartHeight}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/55 p-3 dark:border-slate-800/80 dark:bg-slate-900/25">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                Interpretación ONA
+              </div>
+              <div className="space-y-2.5">
+                {onaItemsWithValue.map((item) => (
+                  <div
+                    key={item.short}
+                    className="rounded-lg border border-slate-200/90 bg-white/70 p-2.5 dark:border-slate-700/70 dark:bg-slate-900/55"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`h-2.5 w-2.5 rounded-full ${item.colorClass}`} />
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          {item.short}
+                        </span>
+                        <span className="text-xs text-slate-600 dark:text-slate-300">
+                          {item.full}
+                        </span>
+                      </div>
+                      <span className="rounded-full border border-slate-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                        {item.value.toFixed(1)}%
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+                      {item.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
