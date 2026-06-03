@@ -134,9 +134,9 @@ export function EmployeeInsightsDeck({
             onClick={() => setIsUserPaused((prev) => !prev)}
             className="
               inline-flex h-7 w-7 items-center justify-center
-              rounded-full text-slate-400
+              rounded-full text-slate-500
               transition-colors
-              hover:bg-white/6 hover:text-slate-200
+              hover:bg-slate-200/70 hover:text-slate-800
               dark:text-slate-500 dark:hover:text-slate-100
             "
           >
@@ -182,9 +182,9 @@ export function EmployeeInsightsDeck({
             onClick={goPrev}
             className=" 
               inline-flex h-7 w-7 items-center justify-center
-              rounded-full text-slate-400
+              rounded-full text-slate-500
               transition-colors
-              hover:bg-white/6 hover:text-slate-200
+              hover:bg-slate-200/70 hover:text-slate-800
               dark:text-slate-500 dark:hover:text-slate-100
             "
           >
@@ -218,13 +218,13 @@ export function EmployeeInsightsDeck({
             onClick={goNext}
             className="
               inline-flex h-7 w-7 items-center justify-center
-              rounded-full text-slate-400
+              rounded-full text-slate-500
               transition-colors
-              hover:bg-white/6 hover:text-slate-200
+              hover:bg-slate-200/70 hover:text-slate-800
               dark:text-slate-500 dark:hover:text-slate-100
             "
           >
-            <ChevronRight className="h41 w-4" />
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       )}
@@ -237,4 +237,3 @@ export function EmployeeInsightsDeck({
     </section>
   );
 }
-``

@@ -136,8 +136,8 @@ export default function EvaluationGraph({
       isValidNumber(selectedPoint.overall_percentile)
         ? [
             {
-              x: selectedPoint.overall_percentile as number,
-              y: selectedPoint.final_score,
+              x: selectedPoint.final_score,
+              y: selectedPoint.overall_percentile as number,
               employee_id: selectedPoint.employee_id,
               society_id: selectedPoint.society_id,
               department_id: selectedPoint.department_id,

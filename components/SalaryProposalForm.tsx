@@ -13,16 +13,17 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Banknote, FlaskConical, SlidersHorizontal, TrendingUp } from "lucide-react";
+import {
+  Banknote,
+  FlaskConical,
+  SlidersHorizontal,
+} from "lucide-react";
 
 import { MoneyInput } from "@/components/MoneyInput";
-import { EmployeeRow } from "./EmployeeCard";
-import { MonetaryInfo } from "@/components/EmployeeView";
 import type { ProposalDraft } from "@/types/compensation";
 
 const schema = z.object({
@@ -40,9 +41,6 @@ const emptyDraft: ProposalDraft = {
   bonus: 0,
   category: "",
 };
-
-const AVG_SALARY_REFERENCE = 30000;
-const AVG_BONUS_REFERENCE = 2000;
 
 const LoadingSkeleton = () => (
   <Card className="shrink-0 bg-[var(--exec-card)]">
@@ -65,10 +63,7 @@ const LoadingSkeleton = () => (
 );
 
 type Props = {
-  employee: EmployeeRow;
-  monetaryInfo: MonetaryInfo | null;
   value: ProposalDraft | null;
-  hasInsights: boolean;
   onChange: (value: ProposalDraft) => void;
   onOpenSimulation: () => void;
 };
@@ -98,11 +93,9 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
 }
 
 export function SalaryProposalForm({
-  monetaryInfo,
   value,
   onChange,
   onOpenSimulation,
-  hasInsights,
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -114,11 +107,6 @@ export function SalaryProposalForm({
   const syncingFromParentRef = React.useRef(false);
 
   // Watchs por campo (mejor que observar todo el objeto)
-  const salaryCurrent = useWatch({
-    control: form.control,
-    name: "salaryCurrent",
-  });
-
   const proposedSalary = useWatch({
     control: form.control,
     name: "proposedSalary",
@@ -152,13 +140,7 @@ export function SalaryProposalForm({
     queueMicrotask(() => {
       syncingFromParentRef.current = false;
     });
-  }, [
-    value?.salaryCurrent,
-    value?.proposedSalary,
-    value?.bonus,
-    value?.category,
-    form,
-  ]);
+  }, [value, form]);
 
   // -----------------------------
   // Form -> padre
@@ -168,7 +150,7 @@ export function SalaryProposalForm({
     if (syncingFromParentRef.current) return;
 
     const nextDraft = normalizeDraft({
-      salaryCurrent,
+      salaryCurrent: value.salaryCurrent,
       proposedSalary,
       bonus,
       category,
@@ -179,39 +161,22 @@ export function SalaryProposalForm({
     if (sameDraft(nextDraft, normalizedValue)) return;
 
     onChange(nextDraft);
-  }, [
-    salaryCurrent,
-    proposedSalary,
-    bonus,
-    category,
-    value?.salaryCurrent,
-    value?.proposedSalary,
-    value?.bonus,
-    value?.category,
-    onChange,
-  ]);
+  }, [proposedSalary, bonus, category, value, onChange]);
 
-  if (!monetaryInfo || !value) {
+  if (!value) {
     return <LoadingSkeleton />;
   }
 
-  const raiseAmount = proposedSalary - salaryCurrent;
-  const raisePct = salaryCurrent > 0 ? (raiseAmount / salaryCurrent) * 100 : 0;
-  const salaryVsAvgPct =
-    AVG_SALARY_REFERENCE > 0
-      ? ((proposedSalary - AVG_SALARY_REFERENCE) / AVG_SALARY_REFERENCE) * 100
-      : 0;
-  const bonusVsAvgPct =
-    AVG_BONUS_REFERENCE > 0
-      ? ((bonus - AVG_BONUS_REFERENCE) / AVG_BONUS_REFERENCE) * 100
-      : 0;
+  const raiseAmount = proposedSalary - value.salaryCurrent;
+  const raisePct =
+    value.salaryCurrent > 0 ? (raiseAmount / value.salaryCurrent) * 100 : 0;
 
   return (
     <Card className="min-h-[640px] border-slate-200 bg-white/90 py-0 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/80">
       <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-700/80">
         <div className="flex items-center gap-3">
           <Banknote className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
-          <CardTitle className="text-xl text-slate-900 dark:text-slate-50">Compensación</CardTitle>
+          <CardTitle className="text-xl text-slate-900 dark:text-slate-50">Nueva propuesta</CardTitle>
         </div>
 
         <button
@@ -224,106 +189,25 @@ export function SalaryProposalForm({
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col px-5 py-5">
-        <div className="mb-5 rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/45">
-          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-            Referencia Comparativa
-          </div>
-          <div className="mt-2 flex h-10 items-center justify-between rounded-md border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-            <span className="truncate">RSM Spain · People & Culture · Barcelona</span>
-            <span className="text-slate-500">⌄</span>
-          </div>
-        </div>
-
-        <div className="mb-6 grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/45">
-            <div className="text-xs text-slate-500 dark:text-slate-400">% vs salario prom.</div>
-            <div className="mt-2 flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-slate-50">
-              {salaryVsAvgPct >= 0 ? "+" : ""}
-              {salaryVsAvgPct.toFixed(1)}%
-              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-            </div>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/45">
-            <div className="text-xs text-slate-500 dark:text-slate-400">% vs bonus prom.</div>
-            <div className="mt-2 flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-slate-50">
-              {bonusVsAvgPct >= 0 ? "+" : ""}
-              {bonusVsAvgPct.toFixed(1)}%
-              <TrendingUp className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-            </div>
-          </div>
-        </div>
-
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(() => undefined)}
             className="flex flex-1 flex-col"
           >
-            <div className="mb-4 border-b border-slate-200 pb-3 text-base font-semibold text-slate-900 dark:border-slate-700 dark:text-slate-50">
-              Propuesta Salarial
+            <div className="mb-5 rounded-lg border border-cyan-500/15 bg-cyan-500/5 px-4 py-3 text-sm text-cyan-900 dark:text-cyan-200">
+              Define solo las condiciones nuevas que quieres simular para el empleado.
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
-              {/* Left column */}
-              <div className="space-y-3">
-                {[
-                  {
-                    name: "salaryCurrent" as const,
-                    label: "Salario actual",
-                    readOnly: true,
-                  },
-                  { name: "bonus" as const, label: "Bonus" },
-                  {
-                    name: "category" as const,
-                    label: "Categoría",
-                    readOnly: true,
-                  },
-                ].map(({ name, label, readOnly }) => (
-                  <FormField
-                    key={name}
-                    control={form.control}
-                    name={name}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs text-slate-500 dark:text-slate-400">
-                          {label}
-                        </FormLabel>
-                        <FormControl>
-                          {name === "category" ? (
-                            <Input
-                              value={(field.value as string) ?? ""}
-                              onChange={field.onChange}
-                              readOnly
-                            />
-                          ) : (
-                            <MoneyInput
-                              value={
-                                typeof field.value === "number"
-                                  ? field.value
-                                  : 0
-                              }
-                              onChange={field.onChange}
-                              readOnly={readOnly}
-                              onBlur={field.onBlur}
-                            />
-                          )}
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ))}
-              </div>
-
-              {/* Right column */}
-              <div className="space-y-3">
+            <div className="space-y-5">
+              <div className="space-y-2.5">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Propuesta nuevo salario
+                </div>
                 <FormField
                   control={form.control}
                   name="proposedSalary"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-cyan-700 dark:text-cyan-300">
-                        Propuesta salarial FY 2026-2027
-                      </FormLabel>
                       <FormControl>
                         <MoneyInput
                           value={
@@ -337,14 +221,71 @@ export function SalaryProposalForm({
                     </FormItem>
                   )}
                 />
-
                 <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>Aumento: {raiseAmount.toLocaleString("es-ES")} €</span>
-                  <span className="text-cyan-700 dark:text-cyan-300">
+                  <span>Variación propuesta</span>
+                  <span className="font-medium text-cyan-700 dark:text-cyan-300">
+                    {raiseAmount >= 0 ? "+" : ""}
+                    {new Intl.NumberFormat("es-ES", {
+                      style: "currency",
+                      currency: "EUR",
+                      minimumFractionDigits: 2,
+                    }).format(raiseAmount)}
+                    {" · "}
                     {raisePct >= 0 ? "+" : ""}
                     {raisePct.toFixed(1)}%
                   </span>
                 </div>
+              </div>
+
+              <div className="space-y-2.5 border-t border-slate-200 pt-5 dark:border-slate-700">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Nueva categoría
+                </div>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          value={(field.value as string) ?? ""}
+                          onChange={field.onChange}
+                          placeholder="Mantener categoría actual o indicar nueva"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2.5 border-t border-slate-200 pt-5 dark:border-slate-700">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Importe bonus desempeño
+                </div>
+                <FormField
+                  control={form.control}
+                  name="bonus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <MoneyInput
+                          value={
+                            typeof field.value === "number"
+                              ? field.value
+                              : 0
+                          }
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  El flujo actual solo soporta un bonus agregado para simulación. Si más adelante añadimos bonus por tipo o mes de pago, lo conectamos aquí.
+                </p>
               </div>
             </div>
 
@@ -353,9 +294,7 @@ export function SalaryProposalForm({
                 type="button"
                 className={cn(
                   "h-12 w-full gap-2 rounded-lg bg-blue-500 text-base font-semibold text-white transition-all duration-200 hover:bg-blue-400",
-                  hasInsights 
-                    ? "shadow-[0_8px_24px_rgba(59,130,246,0.28)]"
-                    : "",
+                  "shadow-[0_8px_24px_rgba(59,130,246,0.28)]",
                 )}
                 onClick={onOpenSimulation}
               >

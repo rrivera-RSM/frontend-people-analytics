@@ -9,15 +9,12 @@ import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type { ProposalDraft, SimulationResult } from "@/types/compensation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { InsightChipsInline } from "@/components/employee-insights/InsightChipsInline";
 import { Download, MoreVertical } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { MoneyInput } from "@/components/MoneyInput";
-import { EmployeeInsightsDeck } from "@/components/employee-insights/EmployeeInsightsDeck";
-import { AttritionGauge } from "@/components/AttritionGauge";
-import { EmployeeInsightCard } from "@/components/employee-insights/EmployeeInsightCard";
+import { DecisionAttritionRiskPanel } from "@/components/DecisionAttritionRiskPanel";
+import { DecisionInsightsCarousel } from "@/components/employee-insights/DecisionInsightsCarousel";
 import { OnaOrganizationGraph } from "./OnaOrganizationGraph";
+import { AnimatePresence, motion } from "framer-motion";
+import { EmployeeTimelineEvolution } from "./EmployeeTimelineEvolution";
 
 import type {
   EmployeeInsightsResponseApi,
@@ -48,6 +45,7 @@ export type OnaData = {
 };
 
 type EmployeeTab = "decision-intelligence" | "ona" | "desempeno";
+const TAB_ORDER: EmployeeTab[] = ["decision-intelligence", "ona", "desempeno"];
 
 const AVG = { avgSalary: 30000, avgBonus: 2000 };
 
@@ -62,7 +60,6 @@ const fetchApi = async <T,>(url: string): Promise<T | null> => {
 };
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
-const round1 = (n: number) => Math.round(n * 10) / 10;
 
 const PERFORMANCE_CHART_CODES = new Set<EmployeeInsightCode>([
   "high_solid_performance",
@@ -78,13 +75,6 @@ const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
   "active_influence_at",
   "active_influence_ap",
   "active_influence_in",
-]);
-
-const TALENT_KPI_CODES = new Set<EmployeeInsightCode>([
-  "high_talent",
-  "high_potential",
-  "high_performer",
-  "high_underrecognized",
 ]);
 
 function getInitials(employee: EmployeeRow) {
@@ -134,16 +124,21 @@ export function EmployeeView({ employee }: Props) {
     useState<EmployeeInsightsResponseApi | null>(null);
 
   const [proposalDraft, setProposalDraft] = useState<ProposalDraft | null>(null);
-  const [acceptedSimulation, setAcceptedSimulation] =
-    useState<SimulationResult | null>(null);
   const [activeTab, setActiveTab] = useState<EmployeeTab>("decision-intelligence");
-  const [localSalary, setLocalSalary] = useState(0);
-  const [localBonus, setLocalBonus] = useState(0);
+  const [tabDirection, setTabDirection] = useState(1);
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
 
   const [loading, setLoading] = useState(false);
+
+  const handleTabChange = (nextTab: EmployeeTab) => {
+    if (nextTab === activeTab) return;
+    const currentIndex = TAB_ORDER.indexOf(activeTab);
+    const nextIndex = TAB_ORDER.indexOf(nextTab);
+    setTabDirection(nextIndex > currentIndex ? 1 : -1);
+    setActiveTab(nextTab);
+  };
 
   useEffect(() => {
     if (!employee?.id) {
@@ -151,7 +146,6 @@ export function EmployeeView({ employee }: Props) {
       setOnaData(null);
       setInsightsData(null);
       setProposalDraft(null);
-      setAcceptedSimulation(null);
       setSimulationError(null);
       setSimulationResult(null);
       return;
@@ -165,7 +159,6 @@ export function EmployeeView({ employee }: Props) {
     setOnaData(null);
     setInsightsData(null);
     setProposalDraft(null);
-    setAcceptedSimulation(null);
     setSimulationError(null);
     setSimulationResult(null);
 
@@ -207,8 +200,6 @@ export function EmployeeView({ employee }: Props) {
 
   useEffect(() => {
     if (!proposalDraft) return;
-    setLocalSalary(proposalDraft.proposedSalary);
-    setLocalBonus(proposalDraft.bonus);
     setSimulationError(null);
     setSimulationResult(null);
   }, [proposalDraft]);
@@ -242,49 +233,6 @@ export function EmployeeView({ employee }: Props) {
     );
   }, [insightViewModels]);
 
-  const talentInsight = useMemo(() => {
-    return (
-      insightViewModels.find((insight) => TALENT_KPI_CODES.has(insight.code)) ??
-      null
-    );
-  }, [insightViewModels]);
-
-  const mainOnaInsight = useMemo(() => {
-    return (
-      insightViewModels.find(
-        (insight) =>
-          insight.family === "ona" && !ONA_CHART_CODES.has(insight.code),
-      ) ??
-      onaInsights[0] ??
-      null
-    );
-  }, [insightViewModels, onaInsights]);
-
-  const visibleContextInsights = useMemo(() => {
-    return insightViewModels.filter(
-      (insight) =>
-        !PERFORMANCE_CHART_CODES.has(insight.code) &&
-        !ONA_CHART_CODES.has(insight.code),
-    );
-  }, [insightViewModels]);
-
-  const executiveInsightCards = useMemo(() => {
-    return [talentInsight, mainOnaInsight].filter(
-      (insight, index, array): insight is NonNullable<typeof insight> =>
-        Boolean(insight) &&
-        array.findIndex((item) => item?.code === insight?.code) === index,
-    );
-  }, [mainOnaInsight, talentInsight]);
-
-  const modalInsights = useMemo(() => {
-    return insightViewModels.filter(
-      (insight) =>
-        !PERFORMANCE_CHART_CODES.has(insight.code) &&
-        !ONA_CHART_CODES.has(insight.code) &&
-        !TALENT_KPI_CODES.has(insight.code),
-    );
-  }, [insightViewModels]);
-
   const fullName = employee
     ? `${employee.first_name} ${employee.last_name}`.trim()
     : "Selecciona un empleado";
@@ -307,23 +255,16 @@ export function EmployeeView({ employee }: Props) {
   const attritionPct = normalizeAttritionRate(employee?.attrition_rate);
   const attritionIsHigh = attritionPct != null && attritionPct >= 34.14;
 
-  const raisePct =
-    proposalDraft && proposalDraft.salaryCurrent > 0
-      ? round1(((localSalary - proposalDraft.salaryCurrent) / proposalDraft.salaryCurrent) * 100)
-      : 0;
-
-  const displayedProbability = simulationResult?.attritionProbability ?? employee?.attrition_rate ?? null;
-
   const runSimulation = async () => {
-    if (!employee || !proposalDraft) return;
+    if (!employee || !proposalDraft || simulationLoading) return;
     setSimulationLoading(true);
     setSimulationError(null);
 
     try {
       const payload = {
         employee_id: employee.id,
-        new_salary: localSalary,
-        new_bonus: localBonus,
+        new_salary: proposalDraft.proposedSalary,
+        new_bonus: proposalDraft.bonus,
         ...(proposalDraft.category ? { new_category: proposalDraft.category } : {}),
       };
 
@@ -358,8 +299,8 @@ export function EmployeeView({ employee }: Props) {
 
       setSimulationResult({
         attritionProbability: simulationItem.probability,
-        simulatedSalary: localSalary,
-        simulatedBonus: localBonus,
+        simulatedSalary: proposalDraft.proposedSalary,
+        simulatedBonus: proposalDraft.bonus,
         simulatedAt: new Date().toISOString(),
       });
     } catch (err) {
@@ -475,58 +416,21 @@ export function EmployeeView({ employee }: Props) {
                   />
                 </section>
 
-                {executiveInsightCards.length > 0 && (
-                  <section className="rounded-xl border border-slate-200 bg-white/85 p-4 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
-                    <div className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-                      Main insights
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                      {executiveInsightCards.map((insight) => (
-                        <EmployeeInsightCard
-                          key={insight.code}
-                          insight={insight}
-                          compact
-                          maxVisibleEvidence={2}
-                        />
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {visibleContextInsights.length > 0 && (
-                  <section className="rounded-xl border bg-[var(--exec-card)] p-4 shadow-sm">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                      <div className="min-w-0">
-                        <h2 className="text-sm font-semibold">
-                          Señales detectadas
-                        </h2>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          Insights relevantes que no dependen de abrir la simulación.
-                        </p>
-                      </div>
-                      <InsightChipsInline
-                        insights={visibleContextInsights}
-                        className="md:justify-end"
-                      />
-                    </div>
-                  </section>
-                )}
-
                 <section className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
                   <SalaryProposalForm
-                    employee={employee}
-                    monetaryInfo={monetaryInfo}
                     value={proposalDraft}
                     onChange={setProposalDraft}
-                    hasInsights={modalInsights.length > 0}
-                    onOpenSimulation={() => setActiveTab("decision-intelligence")}
+                    onOpenSimulation={() => {
+                      handleTabChange("decision-intelligence");
+                      void runSimulation();
+                    }}
                   />
 
                   <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/60">
                     <div className="flex border-b border-slate-200 bg-slate-50/75 dark:border-slate-700/90 dark:bg-slate-900/35">
                       <button
                         type="button"
-                        onClick={() => setActiveTab("decision-intelligence")}
+                        onClick={() => handleTabChange("decision-intelligence")}
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "decision-intelligence"
@@ -538,7 +442,7 @@ export function EmployeeView({ employee }: Props) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setActiveTab("ona")}
+                        onClick={() => handleTabChange("ona")}
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "ona"
@@ -550,7 +454,7 @@ export function EmployeeView({ employee }: Props) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setActiveTab("desempeno")}
+                        onClick={() => handleTabChange("desempeno")}
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "desempeno"
@@ -562,104 +466,25 @@ export function EmployeeView({ employee }: Props) {
                       </button>
                     </div>
 
-                    <div className="grid gap-5 p-6">
+                    <div className="overflow-hidden p-6">
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={activeTab}
+                          initial={{ opacity: 0, x: tabDirection > 0 ? 20 : -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: tabDirection > 0 ? -20 : 20 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                          className="grid gap-5"
+                        >
                       {activeTab === "decision-intelligence" && proposalDraft && (
-                        <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.02fr_0.98fr]">
-                          <div className="space-y-4">
-                            <Card className="bg-slate-50 dark:bg-slate-900/40">
-                              <CardContent className="space-y-4 p-4">
-                                <div className="space-y-1">
-                                  <div className="text-sm text-slate-500 dark:text-slate-400">Categoría</div>
-                                  <div className="font-medium">{proposalDraft.category || "-"}</div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                  <div className="space-y-1">
-                                    <div className="text-sm text-slate-500 dark:text-slate-400">Salario actual</div>
-                                    <div className="font-medium">
-                                      {new Intl.NumberFormat("es-ES", {
-                                        style: "currency",
-                                        currency: "EUR",
-                                        minimumFractionDigits: 2,
-                                      }).format(proposalDraft.salaryCurrent)}
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <div className="text-sm text-slate-500 dark:text-slate-400">Incremento porcentual</div>
-                                    <div className="font-medium text-cyan-700 dark:text-cyan-300">
-                                      {raisePct >= 0 ? "+" : ""}
-                                      {raisePct}%
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="text-sm text-slate-500 dark:text-slate-400">Nuevo salario bruto anual</div>
-                                  <MoneyInput value={localSalary} onChange={setLocalSalary} />
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="text-sm text-slate-500 dark:text-slate-400">Cuantía del bonus (target anual)</div>
-                                  <MoneyInput value={localBonus} onChange={setLocalBonus} />
-                                </div>
-                              </CardContent>
-                            </Card>
+                        <div className="grid gap-5">
+                          <DecisionAttritionRiskPanel
+                            currentProbability={employee.attrition_rate ?? null}
+                            simulationResult={simulationResult}
+                            simulationError={simulationError}
+                          />
 
-                            <div className="flex gap-3">
-                              <Button type="button" variant="secondary" onClick={runSimulation} disabled={simulationLoading}>
-                                {simulationLoading ? "Simulando..." : "Ejecutar simulación"}
-                              </Button>
-                              <Button
-                                type="button"
-                                disabled={!simulationResult || simulationLoading}
-                                onClick={() => {
-                                  if (!simulationResult) return;
-                                  setProposalDraft((prev) =>
-                                    prev
-                                      ? {
-                                          ...prev,
-                                          proposedSalary: localSalary,
-                                          bonus: localBonus,
-                                        }
-                                      : prev,
-                                  );
-                                  setAcceptedSimulation(simulationResult);
-                                }}
-                              >
-                                Confirmar
-                              </Button>
-                            </div>
-                          </div>
-
-                          <div className="space-y-4">
-                            <Card className="bg-slate-50 dark:bg-slate-900/40">
-                              <CardContent className="space-y-4 p-4">
-                                {simulationError && (
-                                  <div className="rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
-                                    {simulationError}
-                                  </div>
-                                )}
-
-                                {displayedProbability != null && (
-                                  <AttritionGauge
-                                    probability={displayedProbability}
-                                    minSize={350}
-                                    maxSize={350}
-                                    label={
-                                      simulationResult
-                                        ? "Riesgo estimado tras simulación"
-                                        : "Riesgo actual estimado"
-                                    }
-                                  />
-                                )}
-                              </CardContent>
-                            </Card>
-
-                            {modalInsights.length > 0 && (
-                              <EmployeeInsightsDeck
-                                insights={modalInsights}
-                                autoPlay
-                                autoPlayIntervalMs={8500}
-                              />
-                            )}
-                          </div>
+                          <DecisionInsightsCarousel insights={insightViewModels} />
                         </div>
                       )}
 
@@ -679,31 +504,19 @@ export function EmployeeView({ employee }: Props) {
                       )}
 
                       {activeTab === "desempeno" && (
-                        <EmployeeProgressChart
-                          employeeId={employee?.id}
-                          insights={performanceInsights}
-                        />
+                        <div className="space-y-5">
+                          <EmployeeProgressChart
+                            employeeId={employee?.id}
+                            insights={performanceInsights}
+                          />
+                          <EmployeeTimelineEvolution employeeId={employee?.id} />
+                        </div>
                       )}
+                        </motion.div>
+                      </AnimatePresence>
                     </div>
                   </div>
                 </section>
-
-                {acceptedSimulation && (
-                  <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3 text-xs text-emerald-800 dark:text-emerald-100">
-                    Última simulación confirmada: riesgo estimado{" "}
-                    <span className="font-semibold">
-                      {(acceptedSimulation.attritionProbability * 100).toFixed(1)}%
-                    </span>{" "}
-                    con salario{" "}
-                    <span className="font-semibold">
-                      {new Intl.NumberFormat("es-ES", {
-                        style: "currency",
-                        currency: "EUR",
-                        minimumFractionDigits: 2,
-                      }).format(acceptedSimulation.simulatedSalary)}
-                    </span>
-                  </div>
-                )}
               </div>
             )}
           </div>

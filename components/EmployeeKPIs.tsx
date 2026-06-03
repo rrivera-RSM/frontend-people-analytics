@@ -1,4 +1,4 @@
-import { Zap } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Zap } from "lucide-react";
 
 type DeltaTone = "up" | "down" | "neutral" | "danger" | "success";
 
@@ -33,6 +33,13 @@ function MetricCard({
     neutral: "text-slate-500 dark:text-slate-400",
   };
 
+  const trendIcon =
+    valueTone === "up" ? (
+      <ArrowUpRight className={compact ? "h-4 w-4" : "h-4 w-4"} />
+    ) : valueTone === "down" || valueTone === "danger" ? (
+      <ArrowDownRight className={compact ? "h-4 w-4" : "h-4 w-4"} />
+    ) : null;
+
   return (
     <div
       className={
@@ -46,11 +53,12 @@ function MetricCard({
       </div>
 
       <div
-        className={`mt-1 font-semibold tracking-tight ${
+        className={`mt-1 flex items-center gap-1 font-semibold tracking-tight ${
           compact ? "text-xl" : "text-lg"
         } ${valueToneClasses[valueTone]}`}
       >
-        {value}
+        {trendIcon}
+        <span>{value}</span>
       </div>
 
       {helperText && (

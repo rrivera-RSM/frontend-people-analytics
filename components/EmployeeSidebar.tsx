@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { EmployeeCard, type EmployeeRow } from "./EmployeeCard";
-import { useDebounce } from "./hooks/useDebounce";
 import { ThemeToggle } from "./ThemeToggle";
 
 type Props = {
@@ -42,20 +42,6 @@ export function EmployeesSidebar({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
 
-  const debouncedQuery = useDebounce(query, 300);
-
-  const queryString = useMemo(() => {
-    const params = new URLSearchParams({
-      office,
-      department,
-      society,
-      limit: String(limit),
-      offset: String(offset),
-      ...(debouncedQuery.trim() && { q: debouncedQuery.trim() }),
-    });
-    return params.toString();
-  }, [office, department, society, limit, offset, debouncedQuery]);
-
   useEffect(() => {
     const controller = new AbortController();
 
@@ -64,12 +50,23 @@ export function EmployeesSidebar({
       setError(null);
 
       try {
-        const res = await fetch(`/api/employees/manager/my-team?${queryString}`, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          cache: "no-store",
-          signal: controller.signal,
+        const params = new URLSearchParams({
+          office,
+          department,
+          society,
+          limit: String(limit),
+          offset: String(offset),
         });
+
+        const res = await fetch(
+          `/api/employees/manager/my-team?${params.toString()}`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
 
         if (!res.ok) {
           throw new Error(`${res.status} ${res.statusText}\n${await res.text()}`);
@@ -99,36 +96,33 @@ export function EmployeesSidebar({
     void load();
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [queryString]);
+  }, [office, department, society, limit, offset]);
 
-  const isSearching = debouncedQuery.trim().length > 0;
+  const normalizedQuery = query.trim().toLowerCase();
+  const isSearching = normalizedQuery.length > 0;
 
   const visibleEmployees = useMemo(() => {
+    const filteredByQuery = isSearching
+      ? employees.filter((employee) => {
+          const fullName = `${employee.first_name} ${employee.last_name}`
+            .trim()
+            .toLowerCase();
+          const email = employee.email.toLowerCase();
+
+          return (
+            fullName.includes(normalizedQuery) || email.includes(normalizedQuery)
+          );
+        })
+      : employees;
+
     if (riskFilter === "high") {
-      return employees.filter((employee) => employee.attrition_rate >= 0.3414);
+      return filteredByQuery.filter(
+        (employee) => employee.attrition_rate >= 0.3414,
+      );
     }
 
-    return employees;
-  }, [employees, riskFilter]);
-
-  useEffect(() => {
-    if (status !== "success") return;
-
-    if (!visibleEmployees.length) {
-      setSelectedId(null);
-      onSelectEmployee?.(null);
-      return;
-    }
-
-    const selected =
-      visibleEmployees.find((employee) => employee.id === selectedId) ??
-      visibleEmployees[0];
-
-    if (selected.id !== selectedId) {
-      setSelectedId(selected.id);
-      onSelectEmployee?.(selected);
-    }
-  }, [onSelectEmployee, selectedId, status, visibleEmployees]);
+    return filteredByQuery;
+  }, [employees, isSearching, normalizedQuery, riskFilter]);
 
   return (
     <aside
@@ -161,7 +155,7 @@ export function EmployeesSidebar({
         {status === "success" && visibleEmployees.length === 0 && !collapsed && (
           <div className="rounded-xl border border-slate-200 bg-white/80 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
             {isSearching
-              ? `No hay resultados para "${debouncedQuery}".`
+              ? `No hay resultados para "${query.trim()}".`
               : "No hay empleados para estos filtros."}
           </div>
         )}
@@ -218,7 +212,7 @@ function Header({
         {!collapsed ? (
           <div className="mb-6 flex items-start justify-between">
             <div className="flex flex-col items-start gap-1.5">
-              <CompanyMark className="h-3.5 w-auto" />
+              <CompanyMark className="h-10 w-auto" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300">
                 People Analytics
               </span>
@@ -227,7 +221,7 @@ function Header({
           </div>
         ) : (
           <div className="mb-3 flex flex-col items-center gap-2">
-            <CompanyMark className="h-3.5 w-auto" />
+            <CompanyMark className="h-8 w-auto" />
             <ThemeToggle />
           </div>
         )}
@@ -302,7 +296,7 @@ function Header({
           <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>
               {status === "loading"
-                ? "Buscando…"
+                ? "Cargando…"
                 : isSearching
                 ? `Resultados: ${count}`
                 : `Empleados: ${count}`}
@@ -370,28 +364,22 @@ function SearchIcon({ className = "" }: { className?: string }) {
 function CompanyMark({ className = "" }: { className?: string }) {
   return (
     <div className={className} aria-label="Logotipo de la empresa" role="img">
-      <svg
-        viewBox="0 0 336 44"
-        className="h-full w-full"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <rect x="0" y="0" width="32" height="44" fill="#8f9398" />
-        <rect x="44" y="0" width="78" height="44" fill="#45a339" />
-        <rect x="136" y="0" width="200" height="44" fill="#1a96cf" />
-        <text
-          x="236"
-          y="29"
-          fill="#ffffff"
-          fontSize="18"
-          fontWeight="700"
-          textAnchor="middle"
-          fontFamily="var(--font-sans)"
-          letterSpacing="0.6"
-        >
-          RSM
-        </text>
-      </svg>
+      <Image
+        src="/logos/corporate/logo_light.svg.svg"
+        alt="RSM logo"
+        width={336}
+        height={44}
+        className="h-full w-full dark:hidden"
+        priority
+      />
+      <Image
+        src="/logos/corporate/logo_dark.svg.svg"
+        alt="RSM logo"
+        width={336}
+        height={44}
+        className="hidden h-full w-full dark:block"
+        priority
+      />
     </div>
   );
 }
