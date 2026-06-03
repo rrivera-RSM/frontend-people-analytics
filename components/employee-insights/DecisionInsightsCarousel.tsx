@@ -196,7 +196,7 @@ export function DecisionInsightsCarousel({
                 <motion.div
                   className={
                     isActive
-                      ? "h-full drop-shadow-[0_18px_34px_rgba(15,23,42,0.18)] dark:drop-shadow-[0_20px_44px_rgba(0,0,0,0.45)]"
+                      ? "h-full drop-shadow-[0_18px_34px_rgba(0,21,61,0.18)] dark:drop-shadow-[0_20px_44px_rgba(0,0,0,0.45)]"
                       : "pointer-events-none h-full blur-[0.2px]"
                   }
                   animate={
@@ -237,7 +237,7 @@ export function DecisionInsightsCarousel({
               onClick={() => goToIndex(dotIndex)}
               className={`h-2 rounded-full transition-all ${
                 dotIndex === index
-                  ? "w-7 bg-cyan-500"
+                  ? "w-7 bg-[var(--rsm-blue)]"
                   : "w-2 bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500"
               }`}
             />

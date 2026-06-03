@@ -18,18 +18,18 @@ function MetricCard({
   compact = false,
 }: MetricCardProps) {
   const valueToneClasses: Record<DeltaTone, string> = {
-    up: "text-cyan-700 dark:text-cyan-300",
-    down: "text-rose-600 dark:text-rose-400",
-    success: "text-emerald-700 dark:text-emerald-300",
-    danger: "text-rose-600 dark:text-rose-400",
+    up: "text-[var(--rsm-blue)] dark:text-[#79d7ff]",
+    down: "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
+    success: "text-[var(--rsm-green)] dark:text-[#8ed989]",
+    danger: "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
     neutral: "text-slate-900 dark:text-slate-50",
   };
 
   const helperToneClasses: Record<DeltaTone, string> = {
-    up: "text-emerald-600/80 dark:text-emerald-400/80",
-    down: "text-rose-600/80 dark:text-rose-400/80",
-    success: "text-emerald-600/80 dark:text-emerald-400/80",
-    danger: "text-rose-600/80 dark:text-rose-400/80",
+    up: "text-[color:rgb(var(--rsm-green-rgb)/0.82)] dark:text-[#8ed989]",
+    down: "text-[color:rgb(var(--rsm-red-rgb)/0.82)] dark:text-[#ff9ab8]",
+    success: "text-[color:rgb(var(--rsm-green-rgb)/0.82)] dark:text-[#8ed989]",
+    danger: "text-[color:rgb(var(--rsm-red-rgb)/0.82)] dark:text-[#ff9ab8]",
     neutral: "text-slate-500 dark:text-slate-400",
   };
 
@@ -138,9 +138,9 @@ export function KpiBar({
   if (variant === "summary") {
     return (
       <section className="rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
-        <div className="border-l-4 border-cyan-400 px-6 py-5">
+        <div className="border-l-4 border-[var(--rsm-blue)] px-6 py-5">
           <div className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-            <Zap className="h-4 w-4 text-cyan-300" />
+            <Zap className="h-4 w-4 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
             Executive Summary
           </div>
 

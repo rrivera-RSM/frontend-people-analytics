@@ -22,10 +22,10 @@ function clamp(value: number, min: number, max: number) {
 export function getAttritionRiskMeta(probability: number) {
   const pct = probability * 100;
 
-  if (pct <= 10) return { label: "Muy bajo", colorClass: "text-emerald-600 dark:text-emerald-300" };
-  if (pct <= 20) return { label: "Bajo", colorClass: "text-lime-600 dark:text-lime-300" };
-  if (pct <= 35) return { label: "Medio", colorClass: "text-amber-600 dark:text-amber-300" };
-  return { label: "Alto", colorClass: "text-rose-600 dark:text-rose-300" };
+  if (pct <= 10) return { label: "Muy bajo", colorClass: "rsm-risk-very-low" };
+  if (pct <= 20) return { label: "Bajo", colorClass: "rsm-risk-low" };
+  if (pct <= 35) return { label: "Medio", colorClass: "rsm-risk-medium" };
+  return { label: "Alto", colorClass: "rsm-risk-high" };
 }
 
 export function AttritionGauge({
@@ -78,15 +78,15 @@ export function AttritionGauge({
             padding: 0.006,
             cornerRadius: 7,
             subArcs: [
-              { limit: 10, color: "#22c55e", showTick: true },
-              { limit: 20, color: "#eab308", showTick: true },
-              { limit: 35, color: "#f97316", showTick: true },
-              { limit: 100, color: "#ef4444", showTick: true },
+              { limit: 10, color: "#3F9C35", showTick: true },
+              { limit: 20, color: "#34A798", showTick: true },
+              { limit: 35, color: "#F1B434", showTick: true },
+              { limit: 100, color: "#E40046", showTick: true },
             ],
           }}
           pointer={{
             type: "needle",
-            color: "#22d3ee",
+            color: "#009CDE",
             length: isCompact ? 0.62 : 0.66,
             width: isCompact ? 8 : 10,
             elastic: true,
@@ -104,7 +104,7 @@ export function AttritionGauge({
                 style: {
                   fontSize: isCompact ? "10px" : "11px",
                   fontWeight: "600",
-                  fill: "#94a3b8",
+                  fill: "#888B8D",
                 },
               },
               ticks: [

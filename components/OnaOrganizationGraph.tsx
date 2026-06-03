@@ -96,10 +96,10 @@ const CATEGORY_PRIORITY: Record<OnaCategory, number> = {
 };
 
 const CATEGORY_COLORS: Record<OnaCategory, string> = {
-  central: "#22c55e",
-  hipo: "#a3e635",
-  intermediary: "#f59e0b",
-  peripheral: "#ef4444",
+  central: "#3F9C35",
+  hipo: "#34A798",
+  intermediary: "#F1B434",
+  peripheral: "#E40046",
 };
 
 const CATEGORY_LABELS: Record<OnaCategory, string> = {
@@ -167,7 +167,7 @@ function normalizeOnaCategory(value: unknown): OnaCategory | null {
 }
 
 function resolveNodeColor(category: OnaCategory | null) {
-  if (!category) return "#fbbf24";
+  if (!category) return "#888B8D";
   return CATEGORY_COLORS[category];
 }
 
@@ -576,23 +576,23 @@ export function OnaOrganizationGraph({
           </CardTitle>
           <div className="inline-flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#009CDE]" />
               Empleado seleccionado (halo)
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#3F9C35]" />
               Central
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-lime-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#34A798]" />
               Hipo
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#F1B434]" />
               Intermediary
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#E40046]" />
               Peripheral
             </span>
           </div>
@@ -614,7 +614,7 @@ export function OnaOrganizationGraph({
             Cargando red organizacional...
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
+          <div className="rounded-xl border border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.1)] p-4 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
             {error}
           </div>
         ) : !hasGraph ? (
@@ -628,7 +628,7 @@ export function OnaOrganizationGraph({
                 className="flex items-center justify-between rounded-xl border px-4 py-3"
                 style={{
                   borderColor: `${selectedNode.color}55`,
-                  background: `linear-gradient(135deg, ${selectedNode.color}18, rgba(15,23,42,0.78))`,
+                  background: `linear-gradient(135deg, ${selectedNode.color}18, rgba(0,21,61,0.78))`,
                 }}
               >
                 <div>
@@ -656,14 +656,14 @@ export function OnaOrganizationGraph({
               </div>
             )}
 
-            <div className="relative overflow-hidden rounded-xl border border-slate-300 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(241,245,249,0.95))] dark:border-slate-700 dark:bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0.55),rgba(2,6,23,0.85))]">
+            <div className="relative overflow-hidden rounded-xl border border-slate-300 bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(244,248,250,0.95))] dark:border-slate-700 dark:bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.11),transparent_30%),linear-gradient(180deg,rgba(0,21,61,0.64),rgba(6,17,38,0.9))]">
               <div className="absolute right-3 top-3 z-10 inline-flex items-center rounded-lg border border-slate-300/80 bg-white/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
                 <button
                   type="button"
                   onClick={() => setViewMode("employee")}
                   className={`rounded-md px-2.5 py-1 font-medium transition ${
                     viewMode === "employee"
-                      ? "bg-cyan-500 text-white"
+                      ? "bg-[#009CDE] text-white"
                       : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -674,7 +674,7 @@ export function OnaOrganizationGraph({
                   onClick={() => setViewMode("organization")}
                   className={`rounded-md px-2.5 py-1 font-medium transition ${
                     viewMode === "organization"
-                      ? "bg-cyan-500 text-white"
+                      ? "bg-[#009CDE] text-white"
                       : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -715,8 +715,8 @@ export function OnaOrganizationGraph({
                       const source = link.source as ForceNode;
                       const target = link.target as ForceNode;
                       return source.isSelected || target.isSelected
-                        ? "rgba(34, 211, 238, 0.42)"
-                        : "rgba(148, 163, 184, 0.12)";
+                        ? "rgba(0, 156, 222, 0.42)"
+                        : "rgba(136, 139, 141, 0.14)";
                     }}
                     linkWidth={(link) => {
                       const source = link.source as ForceNode;
@@ -736,8 +736,8 @@ export function OnaOrganizationGraph({
                       const source = link.source as ForceNode;
                       const target = link.target as ForceNode;
                       return source.isSelected || target.isSelected
-                        ? "rgba(34, 211, 238, 0.82)"
-                        : "rgba(148, 163, 184, 0.24)";
+                        ? "rgba(0, 156, 222, 0.84)"
+                        : "rgba(136, 139, 141, 0.26)";
                     }}
                     nodeCanvasObjectMode={() => "replace"}
                     nodeCanvasObject={(node, ctx, globalScale) => {
@@ -759,11 +759,11 @@ export function OnaOrganizationGraph({
                       if (node.isSelected) {
                         ctx.beginPath();
                         ctx.arc(0, 0, radius * (2.2 + pulse * 0.22), 0, 2 * Math.PI);
-                        ctx.fillStyle = "rgba(34, 211, 238, 0.12)";
+                        ctx.fillStyle = "rgba(0, 156, 222, 0.14)";
                         ctx.fill();
                         ctx.beginPath();
                         ctx.arc(0, 0, radius * 1.6, 0, 2 * Math.PI);
-                        ctx.strokeStyle = "rgba(34, 211, 238, 0.52)";
+                        ctx.strokeStyle = "rgba(0, 156, 222, 0.56)";
                         ctx.lineWidth = 1.5;
                         ctx.stroke();
                         ctx.beginPath();

@@ -20,7 +20,7 @@ type CallStatus = "idle" | "loading" | "success" | "error";
 type RiskFilter = "all" | "high";
 
 const SIDEBAR_CLASSES = {
-  base: "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]",
+  base: "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[var(--exec-sidebar)]",
   expanded: "w-[320px]",
   collapsed: "w-[76px]",
 } as const;
@@ -147,7 +147,7 @@ export function EmployeesSidebar({
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {status === "error" && !collapsed && (
-          <pre className="whitespace-pre-wrap break-words rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+          <pre className="whitespace-pre-wrap break-words rounded-xl border border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.08)] p-3 text-xs text-[var(--rsm-red)]">
             {error}
           </pre>
         )}
@@ -207,7 +207,7 @@ function Header({
   onRiskFilterChange: (filter: RiskFilter) => void;
 }) {
   return (
-    <div className="sticky top-0 z-10 border-b border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]">
+    <div className="sticky top-0 z-10 border-b border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[var(--exec-sidebar)]">
       <div className={`px-4 pt-5 ${collapsed ? "pb-2" : "pb-4"}`}>
         {!collapsed ? (
           <div className="mb-6 flex items-start justify-between">
@@ -234,7 +234,7 @@ function Header({
             <div className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-100">
               Estás viendo:
             </div>
-            <div className="mt-1 text-sm font-semibold text-cyan-700 dark:text-cyan-300">
+            <div className="mt-1 text-sm font-semibold text-[var(--rsm-blue)] dark:text-[#79d7ff]">
               {department} · {office}
             </div>
           </div>
@@ -257,7 +257,7 @@ function Header({
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Buscar por email, nombre..."
-              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-[var(--rsm-blue)] focus:ring-2 focus:ring-[rgb(var(--rsm-blue-rgb)/0.16)] dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
             />
           </label>
         ) : (
@@ -333,7 +333,7 @@ function Chip({
       onClick={onClick}
       className={`rounded-md px-3 py-1 text-xs font-medium border transition-colors ${
         active
-          ? "border-blue-500 bg-blue-500 text-white"
+          ? "border-[var(--rsm-blue)] bg-[var(--rsm-blue)] text-white"
           : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       }`}
     >

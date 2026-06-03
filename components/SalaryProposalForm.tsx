@@ -175,7 +175,7 @@ export function SalaryProposalForm({
     <Card className="min-h-[640px] border-slate-200 bg-white/90 py-0 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/80">
       <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-700/80">
         <div className="flex items-center gap-3">
-          <Banknote className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />
+          <Banknote className="h-5 w-5 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
           <CardTitle className="text-xl text-slate-900 dark:text-slate-50">Nueva propuesta</CardTitle>
         </div>
 
@@ -194,7 +194,7 @@ export function SalaryProposalForm({
             onSubmit={form.handleSubmit(() => undefined)}
             className="flex flex-1 flex-col"
           >
-            <div className="mb-5 rounded-lg border border-cyan-500/15 bg-cyan-500/5 px-4 py-3 text-sm text-cyan-900 dark:text-cyan-200">
+            <div className="mb-5 rounded-lg border border-[color:rgb(var(--rsm-blue-rgb)/0.18)] bg-[rgb(var(--rsm-blue-rgb)/0.06)] px-4 py-3 text-sm text-[#005c86] dark:text-[#d8f6ff]">
               Define solo las condiciones nuevas que quieres simular para el empleado.
             </div>
 
@@ -223,7 +223,7 @@ export function SalaryProposalForm({
                 />
                 <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>Variación propuesta</span>
-                  <span className="font-medium text-cyan-700 dark:text-cyan-300">
+                  <span className="font-medium text-[var(--rsm-blue)] dark:text-[#79d7ff]">
                     {raiseAmount >= 0 ? "+" : ""}
                     {new Intl.NumberFormat("es-ES", {
                       style: "currency",
@@ -293,8 +293,8 @@ export function SalaryProposalForm({
               <Button
                 type="button"
                 className={cn(
-                  "h-12 w-full gap-2 rounded-lg bg-blue-500 text-base font-semibold text-white transition-all duration-200 hover:bg-blue-400",
-                  "shadow-[0_8px_24px_rgba(59,130,246,0.28)]",
+                  "h-12 w-full gap-2 rounded-lg bg-[var(--rsm-blue)] text-base font-semibold text-white transition-all duration-200 hover:bg-[#0086c0]",
+                  "shadow-[0_8px_24px_rgba(0,156,222,0.28)]",
                 )}
                 onClick={onOpenSimulation}
               >

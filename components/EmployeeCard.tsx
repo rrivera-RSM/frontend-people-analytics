@@ -64,8 +64,8 @@ export function EmployeeCard({
   const attritionRateClasses = [
     "inline-flex shrink-0 items-center rounded px-2 py-0.5 text-[11px] font-medium ring-1",
     isAttritionLow
-    ? "bg-emerald-500/15 text-emerald-700 ring-emerald-500/35 dark:text-emerald-300"
-    : "bg-rose-500/15 text-rose-700 ring-rose-500/35 dark:text-rose-300",
+    ? "bg-[rgb(var(--rsm-green-rgb)/0.14)] text-[var(--rsm-green)] ring-[rgb(var(--rsm-green-rgb)/0.35)] dark:text-[#8ed989]"
+    : "bg-[rgb(var(--rsm-red-rgb)/0.12)] text-[var(--rsm-red)] ring-[rgb(var(--rsm-red-rgb)/0.35)] dark:text-[#ff9ab8]",
   ].join(" ");
   
   const attritionRateLabel = isAttritionLow ? "Bajo riesgo" : "Alto riesgo";
@@ -89,7 +89,7 @@ export function EmployeeCard({
                 "rounded-xl p-2 transition-colors",
 
                 selected
-                  ? "border border-cyan-400 bg-cyan-50 text-slate-900 shadow-[0_0_0_1px_rgba(34,211,238,0.25)] dark:bg-slate-800 dark:text-slate-50"
+                  ? "border border-[var(--rsm-blue)] bg-[rgb(var(--rsm-blue-rgb)/0.09)] text-slate-900 shadow-[0_0_0_1px_rgba(0,156,222,0.25)] dark:bg-[rgb(var(--rsm-blue-rgb)/0.16)] dark:text-slate-50"
                   : "border border-transparent bg-transparent text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/70",
 
                 "focus-visible:outline-none focus-visible:ring-2",
@@ -103,7 +103,7 @@ export function EmployeeCard({
                   "h-10 w-10",
                   "border",
                   selected
-                    ? "border-cyan-300 ring-2 ring-cyan-400/30"
+                    ? "border-[var(--rsm-blue)] ring-2 ring-[rgb(var(--rsm-blue-rgb)/0.3)]"
                     : "border-slate-300 dark:border-slate-700",
                 ].join(" ")}
               >
@@ -154,7 +154,7 @@ export function EmployeeCard({
         "rounded-lg border px-3 py-3",
         "transition-colors",
         selected
-          ? "border-cyan-400 bg-cyan-50 text-slate-900 shadow-[0_0_0_1px_rgba(34,211,238,0.25)] dark:bg-slate-800/90 dark:text-slate-50"
+          ? "border-[var(--rsm-blue)] bg-[rgb(var(--rsm-blue-rgb)/0.09)] text-slate-900 shadow-[0_0_0_1px_rgba(0,156,222,0.25)] dark:bg-[rgb(var(--rsm-blue-rgb)/0.16)] dark:text-slate-50"
           : "border-transparent bg-transparent text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/70",
 
         "focus-visible:outline-none focus-visible:ring-2",
@@ -168,14 +168,14 @@ export function EmployeeCard({
     >
       {/* Barra izquierda de selección */}
       {selected && (
-        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-cyan-400" />
+        <span className="absolute left-0 top-2 bottom-2 w-1 rounded-r bg-[var(--rsm-blue)]" />
       )}
 
       <Avatar
         className={[
           "h-9 w-9 shrink-0",
           "border",
-          selected ? "border-cyan-300" : "border-slate-300 dark:border-slate-700",
+          selected ? "border-[var(--rsm-blue)]" : "border-slate-300 dark:border-slate-700",
         ].join(" ")}
       >
         {photoOk && (

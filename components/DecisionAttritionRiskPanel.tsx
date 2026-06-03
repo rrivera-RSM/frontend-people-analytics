@@ -46,7 +46,7 @@ export function DecisionAttritionRiskPanel({
         <div className="flex flex-col justify-between border-b border-slate-200 p-5 dark:border-slate-700/80 lg:border-b-0 lg:border-r">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-              <Activity className="h-4 w-4 text-cyan-600 dark:text-cyan-300" />
+              <Activity className="h-4 w-4 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
               Riesgo de fuga
             </div>
             <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">
@@ -88,11 +88,11 @@ export function DecisionAttritionRiskPanel({
                 {formatPct(currentProbability)}
               </div>
             </div>
-            <div className="rounded-lg border border-cyan-500/20 bg-cyan-500/5 p-3">
-              <div className="text-xs font-medium text-cyan-700 dark:text-cyan-300">
+            <div className="rounded-lg border border-[color:rgb(var(--rsm-blue-rgb)/0.22)] bg-[rgb(var(--rsm-blue-rgb)/0.06)] p-3">
+              <div className="text-xs font-medium text-[#007db2] dark:text-[#79d7ff]">
                 Riesgo simulado
               </div>
-              <div className="mt-1 text-lg font-semibold text-cyan-800 dark:text-cyan-100">
+              <div className="mt-1 text-lg font-semibold text-[var(--rsm-blue)] dark:text-[#d8f6ff]">
                 {formatPct(simulationResult?.attritionProbability ?? null)}
               </div>
             </div>
@@ -134,7 +134,7 @@ export function DecisionAttritionRiskPanel({
           </div>
 
           {simulationError && (
-            <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-200">
+            <div className="mt-4 rounded-lg border border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.1)] p-3 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
               {simulationError}
             </div>
           )}

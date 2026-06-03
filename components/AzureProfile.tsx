@@ -109,7 +109,7 @@ export function AzureProfile() {
 
             <button
               onClick={() => signIn("azure-ad")}
-              className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-500 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-md bg-[var(--rsm-blue)] px-4 py-2 text-white hover:bg-[#0086c0] disabled:opacity-50"
               disabled={authStatus === "loading"}
             >
               {authStatus === "loading" ? <SpinnerIcon /> : <UserIcon />}
@@ -151,7 +151,7 @@ export function AzureProfile() {
                 <button
                   onClick={fetchMe}
                   disabled={callStatus === "loading"}
-                  className="inline-flex items-center gap-2 rounded-md bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-500 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-md bg-[var(--rsm-blue)] px-4 py-2 text-white hover:bg-[#0086c0] disabled:opacity-50"
                 >
                   {callStatus === "loading" ? <SpinnerIcon /> : <RefreshIcon />}
                   {callStatus === "loading" ? "Refrescando..." : "Refrescar"}
@@ -191,7 +191,7 @@ export function AzureProfile() {
               )}
 
               {callStatus === "error" && (
-                <pre className="whitespace-pre-wrap break-words text-sm text-red-600">
+                <pre className="whitespace-pre-wrap break-words text-sm text-[var(--rsm-red)]">
                   {error}
                 </pre>
               )}
@@ -235,7 +235,7 @@ export function AzureProfile() {
                 No autenticado.
               </div>
             ) : callStatus === "error" ? (
-              <div className="whitespace-pre-wrap break-words text-sm text-red-600">
+              <div className="whitespace-pre-wrap break-words text-sm text-[var(--rsm-red)]">
                 {error}
               </div>
             ) : (

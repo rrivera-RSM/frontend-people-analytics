@@ -318,7 +318,7 @@ export function EmployeeView({ employee }: Props) {
       <section className="min-w-0 flex-1 min-h-0 h-full overflow-y-auto border-l border-slate-200 bg-[var(--exec-bg)] [background-image:var(--exec-employee-view)] dark:border-slate-700/80">
         <div className="min-h-full flex flex-col">
           {/* Header */}
-          <header className="shrink-0 border-b border-slate-200 bg-[var(--exec-top)] px-6 py-5 shadow-sm dark:border-slate-700/80 dark:bg-[#0f1728]">
+          <header className="shrink-0 border-b border-slate-200 bg-[var(--exec-top)] px-6 py-5 shadow-sm dark:border-slate-700/80 dark:bg-[var(--exec-top)]">
             {!employee ? (
               <div className="flex min-h-[92px] items-center">
                 <div>
@@ -333,12 +333,12 @@ export function EmployeeView({ employee }: Props) {
             ) : (
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
-                  <Avatar className="h-16 w-16 border-2 border-slate-300 bg-cyan-500 shadow-[0_0_0_3px_rgba(34,211,238,0.12)] dark:border-slate-700">
+                  <Avatar className="h-16 w-16 border-2 border-slate-300 bg-[var(--rsm-blue)] shadow-[0_0_0_3px_rgba(0,156,222,0.14)] dark:border-slate-700">
                     <AvatarImage
                       src={`/api/employees/${employee.id}/photo`}
                       alt={`${fullName} avatar`}
                     />
-                    <AvatarFallback className="bg-cyan-500 text-lg font-bold text-white">
+                    <AvatarFallback className="bg-[var(--rsm-blue)] text-lg font-bold text-white">
                       {getInitials(employee)}
                     </AvatarFallback>
                   </Avatar>
@@ -371,8 +371,8 @@ export function EmployeeView({ employee }: Props) {
                       className={[
                         "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
                         attritionIsHigh
-                          ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
-                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                          ? "border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.1)] text-[var(--rsm-red)] dark:text-[#ff9ab8]"
+                          : "border-[color:rgb(var(--rsm-green-rgb)/0.3)] bg-[rgb(var(--rsm-green-rgb)/0.1)] text-[var(--rsm-green)] dark:text-[#8ed989]",
                       ].join(" ")}
                     >
                       Riesgo de fuga {attritionPct.toFixed(1)}%
@@ -434,7 +434,7 @@ export function EmployeeView({ employee }: Props) {
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "decision-intelligence"
-                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            ? "border-b-2 border-[var(--rsm-blue)] font-semibold text-slate-900 dark:border-[#79d7ff] dark:text-slate-100"
                             : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
@@ -446,7 +446,7 @@ export function EmployeeView({ employee }: Props) {
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "ona"
-                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            ? "border-b-2 border-[var(--rsm-blue)] font-semibold text-slate-900 dark:border-[#79d7ff] dark:text-slate-100"
                             : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
@@ -458,7 +458,7 @@ export function EmployeeView({ employee }: Props) {
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "desempeno"
-                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            ? "border-b-2 border-[var(--rsm-blue)] font-semibold text-slate-900 dark:border-[#79d7ff] dark:text-slate-100"
                             : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >

@@ -91,20 +91,20 @@ function getEvaluationLevel(score: number): EvaluationLevel {
   if (score >= 90) {
     return {
       label: "Alto",
-      toneClassName: "text-emerald-700 dark:text-emerald-300",
+      toneClassName: "text-[var(--rsm-green)] dark:text-[#8ed989]",
     };
   }
 
   if (score >= 75) {
     return {
       label: "Medio",
-      toneClassName: "text-amber-700 dark:text-amber-300",
+      toneClassName: "text-[#9f6f00] dark:text-[#ffe29c]",
     };
   }
 
   return {
     label: "Bajo",
-    toneClassName: "text-rose-700 dark:text-rose-300",
+    toneClassName: "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
   };
 }
 
@@ -179,28 +179,28 @@ function getEventMeta(eventType: string) {
   if (eventType === "org_change") {
     return {
       Icon: Briefcase,
-      dotClassName: "bg-cyan-600 text-white ring-cyan-100 dark:ring-cyan-900/50",
-      labelClassName: "text-cyan-700 dark:text-cyan-300",
+      dotClassName: "bg-[#009CDE] text-white ring-[#009CDE]/18 dark:ring-[#009CDE]/35",
+      labelClassName: "text-[#007db2] dark:text-[#79d7ff]",
     };
   }
   if (eventType === "salary_change") {
     return {
       Icon: Euro,
-      dotClassName: "bg-emerald-600 text-white ring-emerald-100 dark:ring-emerald-900/50",
-      labelClassName: "text-emerald-700 dark:text-emerald-300",
+      dotClassName: "bg-[#3F9C35] text-white ring-[#3F9C35]/18 dark:ring-[#3F9C35]/35",
+      labelClassName: "text-[#2f7c28] dark:text-[#8ed989]",
     };
   }
   if (eventType === "evaluation") {
     return {
       Icon: LineChart,
-      dotClassName: "bg-amber-500 text-white ring-amber-100 dark:ring-amber-900/50",
-      labelClassName: "text-amber-700 dark:text-amber-300",
+      dotClassName: "bg-[#F1B434] text-[#00153D] ring-[#F1B434]/22 dark:ring-[#F1B434]/35",
+      labelClassName: "text-[#9f6f00] dark:text-[#ffe29c]",
     };
   }
   return {
     Icon: Sparkles,
-    dotClassName: "bg-slate-500 text-white ring-slate-100 dark:ring-slate-800",
-    labelClassName: "text-slate-700 dark:text-slate-300",
+    dotClassName: "bg-[#888B8D] text-white ring-[#888B8D]/18 dark:ring-[#888B8D]/30",
+    labelClassName: "text-[#63666A] dark:text-[#d9dcde]",
   };
 }
 
@@ -379,7 +379,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
         )}
 
         {!loading && error && (
-          <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
+          <div className="rounded-md border border-[color:rgb(var(--rsm-red-rgb)/0.35)] bg-[rgb(var(--rsm-red-rgb)/0.08)] p-3 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
             {error}
           </div>
         )}
@@ -553,9 +553,9 @@ function TimelineCard({
               className={[
                 "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
                 trend.direction === "up"
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                  ? "bg-[rgb(var(--rsm-green-rgb)/0.14)] text-[var(--rsm-green)] dark:bg-[rgb(var(--rsm-green-rgb)/0.22)] dark:text-[#8ed989]"
                   : trend.direction === "down"
-                    ? "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300"
+                    ? "bg-[rgb(var(--rsm-red-rgb)/0.12)] text-[var(--rsm-red)] dark:bg-[rgb(var(--rsm-red-rgb)/0.22)] dark:text-[#ff9ab8]"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
               ].join(" ")}
               aria-label={
