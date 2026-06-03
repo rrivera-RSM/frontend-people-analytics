@@ -1,16 +1,63 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const prelo = localFont({
+  variable: "--font-prelo",
+  display: "swap",
+  src: [
+    {
+      path: "../public/fonts/Prelo-Light.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Prelo-Light Italic.otf",
+      weight: "300",
+      style: "italic",
+    },
+    {
+      path: "../public/fonts/Prelo-Book.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Prelo-Book Italic.otf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../public/fonts/Prelo-Medium.otf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Prelo-Medium Italic.otf",
+      weight: "500",
+      style: "italic",
+    },
+    {
+      path: "../public/fonts/Prelo-Bold.otf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Prelo-Bold Italic.otf",
+      weight: "700",
+      style: "italic",
+    },
+    {
+      path: "../public/fonts/Prelo-Black.otf",
+      weight: "900",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Prelo-Black Italic.otf",
+      weight: "900",
+      style: "italic",
+    },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +75,7 @@ export default function RootLayout({
   return (
     <html suppressHydrationWarning data-light-preset={LIGHT_PRESET}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${prelo.variable} antialiased`}
       >
        <Providers>
         {children}
