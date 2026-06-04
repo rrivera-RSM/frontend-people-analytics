@@ -153,7 +153,7 @@ export function EmployeesSidebar({
         )}
 
         {status === "success" && visibleEmployees.length === 0 && !collapsed && (
-          <div className="rounded-xl border border-slate-200 bg-white/80 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+          <div className="rounded-xl border border-slate-200 bg-slate-100/80 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
             {isSearching
               ? `No hay resultados para "${query.trim()}".`
               : "No hay empleados para estos filtros."}
@@ -264,7 +264,7 @@ function Header({
           <button
             type="button"
             onClick={() => onToggleCollapse?.(!collapsed)}
-            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800"
             aria-label="Expandir para buscar"
             title="Expandir para buscar"
           >
@@ -334,7 +334,7 @@ function Chip({
       className={`rounded-md px-3 py-1 text-xs font-medium border transition-colors ${
         active
           ? "border-[var(--rsm-blue)] bg-[var(--rsm-blue)] text-white"
-          : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       }`}
     >
       {children}

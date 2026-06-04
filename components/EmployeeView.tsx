@@ -61,16 +61,20 @@ const fetchApi = async <T,>(url: string): Promise<T | null> => {
 
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-const PERFORMANCE_CHART_CODES = new Set<EmployeeInsightCode>([
+const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
+  "active_influence_ci",
+  "active_influence_at",
+  "active_influence_ap",
+  "active_influence_in",
+]);
+
+const DECISION_EXCLUDED_CODES = new Set<EmployeeInsightCode>([
   "high_solid_performance",
   "hidden_risk",
   "potential",
   "stagnant",
   "recovery",
   "critical",
-]);
-
-const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
   "active_influence_ci",
   "active_influence_at",
   "active_influence_ap",
@@ -192,9 +196,13 @@ export function EmployeeView({ employee }: Props) {
 
     setProposalDraft({
       salaryCurrent: monetaryInfo.salary,
+      currentBonus: monetaryInfo.bonus,
+      currentCategory: employee.category_name ?? "",
       proposedSalary: round2(monetaryInfo.salary * 1.02),
       bonus: monetaryInfo.bonus,
       category: employee.category_name ?? "",
+      includeBonus: monetaryInfo.bonus > 0,
+      includeCategory: false,
     });
   }, [employee, monetaryInfo]);
 
@@ -207,11 +215,15 @@ export function EmployeeView({ employee }: Props) {
   const proposalKpis = useMemo(() => {
     if (!proposalDraft) return null;
 
+    const effectiveBonus = proposalDraft.includeBonus
+      ? proposalDraft.bonus
+      : proposalDraft.currentBonus ?? proposalDraft.bonus;
+
     return computeProposalKpis(
       {
         salaryCurrent: proposalDraft.salaryCurrent,
         proposedSalary: proposalDraft.proposedSalary,
-        bonus: proposalDraft.bonus,
+        bonus: effectiveBonus,
       },
       AVG,
     );
@@ -221,15 +233,15 @@ export function EmployeeView({ employee }: Props) {
     return insightsData ? mapInsightsToViewModels(insightsData.insights) : [];
   }, [insightsData]);
 
-  const performanceInsights = useMemo(() => {
-    return insightViewModels.filter((insight) =>
-      PERFORMANCE_CHART_CODES.has(insight.code),
-    );
-  }, [insightViewModels]);
-
   const onaInsights = useMemo(() => {
     return insightViewModels.filter((insight) =>
       ONA_CHART_CODES.has(insight.code),
+    );
+  }, [insightViewModels]);
+
+  const decisionInsights = useMemo(() => {
+    return insightViewModels.filter(
+      (insight) => !DECISION_EXCLUDED_CODES.has(insight.code),
     );
   }, [insightViewModels]);
 
@@ -264,8 +276,12 @@ export function EmployeeView({ employee }: Props) {
       const payload = {
         employee_id: employee.id,
         new_salary: proposalDraft.proposedSalary,
-        new_bonus: proposalDraft.bonus,
-        ...(proposalDraft.category ? { new_category: proposalDraft.category } : {}),
+        ...(proposalDraft.includeBonus
+          ? { new_bonus: proposalDraft.bonus }
+          : {}),
+        ...(proposalDraft.includeCategory && proposalDraft.category
+          ? { new_category: proposalDraft.category }
+          : {}),
       };
 
       const res = await fetch("/api/predictive_attrition/simulate", {
@@ -300,7 +316,9 @@ export function EmployeeView({ employee }: Props) {
       setSimulationResult({
         attritionProbability: simulationItem.probability,
         simulatedSalary: proposalDraft.proposedSalary,
-        simulatedBonus: proposalDraft.bonus,
+        simulatedBonus: proposalDraft.includeBonus
+          ? proposalDraft.bonus
+          : proposalDraft.currentBonus ?? proposalDraft.bonus,
         simulatedAt: new Date().toISOString(),
       });
     } catch (err) {
@@ -382,14 +400,14 @@ export function EmployeeView({ employee }: Props) {
                   <button
                     type="button"
                     aria-label="Descargar informe"
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-[var(--exec-card)] text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   >
                     <Download className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
                     aria-label="Más acciones"
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-[var(--exec-card)] text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   >
                     <MoreVertical className="h-5 w-5" />
                   </button>
@@ -401,7 +419,7 @@ export function EmployeeView({ employee }: Props) {
           {/* Body */}
           <div className="flex-1 min-h-0 overflow-x-hidden p-6">
             {!employee ? (
-              <div className="grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-white/80 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              <div className="grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-[var(--exec-card)] text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
                 Selecciona un empleado para ver detalles
               </div>
             ) : (
@@ -409,6 +427,8 @@ export function EmployeeView({ employee }: Props) {
                 <section>
                   <KpiBar
                     variant="summary"
+                    currentSalary={monetaryInfo?.salary}
+                    currentBonus={monetaryInfo?.bonus}
                     raiseAmount={proposalKpis?.raiseAmount}
                     salaryVsAvgPct={proposalKpis?.salaryVsAvgPct}
                     bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
@@ -426,8 +446,8 @@ export function EmployeeView({ employee }: Props) {
                     }}
                   />
 
-                  <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/60">
-                    <div className="flex border-b border-slate-200 bg-slate-50/75 dark:border-slate-700/90 dark:bg-slate-900/35">
+                  <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-800/60">
+                    <div className="flex border-b border-slate-200 bg-slate-200/65 dark:border-slate-700/90 dark:bg-slate-900/35">
                       <button
                         type="button"
                         onClick={() => handleTabChange("decision-intelligence")}
@@ -484,7 +504,7 @@ export function EmployeeView({ employee }: Props) {
                             simulationError={simulationError}
                           />
 
-                          <DecisionInsightsCarousel insights={insightViewModels} />
+                          <DecisionInsightsCarousel insights={decisionInsights} />
                         </div>
                       )}
 
@@ -505,10 +525,7 @@ export function EmployeeView({ employee }: Props) {
 
                       {activeTab === "desempeno" && (
                         <div className="space-y-5">
-                          <EmployeeProgressChart
-                            employeeId={employee?.id}
-                            insights={performanceInsights}
-                          />
+                          <EmployeeProgressChart employeeId={employee?.id} />
                           <EmployeeTimelineEvolution employeeId={employee?.id} />
                         </div>
                       )}

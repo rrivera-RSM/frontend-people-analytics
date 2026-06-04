@@ -81,7 +81,7 @@ export function AzureProfile() {
 
   return (
     <div className="w-full max-w-3xl">
-      <div className="flex flex-col items-center gap-4 rounded-xl border border-zinc-200 bg-white/80 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+      <div className="flex flex-col items-center gap-4 rounded-xl border border-zinc-200 bg-slate-100/80 p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
         <h2 className="text-xl font-semibold text-zinc-800 dark:text-zinc-100">
           Azure Profile
         </h2>
@@ -122,7 +122,7 @@ export function AzureProfile() {
             <div className="flex w-full items-center justify-between gap-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
               <div className="flex items-center gap-3">
                 {/* Avatar */}
-                <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-zinc-200 bg-white text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-full border border-zinc-200 bg-slate-50 text-sm font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
                   {photoOk ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -213,7 +213,7 @@ export function AzureProfile() {
           onClick={() => setShowModal(false)}
         >
           <div
-            className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-zinc-900"
+            className="w-full max-w-lg rounded-xl bg-slate-100 p-6 shadow-xl dark:bg-zinc-900"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-4 flex items-center justify-between">

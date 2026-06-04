@@ -39,9 +39,26 @@ export function DecisionAttritionRiskPanel({
     currentProbability != null && simulationResult
       ? simulationResult.attritionProbability - currentProbability
       : null;
+  const indicatorSurfaceClass =
+    displayedRisk?.surfaceClass ??
+    "border-slate-200 bg-slate-100/70 dark:border-slate-700/80 dark:bg-slate-900/35";
+  const deltaToneClass =
+    probabilityDelta == null
+      ? "text-slate-950 dark:text-slate-50"
+      : probabilityDelta > 0
+        ? "text-[var(--rsm-red)] dark:text-[#ff9ab8]"
+        : probabilityDelta < 0
+          ? "text-[var(--rsm-green)] dark:text-[#8ed989]"
+          : "text-slate-950 dark:text-slate-50";
+  const indicatorNarrative =
+    displayedRisk?.label === "Alto riesgo"
+      ? "La señal actual sitúa al empleado en una zona de riesgo elevada. Si las simulaciones salariales apenas modifican el indicador, conviene considerar posibles carencias en la propuesta de valor o factores externos no económicos que puedan estar influyendo en la predicción de fuga."
+      : displayedRisk?.label === "Bajo riesgo"
+        ? "La señal actual sitúa al empleado en una zona de riesgo contenida. En este escenario, la propuesta salarial acompaña una situación relativamente estable y las simulaciones sirven para validar que el riesgo se mantiene bajo control."
+        : "No hay información suficiente para interpretar el riesgo de fuga del empleado con el nivel de detalle esperado.";
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
       <div className="grid min-h-[390px] grid-cols-1 lg:grid-cols-[minmax(300px,0.95fr)_minmax(0,1fr)]">
         <div className="flex flex-col justify-between border-b border-slate-200 p-5 dark:border-slate-700/80 lg:border-b-0 lg:border-r">
           <div>
@@ -58,7 +75,7 @@ export function DecisionAttritionRiskPanel({
             </p>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-6">
             {displayedProbability != null ? (
               <AttritionGauge
                 probability={displayedProbability}
@@ -71,7 +88,7 @@ export function DecisionAttritionRiskPanel({
                 }
               />
             ) : (
-              <div className="grid min-h-[280px] place-items-center rounded-lg border border-dashed border-slate-300 bg-white/60 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              <div className="grid min-h-[280px] place-items-center rounded-lg border border-dashed border-slate-300/80 bg-white/45 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
                 Sin estimación disponible
               </div>
             )}
@@ -80,7 +97,7 @@ export function DecisionAttritionRiskPanel({
 
         <div className="flex flex-col p-5">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-white/75 p-3 dark:border-slate-700/80 dark:bg-slate-800/45">
+            <div className="rounded-lg border border-slate-200 bg-slate-200/55 p-3 dark:border-slate-700/80 dark:bg-slate-800/45">
               <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 Riesgo actual
               </div>
@@ -96,30 +113,29 @@ export function DecisionAttritionRiskPanel({
                 {formatPct(simulationResult?.attritionProbability ?? null)}
               </div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-white/75 p-3 dark:border-slate-700/80 dark:bg-slate-800/45">
+            <div className="rounded-lg border border-slate-200 bg-slate-200/55 p-3 dark:border-slate-700/80 dark:bg-slate-800/45">
               <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 Variación
               </div>
-              <div className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">
+              <div className={`mt-1 text-lg font-semibold ${deltaToneClass}`}>
                 {formatDelta(probabilityDelta)}
               </div>
             </div>
           </div>
 
-          <div className="mt-4 rounded-lg border border-slate-200 bg-white/75 p-4 dark:border-slate-700/80 dark:bg-slate-800/45">
+          <div className={`mt-4 rounded-lg border p-4 ${indicatorSurfaceClass}`}>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   Lectura del indicador
                 </div>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Comparativa entre el riesgo base del empleado y la última
-                  simulación ejecutada desde la propuesta salarial.
+                  Señal binaria respecto al umbral corporativo de atención del 34,14%.
                 </p>
               </div>
               {displayedRisk && (
                 <span
-                  className={`rounded-full border border-current/25 bg-white/70 px-2.5 py-1 text-xs font-semibold dark:bg-slate-900/45 ${displayedRisk.colorClass}`}
+                  className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${displayedRisk.badgeClass}`}
                 >
                   {displayedRisk.label}
                 </span>
@@ -127,9 +143,7 @@ export function DecisionAttritionRiskPanel({
             </div>
 
             <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              El valor actual muestra la probabilidad estimada antes de aplicar
-              cambios. El valor simulado aparece cuando se ejecuta una nueva
-              propuesta desde el formulario lateral.
+              {indicatorNarrative}
             </p>
           </div>
 

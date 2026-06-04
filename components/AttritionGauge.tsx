@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 const GaugeComponent = dynamic(
   () => import("react-gauge-component"),
@@ -15,6 +17,8 @@ type Props = {
   maxSize?: number;
 };
 
+const ATTRITION_THRESHOLD_PCT = 34.14;
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -22,10 +26,29 @@ function clamp(value: number, min: number, max: number) {
 export function getAttritionRiskMeta(probability: number) {
   const pct = probability * 100;
 
-  if (pct <= 10) return { label: "Muy bajo", colorClass: "rsm-risk-very-low" };
-  if (pct <= 20) return { label: "Bajo", colorClass: "rsm-risk-low" };
-  if (pct <= 35) return { label: "Medio", colorClass: "rsm-risk-medium" };
-  return { label: "Alto", colorClass: "rsm-risk-high" };
+  if (pct < ATTRITION_THRESHOLD_PCT) {
+    return {
+      label: "Bajo riesgo",
+      colorClass: "rsm-risk-very-low",
+      accentClass:
+        "text-[var(--rsm-green)] dark:text-[#8ed989]",
+      badgeClass:
+        "border-[color:rgb(var(--rsm-green-rgb)/0.25)] bg-[rgb(var(--rsm-green-rgb)/0.12)] text-[var(--rsm-green)] dark:border-[rgb(var(--rsm-green-rgb)/0.28)] dark:bg-[rgb(var(--rsm-green-rgb)/0.18)] dark:text-[#8ed989]",
+      surfaceClass:
+        "border-[color:rgb(var(--rsm-green-rgb)/0.24)] bg-[linear-gradient(180deg,rgba(63,156,53,0.10),rgba(63,156,53,0.03))] dark:border-[rgb(var(--rsm-green-rgb)/0.24)] dark:bg-[linear-gradient(180deg,rgba(63,156,53,0.16),rgba(63,156,53,0.05))]",
+    };
+  }
+
+  return {
+    label: "Alto riesgo",
+    colorClass: "rsm-risk-high",
+    accentClass:
+      "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
+    badgeClass:
+      "border-[color:rgb(var(--rsm-red-rgb)/0.24)] bg-[rgb(var(--rsm-red-rgb)/0.11)] text-[var(--rsm-red)] dark:border-[rgb(var(--rsm-red-rgb)/0.28)] dark:bg-[rgb(var(--rsm-red-rgb)/0.18)] dark:text-[#ff9ab8]",
+    surfaceClass:
+      "border-[color:rgb(var(--rsm-red-rgb)/0.24)] bg-[linear-gradient(180deg,rgba(228,0,70,0.09),rgba(228,0,70,0.03))] dark:border-[rgb(var(--rsm-red-rgb)/0.24)] dark:bg-[linear-gradient(180deg,rgba(228,0,70,0.15),rgba(228,0,70,0.05))]",
+  };
 }
 
 export function AttritionGauge({
@@ -34,6 +57,7 @@ export function AttritionGauge({
   minSize = 170,
   maxSize = 230,
 }: Props) {
+  const { resolvedTheme } = useTheme();
   const safeProbability = clamp(probability ?? 0, 0, 1);
   const percentage = safeProbability * 100;
   const risk = getAttritionRiskMeta(safeProbability);
@@ -61,38 +85,38 @@ export function AttritionGauge({
   }, [minSize, maxSize]);
 
   const isCompact = size < 190;
+  const pointerColor = resolvedTheme === "dark" ? "#F8FAFC" : "#00153D";
 
   return (
     <div ref={wrapRef} className="w-full">
-      <div
-        className="mx-auto rounded-xl border border-slate-200/80 bg-slate-50/70 px-2 pt-2 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/35"
-        style={{ width: size }}
-      >
+      <div className="mx-auto" style={{ width: size }}>
         <GaugeComponent
           type="semicircle"
           value={percentage}
           minValue={0}
           maxValue={100}
           arc={{
-            width: isCompact ? 0.16 : 0.18,
-            padding: 0.006,
-            cornerRadius: 7,
+            width: isCompact ? 0.15 : 0.17,
+            padding: 0.004,
+            cornerRadius: 6,
             subArcs: [
-              { limit: 10, color: "#3F9C35", showTick: true },
-              { limit: 20, color: "#34A798", showTick: true },
-              { limit: 35, color: "#F1B434", showTick: true },
+              {
+                limit: ATTRITION_THRESHOLD_PCT,
+                color: "#3F9C35",
+                showTick: true,
+              },
               { limit: 100, color: "#E40046", showTick: true },
             ],
           }}
           pointer={{
             type: "needle",
-            color: "#009CDE",
-            length: isCompact ? 0.62 : 0.66,
-            width: isCompact ? 8 : 10,
+            color: pointerColor,
+            length: isCompact ? 0.61 : 0.65,
+            width: isCompact ? 8 : 9,
             elastic: true,
             animationDelay: 0,
           }}
-          marginInPercentage={{ top: 0.08, bottom: 0.02, left: 0.06, right: 0.06 }}
+          marginInPercent={{ top: 0.08, bottom: 0.02, left: 0.06, right: 0.06 }}
           labels={{
             valueLabel: {
               hide: true,
@@ -109,9 +133,7 @@ export function AttritionGauge({
               },
               ticks: [
                 { value: 0 },
-                { value: 10 },
-                { value: 20 },
-                { value: 35 },
+                { value: ATTRITION_THRESHOLD_PCT },
                 { value: 100 },
               ],
             },
@@ -119,12 +141,22 @@ export function AttritionGauge({
         />
       </div>
 
-      <div className="-mt-1 flex flex-col items-center justify-center text-center">
-        <div className={isCompact ? "text-2xl font-semibold text-slate-800 dark:text-slate-100" : "text-3xl font-semibold text-slate-800 dark:text-slate-100"}>
+      <div className="-mt-2 flex flex-col items-center justify-center text-center">
+        <div
+          className={cn(
+            isCompact ? "text-2xl" : "text-3xl",
+            "font-semibold text-slate-900 dark:text-slate-50",
+          )}
+        >
           {percentage.toFixed(1)}%
         </div>
 
-        <div className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${risk.colorClass} border-current/25 bg-white/60 dark:bg-slate-900/50`}>
+        <div
+          className={cn(
+            "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+            risk.badgeClass,
+          )}
+        >
           {risk.label}
         </div>
 

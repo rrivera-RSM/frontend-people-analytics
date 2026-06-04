@@ -106,8 +106,10 @@ export function CompensationSimulationModal({
       const payload = {
         employee_id: employee.id,
         new_salary: localSalary,
-        new_bonus: localBonus,
-        ...(draft.category ? { new_category: draft.category } : {}),
+        ...(draft.includeBonus ? { new_bonus: localBonus } : {}),
+        ...(draft.includeCategory && draft.category
+          ? { new_category: draft.category }
+          : {}),
       };
 
       const res = await fetch("/api/predictive_attrition/simulate", {

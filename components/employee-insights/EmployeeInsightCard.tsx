@@ -79,6 +79,7 @@ function buildInsightNarrative(insight: EmployeeInsightViewModel): InsightNarrat
   const baseFormula = formulaFromEvidence ?? insight.formulaDescription ?? null;
 
   switch (insight.code) {
+    case "low_level_influence":
     case "lower_level_influence": {
       const count = readNumber(evidence.n_lower_categories_in);
       if (count == null) break;
@@ -105,6 +106,7 @@ function buildInsightNarrative(insight: EmployeeInsightViewModel): InsightNarrat
       };
     }
     case "transversal_influence":
+    case "transversal_leadership":
     case "strong_transversal_leadership": {
       const count = readNumber(evidence.n_different_categories_in);
       if (count == null) break;

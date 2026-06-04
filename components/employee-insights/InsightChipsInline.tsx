@@ -75,6 +75,36 @@ function buildInsightNarrative(insight: EmployeeInsightViewModel): InsightNarrat
   const evidence = insight.evidence;
 
   switch (insight.code) {
+    case "low_level_influence":
+    case "lower_level_influence": {
+      const count = readNumber(evidence.n_lower_categories_in);
+      if (count == null) break;
+      return {
+        text: `Se ha identificado al recibir relaciones entrantes de ${formatEvidenceValue(count)} personas pertenecientes a categorias organizativas inferiores a la suya.`,
+        consumedKeys: ["formula_description", "n_lower_categories_in", "threshold"],
+      };
+    }
+    case "peer_level_influence": {
+      const count = readNumber(evidence.n_same_category_in);
+      if (count == null) break;
+      return {
+        text: `Se ha identificado al recibir relaciones entrantes de ${formatEvidenceValue(count)} personas de su misma categoria o de categorias equivalentes.`,
+        consumedKeys: ["formula_description", "n_same_category_in", "threshold"],
+      };
+    }
+    case "transversal_leadership": {
+      const count = readNumber(evidence.n_different_categories_in);
+      if (count == null) break;
+      return {
+        text: `Se ha identificado al recibir reconocimiento desde ${formatEvidenceValue(count)} categorias organizativas distintas y situarse entre los perfiles con mayor volumen de conexiones en su grupo de referencia.`,
+        consumedKeys: [
+          "formula_description",
+          "n_different_categories_in",
+          "n_same_dept_office_in_no_ci",
+          "threshold",
+        ],
+      };
+    }
     case "active_influence_ci":
     case "active_influence_at":
     case "active_influence_ap":

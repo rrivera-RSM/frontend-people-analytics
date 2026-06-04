@@ -606,11 +606,11 @@ export function OnaOrganizationGraph({
 
       <CardContent className="px-3 pb-3 pt-0">
         {!societyId ? (
-          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
+          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-200/50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
             Este empleado no tiene `society_id` disponible para construir la red.
           </div>
         ) : loading ? (
-          <div className="grid min-h-[260px] place-items-center rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
+          <div className="grid min-h-[260px] place-items-center rounded-xl border border-slate-300 bg-slate-200/50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
             Cargando red organizacional...
           </div>
         ) : error ? (
@@ -618,7 +618,7 @@ export function OnaOrganizationGraph({
             {error}
           </div>
         ) : !hasGraph ? (
-          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
+          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-200/50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
             No hay suficientes relaciones ONA para representar esta sociedad.
           </div>
         ) : (
@@ -657,7 +657,7 @@ export function OnaOrganizationGraph({
             )}
 
             <div className="relative overflow-hidden rounded-xl border border-slate-300 bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(244,248,250,0.95))] dark:border-slate-700 dark:bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.11),transparent_30%),linear-gradient(180deg,rgba(0,21,61,0.64),rgba(6,17,38,0.9))]">
-              <div className="absolute right-3 top-3 z-10 inline-flex items-center rounded-lg border border-slate-300/80 bg-white/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+              <div className="absolute right-3 top-3 z-10 inline-flex items-center rounded-lg border border-slate-300/80 bg-slate-100/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
                 <button
                   type="button"
                   onClick={() => setViewMode("employee")}
@@ -681,7 +681,7 @@ export function OnaOrganizationGraph({
                   Organización centrada
                 </button>
               </div>
-              <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-lg border border-slate-300/80 bg-white/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+              <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-lg border border-slate-300/80 bg-slate-100/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
                 <button
                   type="button"
                   onClick={() => applyCameraMode(viewMode)}

@@ -35,12 +35,12 @@ const TOKENS = {
   axis: "#888B8D",
   grid: "rgba(136, 139, 141, 0.16)",
 
-  other: "#63666A",
-  society: "#009CDE",
-  department: "#34A798",
-  selected: "#3F9C35",
+  other: "rgba(136, 139, 141, 0.42)",
+  society: "rgba(0, 156, 222, 0.62)",
+  department: "rgba(52, 167, 152, 0.8)",
+  selected: "#00153D",
 
-  selectedRing: "rgba(63, 156, 53, 0.45)",
+  selectedRing: "#F1B434",
   tooltipBg: "#00153D",
 };
 
@@ -206,7 +206,7 @@ export default function EvaluationGraph({
         background: "transparent",
         foreColor: TOKENS.axis,
         fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+          "Arial, Helvetica Neue, Helvetica, ui-sans-serif, system-ui, sans-serif",
       },
       legend: {
         show: true,
@@ -287,8 +287,8 @@ export default function EvaluationGraph({
         axisTicks: { show: false },
       },
       markers: {
-        size: [3, 4, 5, 8],
-        strokeWidth: [0, 0, 0, 3],
+        size: [3, 4, 5, 11],
+        strokeWidth: [0, 0, 0, 4],
         strokeColors: [
           "transparent",
           "transparent",
@@ -319,7 +319,7 @@ export default function EvaluationGraph({
               background: ${TOKENS.tooltipBg};
               color: #fff;
               border-radius: 12px;
-              font-family: Inter, system-ui;
+              font-family: Arial, Helvetica Neue, Helvetica, system-ui, sans-serif;
               font-size: 12px;
               box-shadow: 0 8px 20px rgba(0, 21, 61, 0.28);
               border: 1px solid rgba(255,255,255,0.08);

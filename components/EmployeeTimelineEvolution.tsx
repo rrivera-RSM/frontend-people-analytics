@@ -39,6 +39,7 @@ type TimelineGroup = {
 type TimelineTrend = {
   delta: number;
   direction: "up" | "down" | "flat";
+  label?: string;
 };
 
 type EvaluationLevel = {
@@ -50,6 +51,11 @@ type TimelineSummary = {
   text: string;
   trend?: TimelineTrend;
   level?: EvaluationLevel;
+};
+
+type SalarySnapshot = {
+  salary: number | null;
+  bonus: number | null;
 };
 
 function formatDate(iso: string | null | undefined) {
@@ -77,6 +83,55 @@ function formatMoney(value: number | null | undefined) {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function formatMoneyDelta(value: number) {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${formatMoney(Math.abs(value))}`;
+}
+
+function getSalarySnapshot(payload: SalaryChangePayload): SalarySnapshot {
+  return {
+    salary: isFiniteNumber(payload.salary) ? payload.salary : null,
+    bonus: isFiniteNumber(payload.bonus) ? payload.bonus : null,
+  };
+}
+
+function getSalaryTrend(
+  current: SalarySnapshot,
+  previous: SalarySnapshot | null,
+): TimelineTrend | undefined {
+  if (!previous || current.salary == null || previous.salary == null) {
+    return undefined;
+  }
+
+  const salaryDelta = current.salary - previous.salary;
+  const bonusDelta =
+    current.bonus != null && previous.bonus != null
+      ? current.bonus - previous.bonus
+      : null;
+
+  const parts: string[] = [];
+  if (salaryDelta !== 0) {
+    parts.push(`${formatMoneyDelta(salaryDelta)} salario`);
+  }
+  if (bonusDelta != null && bonusDelta !== 0) {
+    parts.push(`${formatMoneyDelta(bonusDelta)} bonus`);
+  }
+
+  const referenceDelta = salaryDelta !== 0 ? salaryDelta : bonusDelta ?? 0;
+  const direction =
+    referenceDelta > 0 ? "up" : referenceDelta < 0 ? "down" : "flat";
+
+  return {
+    delta: referenceDelta,
+    direction,
+    label: parts.length > 0 ? parts.join(" · ") : "Sin cambios",
+  };
 }
 
 function getEvaluationScore(payload: EvaluationPayload) {
@@ -112,6 +167,7 @@ function getEventSummary(
   event: EmployeeTimelineEvent,
   occurrenceIndex = 0,
   previousEvaluationScore: number | null = null,
+  previousSalarySnapshot: SalarySnapshot | null = null,
 ): TimelineSummary {
   switch (event.event_type) {
     case "org_change": {
@@ -135,11 +191,16 @@ function getEventSummary(
       const payload = event.payload as unknown as SalaryChangePayload;
       const salary = formatMoney(payload.salary);
       const bonus = payload.bonus ? ` · Bonus ${formatMoney(payload.bonus)}` : "";
+      const trend = getSalaryTrend(
+        getSalarySnapshot(payload),
+        previousSalarySnapshot,
+      );
       return {
         text:
           occurrenceIndex === 0
             ? `Salario inicial: ${salary}${bonus}`
             : `Salario actualizado a ${salary}${bonus}`,
+        trend: occurrenceIndex === 0 ? undefined : trend,
       };
     }
     case "evaluation": {
@@ -221,21 +282,33 @@ function groupEventsByDate(events: EmployeeTimelineEvent[]) {
   const groups = new Map<string, TimelineGroup>();
   const typeCounts = new Map<string, number>();
   let lastEvaluationScore: number | null = null;
+  let lastSalarySnapshot: SalarySnapshot | null = null;
 
   sortEventsAscending(events).forEach((event) => {
     const key = getDateKey(event.event_at);
     const existing = groups.get(key);
     const occurrenceIndex = typeCounts.get(event.event_type) ?? 0;
-    const payload = event.payload as unknown as EvaluationPayload;
-    const summary = getEventSummary(event, occurrenceIndex, lastEvaluationScore);
+    const evaluationPayload = event.payload as unknown as EvaluationPayload;
+    const summary = getEventSummary(
+      event,
+      occurrenceIndex,
+      lastEvaluationScore,
+      lastSalarySnapshot,
+    );
 
     typeCounts.set(event.event_type, occurrenceIndex + 1);
 
     if (event.event_type === "evaluation") {
-      const score = getEvaluationScore(payload);
+      const score = getEvaluationScore(evaluationPayload);
       if (score != null) {
         lastEvaluationScore = score;
       }
+    }
+
+    if (event.event_type === "salary_change") {
+      lastSalarySnapshot = getSalarySnapshot(
+        event.payload as unknown as SalaryChangePayload,
+      );
     }
 
     if (existing) {
@@ -348,7 +421,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
   const hasMultipleTypes = lanes.length > 1;
 
   return (
-    <Card className="bg-slate-50 dark:bg-slate-900/40">
+    <Card className="bg-[var(--exec-card)] dark:bg-slate-900/40">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -358,7 +431,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-100/85 px-3 py-2 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
             <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
               Agrupar por tipo
             </span>
@@ -400,7 +473,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
               return (
                 <section
                   key={lane.eventType}
-                  className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/50"
+                  className="rounded-2xl border border-slate-200 bg-slate-100/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/50"
                 >
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
@@ -574,8 +647,8 @@ function TimelineCard({
                 <ArrowRight className="h-3 w-3" />
               )}
               <span>
-                {trend.direction === "up" && trend.delta > 0 ? "+" : ""}
-                {trend.delta.toFixed(2)}
+                {trend.label ??
+                  `${trend.direction === "up" && trend.delta > 0 ? "+" : ""}${trend.delta.toFixed(2)}`}
               </span>
             </span>
           )}

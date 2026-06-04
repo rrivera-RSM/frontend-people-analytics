@@ -15,7 +15,7 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   Banknote,
@@ -28,9 +28,13 @@ import type { ProposalDraft } from "@/types/compensation";
 
 const schema = z.object({
   salaryCurrent: z.number().nonnegative(),
+  includeBonus: z.boolean(),
+  includeCategory: z.boolean(),
   bonus: z.number().nonnegative(),
   category: z.string(),
   proposedSalary: z.number().nonnegative(),
+  bonusPaymentMonth: z.string(),
+  observations: z.string(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -40,7 +44,53 @@ const emptyDraft: ProposalDraft = {
   proposedSalary: 0,
   bonus: 0,
   category: "",
+  includeBonus: false,
+  includeCategory: false,
+  bonusPaymentMonth: "",
+  observations: "",
 };
+
+const BONUS_PAYMENT_MONTHS = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+] as const;
+
+const CATEGORY_ORDER = [
+  "becario",
+  "junior",
+  "senior",
+  "manager",
+  "director",
+] as const;
+
+function normalizeCategoryValue(value: string | null | undefined) {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function getAllowedCategoryOptions(currentCategory: string | null | undefined) {
+  const normalizedCurrent = normalizeCategoryValue(currentCategory);
+  const currentIndex = CATEGORY_ORDER.indexOf(
+    normalizedCurrent as (typeof CATEGORY_ORDER)[number],
+  );
+
+  if (currentIndex === -1) {
+    return currentCategory ? [currentCategory] : [];
+  }
+
+  return CATEGORY_ORDER.slice(currentIndex).map((category) => {
+    return category.charAt(0).toUpperCase() + category.slice(1);
+  });
+}
 
 const LoadingSkeleton = () => (
   <Card className="shrink-0 bg-[var(--exec-card)]">
@@ -76,8 +126,16 @@ function normalizeDraft(
       typeof draft?.salaryCurrent === "number" ? draft.salaryCurrent : 0,
     proposedSalary:
       typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
+    includeBonus:
+      typeof draft?.includeBonus === "boolean" ? draft.includeBonus : false,
+    includeCategory:
+      typeof draft?.includeCategory === "boolean" ? draft.includeCategory : false,
     bonus: typeof draft?.bonus === "number" ? draft.bonus : 0,
     category: typeof draft?.category === "string" ? draft.category : "",
+    bonusPaymentMonth:
+      typeof draft?.bonusPaymentMonth === "string" ? draft.bonusPaymentMonth : "",
+    observations:
+      typeof draft?.observations === "string" ? draft.observations : "",
   };
 }
 
@@ -87,8 +145,12 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
   return (
     a.salaryCurrent === b.salaryCurrent &&
     a.proposedSalary === b.proposedSalary &&
+    a.includeBonus === b.includeBonus &&
+    a.includeCategory === b.includeCategory &&
     a.bonus === b.bonus &&
-    a.category === b.category
+    a.category === b.category &&
+    a.bonusPaymentMonth === b.bonusPaymentMonth &&
+    a.observations === b.observations
   );
 }
 
@@ -117,9 +179,29 @@ export function SalaryProposalForm({
     name: "bonus",
   });
 
+  const includeBonus = useWatch({
+    control: form.control,
+    name: "includeBonus",
+  });
+
   const category = useWatch({
     control: form.control,
     name: "category",
+  });
+
+  const includeCategory = useWatch({
+    control: form.control,
+    name: "includeCategory",
+  });
+
+  const bonusPaymentMonth = useWatch({
+    control: form.control,
+    name: "bonusPaymentMonth",
+  });
+
+  const observations = useWatch({
+    control: form.control,
+    name: "observations",
   });
 
   // -----------------------------
@@ -152,8 +234,12 @@ export function SalaryProposalForm({
     const nextDraft = normalizeDraft({
       salaryCurrent: value.salaryCurrent,
       proposedSalary,
+      includeBonus,
+      includeCategory,
       bonus,
       category,
+      bonusPaymentMonth,
+      observations,
     });
 
     const normalizedValue = normalizeDraft(value);
@@ -161,7 +247,57 @@ export function SalaryProposalForm({
     if (sameDraft(nextDraft, normalizedValue)) return;
 
     onChange(nextDraft);
-  }, [proposedSalary, bonus, category, value, onChange]);
+  }, [
+    proposedSalary,
+    includeBonus,
+    bonus,
+    includeCategory,
+    category,
+    bonusPaymentMonth,
+    observations,
+    value,
+    onChange,
+  ]);
+
+  const currentBonus = value?.currentBonus ?? value?.bonus ?? 0;
+  const currentCategory = value?.currentCategory ?? value?.category ?? "";
+  const bonusAvailable = currentBonus > 0;
+  const allowedCategoryOptions = getAllowedCategoryOptions(currentCategory);
+
+  React.useEffect(() => {
+    if (!bonusAvailable && form.getValues("includeBonus")) {
+      form.setValue("includeBonus", false, { shouldDirty: true });
+    }
+  }, [bonusAvailable, form]);
+
+  React.useEffect(() => {
+    if (!includeBonus) {
+      const nextMonth = bonusAvailable ? form.getValues("bonusPaymentMonth") : "";
+      form.setValue("bonus", currentBonus, { shouldDirty: true });
+      form.setValue("bonusPaymentMonth", nextMonth, { shouldDirty: true });
+    }
+  }, [includeBonus, currentBonus, form, bonusAvailable]);
+
+  React.useEffect(() => {
+    if (!includeCategory) {
+      form.setValue("category", currentCategory, { shouldDirty: true });
+      return;
+    }
+
+    const normalizedCategory = normalizeCategoryValue(form.getValues("category"));
+    const allowedNormalized = allowedCategoryOptions.map((option) =>
+      normalizeCategoryValue(option),
+    );
+
+    if (
+      allowedNormalized.length > 0 &&
+      !allowedNormalized.includes(normalizedCategory)
+    ) {
+      form.setValue("category", allowedCategoryOptions[0] ?? currentCategory, {
+        shouldDirty: true,
+      });
+    }
+  }, [includeCategory, currentCategory, allowedCategoryOptions, form]);
 
   if (!value) {
     return <LoadingSkeleton />;
@@ -172,7 +308,7 @@ export function SalaryProposalForm({
     value.salaryCurrent > 0 ? (raiseAmount / value.salaryCurrent) * 100 : 0;
 
   return (
-    <Card className="min-h-[640px] border-slate-200 bg-white/90 py-0 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/80">
+    <Card className="min-h-[640px] border-slate-200 bg-[var(--exec-card)] py-0 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/80">
       <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-700/80">
         <div className="flex items-center gap-3">
           <Banknote className="h-5 w-5 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
@@ -198,10 +334,10 @@ export function SalaryProposalForm({
               Define solo las condiciones nuevas que quieres simular para el empleado.
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4">
               <div className="space-y-2.5">
                 <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Propuesta nuevo salario
+                  Propuesta nuevo salario a partir de septiembre
                 </div>
                 <FormField
                   control={form.control}
@@ -237,20 +373,32 @@ export function SalaryProposalForm({
                 </div>
               </div>
 
-              <div className="space-y-2.5 border-t border-slate-200 pt-5 dark:border-slate-700">
-                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Nueva categoría
-                </div>
+              <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(includeBonus)}
+                    disabled={!bonusAvailable}
+                    onChange={(event) => {
+                      form.setValue("includeBonus", event.target.checked, {
+                        shouldDirty: true,
+                      });
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-[var(--rsm-blue)] focus:ring-[var(--rsm-blue)] disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-900"
+                  />
+                  <span>Importe bonus desempeño (nuevo)</span>
+                </label>
                 <FormField
                   control={form.control}
-                  name="category"
+                  name="bonus"
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <Input
-                          value={(field.value as string) ?? ""}
+                        <MoneyInput
+                          value={includeBonus ? field.value ?? 0 : currentBonus}
                           onChange={field.onChange}
-                          placeholder="Mantener categoría actual o indicar nueva"
+                          onBlur={field.onBlur}
+                          disabled={!includeBonus || !bonusAvailable}
                         />
                       </FormControl>
                       <FormMessage />
@@ -259,33 +407,117 @@ export function SalaryProposalForm({
                 />
               </div>
 
-              <div className="space-y-2.5 border-t border-slate-200 pt-5 dark:border-slate-700">
+              <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
                 <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  Importe bonus desempeño
+                  Mes de pago del bonus
                 </div>
                 <FormField
                   control={form.control}
-                  name="bonus"
+                  name="bonusPaymentMonth"
                   render={({ field }) => (
                     <FormItem>
                       <FormControl>
-                        <MoneyInput
+                        <select
+                          value={(field.value as string) ?? ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          disabled={!includeBonus || !bonusAvailable}
+                          className={cn(
+                            "h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs outline-none transition-[color,box-shadow]",
+                            "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                            "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] dark:disabled:bg-slate-950 dark:disabled:text-slate-500",
+                          )}
+                        >
+                          <option value="">Seleccionar mes</option>
+                          {BONUS_PAYMENT_MONTHS.map((month) => (
+                            <option key={month} value={month}>
+                              {month}
+                            </option>
+                          ))}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(includeCategory)}
+                    onChange={(event) => {
+                      form.setValue("includeCategory", event.target.checked, {
+                        shouldDirty: true,
+                      });
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-[var(--rsm-blue)] focus:ring-[var(--rsm-blue)] dark:border-slate-600 dark:bg-slate-900"
+                  />
+                  <span>Nueva categoría (si hay)</span>
+                </label>
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <select
                           value={
-                            typeof field.value === "number"
-                              ? field.value
-                              : 0
+                            includeCategory
+                              ? (field.value as string) ?? ""
+                              : currentCategory
                           }
                           onChange={field.onChange}
                           onBlur={field.onBlur}
+                          disabled={!includeCategory}
+                          className={cn(
+                            "h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs outline-none transition-[color,box-shadow]",
+                            "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                            "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] dark:disabled:bg-slate-950 dark:disabled:text-slate-500",
+                          )}
+                        >
+                          {!includeCategory ? (
+                            <option value={currentCategory}>
+                              {currentCategory || "Sin categoría"}
+                            </option>
+                          ) : (
+                            allowedCategoryOptions.map((option) => (
+                              <option key={option} value={option}>
+                                {option}
+                              </option>
+                            ))
+                          )}
+                        </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  Observaciones
+                </div>
+                <FormField
+                  control={form.control}
+                  name="observations"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          value={(field.value as string) ?? ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          placeholder="Añade aquí cualquier comentario adicional sobre la propuesta"
+                          className="min-h-24 resize-none"
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  El flujo actual solo soporta un bonus agregado para simulación. Si más adelante añadimos bonus por tipo o mes de pago, lo conectamos aquí.
-                </p>
               </div>
             </div>
 

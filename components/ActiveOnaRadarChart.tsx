@@ -340,7 +340,7 @@ export default function OnaRadarChart({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
-            <div ref={wrapRef} className="w-full overflow-hidden rounded-xl border border-slate-200/70 bg-slate-50/45 p-2 dark:border-slate-800/80 dark:bg-slate-900/25">
+            <div ref={wrapRef} className="w-full overflow-hidden rounded-xl border border-slate-300/70 bg-slate-200/45 p-2 dark:border-slate-800/80 dark:bg-slate-900/25">
               <div className="mx-auto flex w-full justify-center overflow-hidden">
                 <Chart
                   options={options}
@@ -352,7 +352,7 @@ export default function OnaRadarChart({
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200/80 bg-slate-50/55 p-3 dark:border-slate-800/80 dark:bg-slate-900/25">
+            <div className="rounded-xl border border-slate-300/80 bg-slate-200/45 p-3 dark:border-slate-800/80 dark:bg-slate-900/25">
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                 Interpretación ONA
               </div>
@@ -360,7 +360,7 @@ export default function OnaRadarChart({
                 {onaItemsWithValue.map((item) => (
                   <div
                     key={item.short}
-                    className="rounded-lg border border-slate-200/90 bg-white/70 p-2.5 dark:border-slate-700/70 dark:bg-slate-900/55"
+                    className="rounded-lg border border-slate-300/90 bg-slate-100/85 p-2.5 dark:border-slate-700/70 dark:bg-slate-900/55"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function OnaRadarChart({
                           {item.full}
                         </span>
                       </div>
-                      <span className="rounded-full border border-slate-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                      <span className="rounded-full border border-slate-300/80 bg-slate-200/80 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                         {item.value.toFixed(1)}%
                       </span>
                     </div>

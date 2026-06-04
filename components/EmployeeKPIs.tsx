@@ -45,7 +45,7 @@ function MetricCard({
       className={
         compact
           ? "min-w-0"
-          : "rounded-lg border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/50"
+          : "rounded-lg border border-slate-200 bg-[var(--exec-card)] p-4 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/50"
       }
     >
       <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -75,6 +75,8 @@ function MetricCard({
 }
 
 export type KpiBarProps = {
+  currentSalary?: number | null;
+  currentBonus?: number | null;
   raiseAmount?: number | null;
   salaryVsAvgPct?: number | null;
   bonusVsAvgPct?: number | null;
@@ -125,6 +127,8 @@ const getAttritionHelperText = (pct: number): string => {
 };
 
 export function KpiBar({
+  currentSalary,
+  currentBonus,
   raiseAmount,
   salaryVsAvgPct,
   bonusVsAvgPct,
@@ -137,14 +141,14 @@ export function KpiBar({
 
   if (variant === "summary") {
     return (
-      <section className="rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
+      <section className="rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
         <div className="border-l-4 border-[var(--rsm-blue)] px-6 py-5">
           <div className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
             <Zap className="h-4 w-4 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
             Executive Summary
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-6">
             <MetricCard
               compact
               label="Probabilidad de fuga"
@@ -165,6 +169,20 @@ export function KpiBar({
                     : "Baja"
                   : undefined
               }
+            />
+
+            <MetricCard
+              compact
+              label="Salario actual"
+              value={isNum(currentSalary) ? eur.format(currentSalary) : "-"}
+              helperText="Compensación fija vigente"
+            />
+
+            <MetricCard
+              compact
+              label="Bonus actual"
+              value={isNum(currentBonus) ? eur.format(currentBonus) : "-"}
+              helperText="Bonus vigente registrado"
             />
 
             <MetricCard

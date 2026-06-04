@@ -336,6 +336,26 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
     sortOrder: 200,
   },
 
+  transversal_leadership: {
+    code: "transversal_leadership",
+    shortCode: "O09",
+    family: "ona",
+    tone: "accent",
+    chipLabel: "Liderazgo transversal",
+    title: "Liderazgo transversal",
+    description:
+      "Este empleado concentra reconocimiento desde múltiples niveles o colectivos de la organización, lo que sugiere una capacidad de liderazgo que trasciende de su entorno directo. Es una señal de influencia transversal, credibilidad interna y capacidad para generar impacto en distintos segmentos organizativos.",
+    formulaDescription:
+      "Se activa cuando el empleado recibe relaciones entrantes desde tres o más categorías organizativas distintas y, además, se sitúa entre el 20% con más conexiones dentro de su grupo de referencia (Departamento-Oficina).",
+    ...insightVisual("purple"),
+    visibleEvidenceKeys: [
+      "n_different_categories_in",
+      "n_same_dept_office_in_no_ci",
+      "threshold",
+    ],
+    sortOrder: 205,
+  },
+
   /* ------------------------------------------------------------------ */
   /* ONA RELACIONES - NUEVOS                                            */
   /* ------------------------------------------------------------------ */
@@ -372,6 +392,38 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
     sortOrder: 220,
   },
 
+  lower_level_influence: {
+    code: "lower_level_influence",
+    shortCode: "O11B",
+    family: "ona",
+    tone: "success",
+    chipLabel: "Influencia en niveles inferiores",
+    title: "Influencia en niveles inferiores",
+    description:
+      "Este empleado genera reconocimiento en niveles organizativos inferiores, lo que refleja capacidad de influencia, cercanía y referencia profesional.",
+    formulaDescription:
+      "Se identifica cuando el empleado recibe relaciones entrantes desde tres o más personas pertenecientes a categorías organizativas inferiores a la suya.",
+    ...insightVisual("green"),
+    visibleEvidenceKeys: ["n_lower_categories_in", "threshold"],
+    sortOrder: 225,
+  },
+
+  low_level_influence: {
+    code: "low_level_influence",
+    shortCode: "O11C",
+    family: "ona",
+    tone: "success",
+    chipLabel: "Influencia en niveles inferiores",
+    title: "Influencia en niveles inferiores",
+    description:
+      "Este empleado genera reconocimiento en niveles organizativos inferiores, lo que refleja capacidad de influencia, cercanía y referencia profesional.",
+    formulaDescription:
+      "Se identifica cuando el empleado recibe relaciones entrantes desde tres o más personas pertenecientes a categorías organizativas inferiores a la suya.",
+    ...insightVisual("green"),
+    visibleEvidenceKeys: ["n_lower_categories_in", "threshold"],
+    sortOrder: 226,
+  },
+
   lateral_influence: {
     code: "lateral_influence",
     shortCode: "O12",
@@ -386,6 +438,22 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
     ...insightVisual("blue"),
     visibleEvidenceKeys: ["n_same_category_in", "threshold"],
     sortOrder: 230,
+  },
+
+  peer_level_influence: {
+    code: "peer_level_influence",
+    shortCode: "O12B",
+    family: "ona",
+    tone: "info",
+    chipLabel: "Referente en su nivel",
+    title: "Referente en su nivel",
+    description:
+      "Este empleado tiene una influencia fuerte entre personas de su mismo nivel o niveles cercanos. Puede ser una referencia natural para sus pares.",
+    formulaDescription:
+      "Se identifica cuando el empleado recibe relaciones entrantes desde dos o más personas de su misma categoría organizativa o categorías equivalentes.",
+    ...insightVisual("turquoise"),
+    visibleEvidenceKeys: ["n_same_category_in", "threshold"],
+    sortOrder: 235,
   },
 
   upward_influence: {
