@@ -67,7 +67,7 @@ function MetricCard({
             compact ? "line-clamp-2 max-w-[260px] leading-5" : ""
           } ${helperToneClasses[valueTone]}`}
         >
-          {helperText}
+          <span>{helperText}</span>
         </div>
       )}
     </div>

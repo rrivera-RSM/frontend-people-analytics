@@ -12,6 +12,7 @@ type Props = {
   limit?: number;
   offset?: number;
   collapsed?: boolean;
+  demoMode?: boolean;
   onSelectEmployee?: (employee: EmployeeRow | null) => void;
   onToggleCollapse?: (collapsed: boolean) => void;
 };
@@ -34,6 +35,7 @@ export function EmployeesSidebar({
   onSelectEmployee,
   onToggleCollapse,
   collapsed = false,
+  demoMode = false,
 }: Props) {
   const [status, setStatus] = useState<CallStatus>("idle");
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
@@ -165,6 +167,7 @@ export function EmployeesSidebar({
             <EmployeeCard
               key={emp.id}
               employee={emp}
+              demoMode={demoMode}
               selected={emp.id === selectedId}
               onSelect={(e) => {
                 setSelectedId(e.id);

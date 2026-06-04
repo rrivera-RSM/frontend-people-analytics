@@ -9,7 +9,7 @@ import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type { ProposalDraft, SimulationResult } from "@/types/compensation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, MoreVertical } from "lucide-react";
+import { Eye, EyeOff, MoreVertical } from "lucide-react";
 import { DecisionAttritionRiskPanel } from "@/components/DecisionAttritionRiskPanel";
 import { DecisionInsightsCarousel } from "@/components/employee-insights/DecisionInsightsCarousel";
 import { OnaOrganizationGraph } from "./OnaOrganizationGraph";
@@ -21,9 +21,14 @@ import type {
   EmployeeInsightCode,
 } from "@/types/employee-insights";
 import { mapInsightsToViewModels } from "@/lib/employee-insights";
+import {
+  getDemoSensitiveImageClassName,
+} from "@/lib/demo-mode";
 
 type Props = {
   employee: EmployeeRow | null;
+  demoMode?: boolean;
+  onToggleDemoMode?: () => void;
 };
 
 export type MonetaryInfo = {
@@ -121,7 +126,23 @@ function normalizeAttritionRate(value?: number | null) {
   return value <= 1 ? value * 100 : value;
 }
 
-export function EmployeeView({ employee }: Props) {
+const compactMoneyFormatter = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
+
+function formatMoneyCompact(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  return compactMoneyFormatter.format(value);
+}
+
+export function EmployeeView({
+  employee,
+  demoMode = false,
+  onToggleDemoMode,
+}: Props) {
   const [monetaryInfo, setMonetaryInfo] = useState<MonetaryInfo | null>(null);
   const [onaData, setOnaData] = useState<OnaData | null>(null);
   const [insightsData, setInsightsData] =
@@ -249,16 +270,6 @@ export function EmployeeView({ employee }: Props) {
     ? `${employee.first_name} ${employee.last_name}`.trim()
     : "Selecciona un empleado";
 
-  const employeeMeta = useMemo(() => {
-    if (!employee) return [];
-
-    return [
-      employee.category_name,
-      employee.department_name,
-      employee.office_name,
-    ].filter(Boolean);
-  }, [employee]);
-
   const tenureLabel = useMemo(
     () => getTenureLabel(employee?.joined_at),
     [employee?.joined_at],
@@ -266,6 +277,8 @@ export function EmployeeView({ employee }: Props) {
 
   const attritionPct = normalizeAttritionRate(employee?.attrition_rate);
   const attritionIsHigh = attritionPct != null && attritionPct >= 34.14;
+  const demoModeLabel = demoMode ? "Desactivar modo demo" : "Activar modo demo";
+  const DemoModeIcon = demoMode ? EyeOff : Eye;
 
   const runSimulation = async () => {
     if (!employee || !proposalDraft || simulationLoading) return;
@@ -338,7 +351,7 @@ export function EmployeeView({ employee }: Props) {
           {/* Header */}
           <header className="shrink-0 border-b border-slate-200 bg-[var(--exec-top)] px-6 py-5 shadow-sm dark:border-slate-700/80 dark:bg-[var(--exec-top)]">
             {!employee ? (
-              <div className="flex min-h-[92px] items-center">
+              <div className="flex min-h-[92px] items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                     Vista de empleado
@@ -347,11 +360,30 @@ export function EmployeeView({ employee }: Props) {
                     {fullName}
                   </h1>
                 </div>
+                <button
+                  type="button"
+                  aria-label={demoModeLabel}
+                  title={demoModeLabel}
+                  onClick={onToggleDemoMode}
+                  className={[
+                    "inline-flex h-12 w-12 items-center justify-center rounded-lg border transition-colors",
+                    demoMode
+                      ? "border-[var(--rsm-blue)] bg-[rgb(var(--rsm-blue-rgb)/0.12)] text-[var(--rsm-blue)] hover:bg-[rgb(var(--rsm-blue-rgb)/0.18)] dark:border-[#79d7ff] dark:text-[#79d7ff]"
+                      : "border-slate-300 bg-[var(--exec-card)] text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                  ].join(" ")}
+                >
+                  <DemoModeIcon className="h-5 w-5" />
+                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
-                  <Avatar className="h-16 w-16 border-2 border-slate-300 bg-[var(--rsm-blue)] shadow-[0_0_0_3px_rgba(0,156,222,0.14)] dark:border-slate-700">
+                  <Avatar
+                    className={getDemoSensitiveImageClassName(
+                      demoMode,
+                      "h-16 w-16 border-2 border-slate-300 bg-[var(--rsm-blue)] shadow-[0_0_0_3px_rgba(0,156,222,0.14)] dark:border-slate-700",
+                    )}
+                  >
                     <AvatarImage
                       src={`/api/employees/${employee.id}/photo`}
                       alt={`${fullName} avatar`}
@@ -362,18 +394,40 @@ export function EmployeeView({ employee }: Props) {
                   </Avatar>
 
                   <div className="min-w-0">
-                    <h1 className="truncate text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                    <h1
+                      className={[
+                        "truncate text-3xl font-bold tracking-tight",
+                        demoMode
+                          ? "inline-flex max-w-full rounded-sm bg-slate-950 px-3 py-1 text-transparent shadow-[0_2px_0_rgba(15,23,42,0.18)] dark:bg-slate-100"
+                          : "text-slate-900 dark:text-slate-50",
+                      ].join(" ")}
+                    >
                       {fullName}
                     </h1>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
-                      {employeeMeta.map((item) => (
-                        <span
-                          key={item}
-                          className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700"
-                        >
-                          {item}
-                        </span>
-                      ))}
+                      {demoMode ? (
+                        <>
+                          <span className="border-r border-slate-300 pr-3 font-medium text-[var(--rsm-blue)] last:border-r-0 dark:border-slate-700 dark:text-[#79d7ff]">
+                            Salario: {formatMoneyCompact(monetaryInfo?.salary)}
+                          </span>
+                          <span className="border-r border-slate-300 pr-3 font-medium text-[var(--rsm-blue)] last:border-r-0 dark:border-slate-700 dark:text-[#79d7ff]">
+                            Bonus: {formatMoneyCompact(monetaryInfo?.bonus)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {[employee.category_name, employee.department_name, employee.office_name]
+                            .filter(Boolean)
+                            .map((item) => (
+                              <span
+                                key={item}
+                                className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700"
+                              >
+                                {item}
+                              </span>
+                            ))}
+                        </>
+                      )}
                       {tenureLabel && (
                         <span className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700">
                           Seniority: {tenureLabel.replace(" en la firma", "")}
@@ -399,10 +453,17 @@ export function EmployeeView({ employee }: Props) {
 
                   <button
                     type="button"
-                    aria-label="Descargar informe"
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-[var(--exec-card)] text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    aria-label={demoModeLabel}
+                    title={demoModeLabel}
+                    onClick={onToggleDemoMode}
+                    className={[
+                      "inline-flex h-12 w-12 items-center justify-center rounded-lg border transition-colors",
+                      demoMode
+                        ? "border-[var(--rsm-blue)] bg-[rgb(var(--rsm-blue-rgb)/0.12)] text-[var(--rsm-blue)] hover:bg-[rgb(var(--rsm-blue-rgb)/0.18)] dark:border-[#79d7ff] dark:text-[#79d7ff]"
+                        : "border-slate-300 bg-[var(--exec-card)] text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                    ].join(" ")}
                   >
-                    <Download className="h-5 w-5" />
+                    <DemoModeIcon className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
@@ -438,6 +499,7 @@ export function EmployeeView({ employee }: Props) {
 
                 <section className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
                   <SalaryProposalForm
+                    demoMode={demoMode}
                     value={proposalDraft}
                     onChange={setProposalDraft}
                     onOpenSimulation={() => {
@@ -526,7 +588,10 @@ export function EmployeeView({ employee }: Props) {
                       {activeTab === "desempeno" && (
                         <div className="space-y-5">
                           <EmployeeProgressChart employeeId={employee?.id} />
-                          <EmployeeTimelineEvolution employeeId={employee?.id} />
+                          <EmployeeTimelineEvolution
+                            demoMode={demoMode}
+                            employeeId={employee?.id}
+                          />
                         </div>
                       )}
                         </motion.div>

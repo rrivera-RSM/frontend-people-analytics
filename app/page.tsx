@@ -10,6 +10,7 @@ import { SidebarCollapseToggle } from "@/components/SidebarCollapseToggle";
 export default function EmployeesPage() {
   const [selected, setSelected] = useState<EmployeeRow | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [demoMode, setDemoMode] = useState(false);
 
   const { status } = useSession();
   const started = useRef(false);
@@ -37,6 +38,7 @@ export default function EmployeesPage() {
               <EmployeesSidebar
                 office="Barcelona"
                 collapsed={collapsed}
+                demoMode={demoMode}
                 onToggleCollapse={(c) => setCollapsed(c)}
                 department="PEOPLE & CULTURE"
                 society="RSM SPAIN SERVICIOS ADMINISTRATIVOS, SL"
@@ -71,7 +73,11 @@ export default function EmployeesPage() {
             {/* Fondo interior suave como mockup */}
             <div className="h-full min-h-0 ">
               {/* EmployeeView ya gestiona su layout; evitamos overflow-y-auto aquí */}
-              <EmployeeView employee={selected} />
+              <EmployeeView
+                employee={selected}
+                demoMode={demoMode}
+                onToggleDemoMode={() => setDemoMode((current) => !current)}
+              />
             </div>
           </section>
         </div>

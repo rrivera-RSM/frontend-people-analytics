@@ -22,6 +22,7 @@ import type {
 
 type Props = {
   employeeId: number | null | undefined;
+  demoMode?: boolean;
 };
 
 type TimelineViewMode = "snake" | "by_type";
@@ -51,6 +52,8 @@ type TimelineSummary = {
   text: string;
   trend?: TimelineTrend;
   level?: EvaluationLevel;
+  sensitive?: boolean;
+  redactedText?: string;
 };
 
 type SalarySnapshot = {
@@ -177,14 +180,50 @@ function getEventSummary(
       const office = payload.office_name?.trim();
 
       if (occurrenceIndex === 0) {
-        if (category) return { text: `Categoría inicial: ${category}` };
-        if (department) return { text: `Departamento inicial: ${department}` };
-        if (office) return { text: `Oficina inicial: ${office}` };
+        if (category) {
+          return {
+            text: `Categoría inicial: ${category}`,
+            sensitive: true,
+            redactedText: "Categoría inicial censurada",
+          };
+        }
+        if (department) {
+          return {
+            text: `Departamento inicial: ${department}`,
+            sensitive: true,
+            redactedText: "Departamento inicial censurado",
+          };
+        }
+        if (office) {
+          return {
+            text: `Oficina inicial: ${office}`,
+            sensitive: true,
+            redactedText: "Oficina inicial censurada",
+          };
+        }
       }
 
-      if (category) return { text: `Ascendido a ${category}` };
-      if (department) return { text: `Cambio a ${department}` };
-      if (office) return { text: `Traslado a ${office}` };
+      if (category) {
+        return {
+          text: `Ascendido a ${category}`,
+          sensitive: true,
+          redactedText: "Cambio de categoría censurado",
+        };
+      }
+      if (department) {
+        return {
+          text: `Cambio a ${department}`,
+          sensitive: true,
+          redactedText: "Cambio de departamento censurado",
+        };
+      }
+      if (office) {
+        return {
+          text: `Traslado a ${office}`,
+          sensitive: true,
+          redactedText: "Traslado de oficina censurado",
+        };
+      }
       return { text: "Cambio organizativo" };
     }
     case "salary_change": {
@@ -365,7 +404,10 @@ function buildLanes(events: EmployeeTimelineEvent[]) {
   }));
 }
 
-export function EmployeeTimelineEvolution({ employeeId }: Props) {
+export function EmployeeTimelineEvolution({
+  employeeId,
+  demoMode = false,
+}: Props) {
   const [data, setData] = useState<EmployeeTimelineEvolutionResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -462,7 +504,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
         )}
 
         {!loading && !error && groupedEvents.length > 0 && viewMode === "snake" && (
-          <TimelineSnake groups={groupedEvents} />
+          <TimelineSnake demoMode={demoMode} groups={groupedEvents} />
         )}
 
         {!loading && !error && groupedEvents.length > 0 && viewMode === "by_type" && (
@@ -486,7 +528,11 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
                     </div>
                     <div className={`h-2.5 w-2.5 rounded-full ${meta.dotClassName.split(" ")[0]}`} />
                   </div>
-                  <TimelineSnake groups={lane.groups} compact />
+                  <TimelineSnake
+                    compact
+                    demoMode={demoMode}
+                    groups={lane.groups}
+                  />
                 </section>
               );
             })}
@@ -500,9 +546,11 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
 function TimelineSnake({
   groups,
   compact = false,
+  demoMode = false,
 }: {
   groups: TimelineGroup[];
   compact?: boolean;
+  demoMode?: boolean;
 }) {
   if (!groups.length) return null;
 
@@ -514,12 +562,14 @@ function TimelineSnake({
           const isLeft = index % 2 === 0;
           const isMixed = new Set(group.eventTypes).size > 1;
           const meta = getEventMeta(isMixed ? "mixed" : group.primaryType);
+          const visibleSummaries = group.summaries.map((item) =>
+            demoMode && item.sensitive ? item.redactedText ?? item.text : item.text,
+          );
           const summaryText =
-            group.summaries.length <= 2
-              ? group.summaries.map((item) => item.text).join(" · ")
-              : `${group.summaries
+            visibleSummaries.length <= 2
+              ? visibleSummaries.join(" · ")
+              : `${visibleSummaries
                   .slice(0, 2)
-                  .map((item) => item.text)
                   .join(" · ")} +${group.summaries.length - 2} más`;
           const primaryTrend =
             group.summaries.length === 1 ? group.summaries[0]?.trend : undefined;

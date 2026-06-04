@@ -8,6 +8,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  getDemoSensitiveImageClassName,
+  getDemoSensitiveTextClassName,
+} from "@/lib/demo-mode";
 
 export type EmployeeRow = {
   id: number;
@@ -30,6 +34,7 @@ type Props = {
   employee: EmployeeRow;
   selected?: boolean;
   compact?: boolean;
+  demoMode?: boolean;
   onSelect?: (employee: EmployeeRow) => void;
 };
 
@@ -43,6 +48,7 @@ export function EmployeeCard({
   employee,
   selected = false,
   compact = false,
+  demoMode = false,
   onSelect,
 }: Props) {
   const [failedPhotoId, setFailedPhotoId] = useState<number | null>(null);
@@ -99,13 +105,16 @@ export function EmployeeCard({
               ].join(" ")}
             >
               <Avatar
-                className={[
+                className={getDemoSensitiveImageClassName(
+                  demoMode,
+                  [
                   "h-10 w-10",
                   "border",
                   selected
                     ? "border-[var(--rsm-blue)] ring-2 ring-[rgb(var(--rsm-blue-rgb)/0.3)]"
                     : "border-slate-300 dark:border-slate-700",
-                ].join(" ")}
+                  ].join(" "),
+                )}
               >
                 {photoOk && (
                   <AvatarImage
@@ -123,17 +132,43 @@ export function EmployeeCard({
           </TooltipTrigger>
 
           <TooltipContent side="right" className="max-w-[240px]">
-            <div className="text-sm font-semibold">{fullName}</div>
+            <div
+              className={getDemoSensitiveTextClassName(
+                demoMode,
+                "text-sm font-semibold",
+              )}
+            >
+              {fullName}
+            </div>
             <div className="mt-1 flex items-center justify-between gap-3">
-              <div className="truncate text-xs text-slate-500">{employee.email}</div>
+              <div
+                className={getDemoSensitiveTextClassName(
+                  demoMode,
+                  "truncate text-xs text-slate-500",
+                )}
+              >
+                {employee.email}
+              </div>
               <div className={attritionRateClasses}>{attritionRateLabel}</div>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-              <span className="inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[11px] font-medium bg-slate-100 text-slate-700">
+              <span
+                className={getDemoSensitiveTextClassName(
+                  demoMode,
+                  "inline-flex max-w-full truncate rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700",
+                )}
+              >
                 {employee.category_name}
               </span>
               {extraInfoLabel ? (
-                <span className="truncate text-[11px] text-slate-500">{extraInfoLabel}</span>
+                <span
+                  className={getDemoSensitiveTextClassName(
+                    demoMode,
+                    "truncate text-[11px] text-slate-500",
+                  )}
+                >
+                  {extraInfoLabel}
+                </span>
               ) : null}
             </div>
           </TooltipContent>
@@ -172,11 +207,14 @@ export function EmployeeCard({
       )}
 
       <Avatar
-        className={[
+        className={getDemoSensitiveImageClassName(
+          demoMode,
+          [
           "h-9 w-9 shrink-0",
           "border",
           selected ? "border-[var(--rsm-blue)]" : "border-slate-300 dark:border-slate-700",
-        ].join(" ")}
+          ].join(" "),
+        )}
       >
         {photoOk && (
           <AvatarImage
@@ -192,15 +230,31 @@ export function EmployeeCard({
       </Avatar>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{fullName}</div>
+        <div
+          className={getDemoSensitiveTextClassName(
+            demoMode,
+            "truncate text-sm font-semibold text-slate-800 dark:text-slate-100",
+          )}
+        >
+          {fullName}
+        </div>
         <div className="mt-1 flex items-center justify-between gap-3">
-          <div className="truncate text-xs text-slate-500 dark:text-slate-400">{employee.email}</div>
+          <div
+            className={getDemoSensitiveTextClassName(
+              demoMode,
+              "truncate text-xs text-slate-500 dark:text-slate-400",
+            )}
+          >
+            {employee.email}
+          </div>
           <div className={attritionRateClasses}>{attritionRateLabel}</div>
         </div>
 
         {extraInfoLabel ? (
           <div className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">
-            {extraInfoLabel}
+            <span className={getDemoSensitiveTextClassName(demoMode)}>
+              {extraInfoLabel}
+            </span>
           </div>
         ) : null}
 

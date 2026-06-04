@@ -25,7 +25,6 @@ import {
 
 import { MoneyInput } from "@/components/MoneyInput";
 import type { ProposalDraft } from "@/types/compensation";
-
 const schema = z.object({
   salaryCurrent: z.number().nonnegative(),
   includeBonus: z.boolean(),
@@ -116,6 +115,7 @@ type Props = {
   value: ProposalDraft | null;
   onChange: (value: ProposalDraft) => void;
   onOpenSimulation: () => void;
+  demoMode?: boolean;
 };
 
 function normalizeDraft(
@@ -158,6 +158,7 @@ export function SalaryProposalForm({
   value,
   onChange,
   onOpenSimulation,
+  demoMode = false,
 }: Props) {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -298,6 +299,12 @@ export function SalaryProposalForm({
       });
     }
   }, [includeCategory, currentCategory, allowedCategoryOptions, form]);
+
+  React.useEffect(() => {
+    if (!demoMode || !form.getValues("includeCategory")) return;
+    form.setValue("includeCategory", false, { shouldDirty: true });
+    form.setValue("category", currentCategory, { shouldDirty: true });
+  }, [demoMode, currentCategory, form]);
 
   if (!value) {
     return <LoadingSkeleton />;
@@ -442,59 +449,70 @@ export function SalaryProposalForm({
                 />
               </div>
 
-              <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
-                <label className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  <input
-                    type="checkbox"
-                    checked={Boolean(includeCategory)}
-                    onChange={(event) => {
-                      form.setValue("includeCategory", event.target.checked, {
-                        shouldDirty: true,
-                      });
-                    }}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-[var(--rsm-blue)] focus:ring-[var(--rsm-blue)] dark:border-slate-600 dark:bg-slate-900"
-                  />
-                  <span>Nueva categoría (si hay)</span>
-                </label>
-                <FormField
-                  control={form.control}
-                  name="category"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <select
-                          value={
-                            includeCategory
-                              ? (field.value as string) ?? ""
-                              : currentCategory
-                          }
-                          onChange={field.onChange}
-                          onBlur={field.onBlur}
-                          disabled={!includeCategory}
-                          className={cn(
-                            "h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs outline-none transition-[color,box-shadow]",
-                            "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
-                            "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] dark:disabled:bg-slate-950 dark:disabled:text-slate-500",
-                          )}
-                        >
-                          {!includeCategory ? (
-                            <option value={currentCategory}>
-                              {currentCategory || "Sin categoría"}
-                            </option>
-                          ) : (
-                            allowedCategoryOptions.map((option) => (
-                              <option key={option} value={option}>
-                                {option}
+              {demoMode ? (
+                <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                  <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Categoría
+                  </div>
+                  <div className="rounded-lg border border-dashed border-slate-300 bg-slate-100/80 px-3 py-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-400">
+                    Oculta en modo demo para no exponer la estructura interna.
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(includeCategory)}
+                      onChange={(event) => {
+                        form.setValue("includeCategory", event.target.checked, {
+                          shouldDirty: true,
+                        });
+                      }}
+                      className="h-3.5 w-3.5 rounded border-slate-300 text-[var(--rsm-blue)] focus:ring-[var(--rsm-blue)] dark:border-slate-600 dark:bg-slate-900"
+                    />
+                    <span>Nueva categoría (si hay)</span>
+                  </label>
+                  <FormField
+                    control={form.control}
+                    name="category"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <select
+                            value={
+                              includeCategory
+                                ? (field.value as string) ?? ""
+                                : currentCategory
+                            }
+                            onChange={field.onChange}
+                            onBlur={field.onBlur}
+                            disabled={!includeCategory}
+                            className={cn(
+                              "h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs outline-none transition-[color,box-shadow]",
+                              "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
+                              "disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:[color-scheme:dark] dark:disabled:bg-slate-950 dark:disabled:text-slate-500",
+                            )}
+                          >
+                            {!includeCategory ? (
+                              <option value={currentCategory}>
+                                {currentCategory || "Sin categoría"}
                               </option>
-                            ))
-                          )}
-                        </select>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                            ) : (
+                              allowedCategoryOptions.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))
+                            )}
+                          </select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
 
               <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
                 <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">
