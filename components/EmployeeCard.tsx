@@ -18,6 +18,7 @@ export type EmployeeRow = {
   first_name: string;
   last_name: string;
   email: string;
+  category_id?: number;
   category_name: string;
   attrition_rate: number;
   dni?: string;
@@ -35,6 +36,7 @@ type Props = {
   selected?: boolean;
   compact?: boolean;
   demoMode?: boolean;
+  showPhoto?: boolean;
   onSelect?: (employee: EmployeeRow) => void;
 };
 
@@ -49,6 +51,7 @@ export function EmployeeCard({
   selected = false,
   compact = false,
   demoMode = false,
+  showPhoto = true,
   onSelect,
 }: Props) {
   const [failedPhotoId, setFailedPhotoId] = useState<number | null>(null);
@@ -116,11 +119,13 @@ export function EmployeeCard({
                   ].join(" "),
                 )}
               >
-                {photoOk && (
+                {showPhoto && photoOk && (
                   <AvatarImage
                     src={photoSrc}
                     alt={`${fullName} avatar`}
                     loading="lazy"
+                    fetchPriority="low"
+                    decoding="async"
                     onError={() => setFailedPhotoId(employee.id)}
                   />
                 )}
@@ -216,11 +221,13 @@ export function EmployeeCard({
           ].join(" "),
         )}
       >
-        {photoOk && (
+        {showPhoto && photoOk && (
           <AvatarImage
             src={photoSrc}
             alt={`${fullName} avatar`}
             loading="lazy"
+            fetchPriority="low"
+            decoding="async"
             onError={() => setFailedPhotoId(employee.id)}
           />
         )}

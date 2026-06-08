@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { EmployeeCard, type EmployeeRow } from "./EmployeeCard";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -43,6 +43,7 @@ export function EmployeesSidebar({
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
+  const [showEmployeePhotos, setShowEmployeePhotos] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -50,6 +51,7 @@ export function EmployeesSidebar({
     async function load() {
       setStatus("loading");
       setError(null);
+      setShowEmployeePhotos(false);
 
       try {
         const params = new URLSearchParams({
@@ -65,7 +67,6 @@ export function EmployeesSidebar({
           {
             method: "GET",
             headers: { Accept: "application/json" },
-            cache: "no-store",
             signal: controller.signal,
           },
         );
@@ -75,18 +76,22 @@ export function EmployeesSidebar({
         }
 
         const rows = (await res.json()) as EmployeeRow[];
-        setEmployees(Array.isArray(rows) ? rows : []);
+        const normalizedRows = Array.isArray(rows) ? rows : [];
 
-        if (rows.length > 0) {
+        if (normalizedRows.length > 0) {
           const selected =
-            rows.find((r) => r.id === selectedId) || rows[0];
+            normalizedRows.find((r) => r.id === selectedId) || normalizedRows[0];
           setSelectedId(selected.id);
           onSelectEmployee?.(selected);
         } else {
           setSelectedId(null);
           onSelectEmployee?.(null);
         }
-        setStatus("success");
+
+        startTransition(() => {
+          setEmployees(normalizedRows);
+          setStatus("success");
+        });
       } catch (e: unknown) {
         if (!(e instanceof DOMException && e.name === "AbortError")) {
           setError(e instanceof Error ? e.message : "Unknown error");
@@ -99,6 +104,31 @@ export function EmployeesSidebar({
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [office, department, society, limit, offset]);
+
+  useEffect(() => {
+    if (status !== "success" || employees.length === 0) return;
+
+    let cancelled = false;
+
+    const enablePhotos = () => {
+      if (!cancelled) setShowEmployeePhotos(true);
+    };
+
+    // Dejamos que la vista principal dispare sus fetches primero.
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(enablePhotos, { timeout: 1200 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(enablePhotos, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [employees.length, status]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const isSearching = normalizedQuery.length > 0;
@@ -168,6 +198,7 @@ export function EmployeesSidebar({
               key={emp.id}
               employee={emp}
               demoMode={demoMode}
+              showPhoto={showEmployeePhotos}
               selected={emp.id === selectedId}
               onSelect={(e) => {
                 setSelectedId(e.id);

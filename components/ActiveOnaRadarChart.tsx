@@ -5,7 +5,7 @@ import React, { useMemo, useRef, useLayoutEffect, useState } from "react";
 import type { ApexOptions } from "apexcharts";
 import { Info } from "lucide-react";
 
-import type { OnaData } from "./EmployeeView";
+import type { OnaData } from "@/types/employee-data";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import type { EmployeeInsightViewModel } from "@/types/employee-insights";
 import { InsightChipsInline } from "./employee-insights/InsightChipsInline";
@@ -305,7 +305,11 @@ export default function OnaRadarChart({
       </CardHeader>
 
       <CardContent className="px-3 pt-0 pb-3">
-        {!data ? (
+        {loading ? (
+          <div className="min-h-[180px] grid place-items-center text-sm">
+            Cargando…
+          </div>
+        ) : !data ? (
           <div className="min-h-[180px] grid place-items-center">
             <div className="flex items-center gap-2 text-center">
               <span className="text-[var(--rsm-dark-grey)] text-sm">
@@ -333,10 +337,6 @@ export default function OnaRadarChart({
                 </div>
               </div>
             </div>
-          </div>
-        ) : loading ? (
-          <div className="min-h-[180px] grid place-items-center text-sm">
-            Cargando…
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">

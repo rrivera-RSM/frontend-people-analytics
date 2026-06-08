@@ -13,8 +13,8 @@ export function useLatestEvaluationScatter() {
   const query = useQuery<EvaluationScatterLatestCycleResponse, Error>({
     queryKey: ["evaluations", "scatter", "latest-cycle"],
     queryFn: fetchLatestEvaluationScatter,
-    staleTime: 1000 * 60 * 10, // 10 min
-    gcTime: 1000 * 60 * 30, // 30 min
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     retry: 1,
@@ -32,4 +32,3 @@ export function useLatestEvaluationScatter() {
     totalPoints: query.data?.total_points ?? 0,
   };
 }
-``

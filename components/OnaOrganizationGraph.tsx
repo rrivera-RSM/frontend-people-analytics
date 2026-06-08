@@ -3,9 +3,9 @@
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useOnaRelations } from "@/hooks/use-ona-relations";
 import type {
   OnaCategory,
-  OnaRelationNodeApi,
   OnaRelationsApiResponse,
 } from "@/types/ona-relations";
 
@@ -435,54 +435,16 @@ export function OnaOrganizationGraph({
   societyId,
   title = "Red organizacional de la sociedad",
 }: Props) {
-  const [data, setData] = useState<OnaRelationsApiResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const forceGraphRef = useRef<ForceGraphRef | null>(null);
   const [graphSize, setGraphSize] = useState({ width: 960, height: 420 });
   const [viewMode, setViewMode] = useState<ViewMode>("employee");
   const [pulseTick, setPulseTick] = useState(0);
-
-  useEffect(() => {
-    if (!employeeId || !societyId) {
-      setData(null);
-      setError(null);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/ona/relations?society_id=${societyId}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`No se pudo cargar la red ONA (${response.status})`);
-        }
-
-        const payload = (await response.json()) as OnaRelationsApiResponse;
-        setData(payload);
-      } catch (err) {
-        if (!(err instanceof DOMException && err.name === "AbortError")) {
-          setError(
-            err instanceof Error ? err.message : "No se pudo cargar la red ONA",
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void load();
-    return () => controller.abort();
-  }, [employeeId, societyId]);
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useOnaRelations(societyId);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -615,7 +577,7 @@ export function OnaOrganizationGraph({
           </div>
         ) : error ? (
           <div className="rounded-xl border border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.1)] p-4 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
-            {error}
+            {error instanceof Error ? error.message : "No se pudo cargar la red ONA"}
           </div>
         ) : !hasGraph ? (
           <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-200/50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">

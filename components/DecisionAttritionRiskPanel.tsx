@@ -56,6 +56,8 @@ export function DecisionAttritionRiskPanel({
       : displayedRisk?.label === "Bajo riesgo"
         ? "La señal actual sitúa al empleado en una zona de riesgo contenida. En este escenario, la propuesta salarial acompaña una situación relativamente estable y las simulaciones sirven para validar que el riesgo se mantiene bajo control."
         : "No hay información suficiente para interpretar el riesgo de fuga del empleado con el nivel de detalle esperado.";
+  const showGaugeComparison =
+    currentProbability != null && simulationResult != null;
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
@@ -77,16 +79,30 @@ export function DecisionAttritionRiskPanel({
 
           <div className="mt-6">
             {displayedProbability != null ? (
-              <AttritionGauge
-                probability={displayedProbability}
-                minSize={300}
-                maxSize={360}
-                label={
-                  simulationResult
-                    ? "Riesgo estimado tras simulación"
-                    : "Riesgo actual estimado"
-                }
-              />
+              <>
+                <AttritionGauge
+                  probability={displayedProbability}
+                  comparisonProbability={
+                    showGaugeComparison ? currentProbability : null
+                  }
+                  minSize={300}
+                  maxSize={360}
+                  label={
+                    simulationResult
+                      ? "Riesgo estimado tras simulación"
+                      : "Riesgo actual estimado"
+                  }
+                />
+
+                {showGaugeComparison && probabilityDelta != null && (
+                  <div className="mt-3 rounded-lg border border-slate-200 bg-slate-100/75 px-3 py-2 text-xs text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/40 dark:text-slate-300">
+                    <span className={deltaToneClass}>
+                      La banda sombreada muestra {formatDelta(probabilityDelta)}
+                    </span>{" "}
+                    respecto al riesgo actual.
+                  </div>
+                )}
+              </>
             ) : (
               <div className="grid min-h-[280px] place-items-center rounded-lg border border-dashed border-slate-300/80 bg-white/45 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
                 Sin estimación disponible

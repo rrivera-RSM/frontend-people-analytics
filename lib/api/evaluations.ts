@@ -3,7 +3,6 @@ import type { EvaluationScatterLatestCycleResponse } from "@/types/evaluation-sc
 export async function fetchLatestEvaluationScatter(): Promise<EvaluationScatterLatestCycleResponse> {
   const res = await fetch("/api/evaluations/scatter/latest-cycle", {
     method: "GET",
-    cache: "no-store",
     credentials: "same-origin",
   });
 

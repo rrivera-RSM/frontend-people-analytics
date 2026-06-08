@@ -70,7 +70,7 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
     family: "talent",
     tone: "warning",
     chipLabel: "Alto Infrareconocido",
-    title: "Alto Infrareconocido",
+    title: "Talento Infrareconocido",
     description:
       "Este empleado tiene una posición fuerte dentro de la red, pero su desempeño actual todavía no refleja ese nivel de influencia. Puede ser un perfil con valor interno que no está del todo capturado por los indicadores tradicionales.",
     formulaDescription:
@@ -456,20 +456,17 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
     sortOrder: 235,
   },
 
-  upward_influence: {
-    code: "upward_influence",
-    shortCode: "O13",
+  upper_level_influence: {
+    code: "upper_level_influence",
+    shortCode: "O12C",
     family: "ona",
     tone: "accent",
-    chipLabel: "Influencia Ascendente",
-    title: "Influencia Ascendente",
+    chipLabel: "Influencia en niveles superiores",
+    title: "Influencia en niveles superiores",
     description:
-      "Este empleado está siendo reconocido por perfiles de niveles superiores. Es una señal interesante de visibilidad, confianza e impacto por encima de su posición actual.",
+      "Este empleado genera reconocimiento en niveles organizativos superiores, lo que indica credibilidad y capacidad de impacto por encima de su posición formal actual. Es una señal relevante de confianza ascendente y posible proyección hacia mayores niveles de responsabilidad.",
     formulaDescription:
-      "Se calcula contando relaciones entrantes desde categorías superiores a la del empleado. Si el número supera el umbral definido, se marca como influencia ascendente.",
-    ...insightVisual("orange"),
-    visibleEvidenceKeys: ["n_upper_categories_in", "threshold"],
-    sortOrder: 240,
+      "Se identifica cuando el empleado recibe relaciones entrantes desde dos o más personas pertenecientes a categorías organizativas superiores a la suya.",
   },
 
   bridge_person: {

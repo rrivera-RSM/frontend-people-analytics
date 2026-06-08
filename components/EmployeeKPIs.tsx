@@ -1,4 +1,8 @@
 import { ArrowDownRight, ArrowUpRight, Zap } from "lucide-react";
+import type {
+  SalaryProposalBenchmarkScope,
+  SalaryProposalBenchmarkScopeKey,
+} from "@/types/compensation";
 
 type DeltaTone = "up" | "down" | "neutral" | "danger" | "success";
 
@@ -77,12 +81,14 @@ function MetricCard({
 export type KpiBarProps = {
   currentSalary?: number | null;
   currentBonus?: number | null;
-  raiseAmount?: number | null;
+  attritionRate?: number | null;
   salaryVsAvgPct?: number | null;
   bonusVsAvgPct?: number | null;
-  performanceLabel?: string;
-  attritionRate?: number | null;
-  variant?: "summary" | "cards";
+  salaryIncreaseReference?: number | null;
+  bonusReference?: number | null;
+  benchmarkScope?: SalaryProposalBenchmarkScope;
+  availableBenchmarkScope?: SalaryProposalBenchmarkScope;
+  onBenchmarkScopeChange?: (value: SalaryProposalBenchmarkScope) => void;
 };
 
 const eur = new Intl.NumberFormat("es-ES", {
@@ -120,35 +126,90 @@ const getAttritionTone = (pct: number): DeltaTone => {
   return pct >= ATTRITION_THRESHOLD_PCT ? "danger" : "success";
 };
 
-const getAttritionHelperText = (pct: number): string => {
-  return pct >= ATTRITION_THRESHOLD_PCT
-    ? "Por encima del umbral de atención"
-    : "Por debajo del umbral de atención";
-};
+const BENCHMARK_SCOPE_OPTIONS: Array<{
+  key: SalaryProposalBenchmarkScopeKey;
+  label: string;
+}> = [
+  { key: "society", label: "Sociedad" },
+  { key: "department", label: "Depto." },
+  { key: "office", label: "Oficina" },
+  { key: "category", label: "Categoría" },
+];
 
 export function KpiBar({
   currentSalary,
   currentBonus,
-  raiseAmount,
+  attritionRate,
   salaryVsAvgPct,
   bonusVsAvgPct,
-  attritionRate,
-  variant = "cards",
+  salaryIncreaseReference,
+  bonusReference,
+  benchmarkScope,
+  availableBenchmarkScope,
+  onBenchmarkScopeChange,
 }: KpiBarProps) {
   const normalizedAttritionPct = isNum(attritionRate)
     ? normalizeAttritionRate(attritionRate)
     : null;
+  const canEditBenchmarkScope =
+    Boolean(benchmarkScope) &&
+    Boolean(availableBenchmarkScope) &&
+    Boolean(onBenchmarkScopeChange);
 
-  if (variant === "summary") {
-    return (
-      <section className="rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
-        <div className="border-l-4 border-[var(--rsm-blue)] px-6 py-5">
-          <div className="mb-5 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+  const handleBenchmarkScopeToggle = (key: SalaryProposalBenchmarkScopeKey) => {
+    if (!benchmarkScope || !availableBenchmarkScope || !onBenchmarkScopeChange) {
+      return;
+    }
+
+    if (!availableBenchmarkScope[key]) return;
+
+    onBenchmarkScopeChange({
+      ...benchmarkScope,
+      [key]: !benchmarkScope[key],
+    });
+  };
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
+      <div className="border-l-4 border-[var(--rsm-blue)] px-6 py-5">
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
             <Zap className="h-4 w-4 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
             Executive Summary
           </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-6">
+          <div className="flex flex-wrap items-center gap-1.5">
+            {BENCHMARK_SCOPE_OPTIONS.map((option) => {
+              const active = benchmarkScope?.[option.key] ?? false;
+              const disabled =
+                !canEditBenchmarkScope ||
+                !(availableBenchmarkScope?.[option.key] ?? false);
+
+              return (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => handleBenchmarkScopeToggle(option.key)}
+                  disabled={disabled}
+                  className={[
+                    "rounded-md border px-2 py-1 text-[11px] font-medium leading-none transition-colors",
+                    active
+                      ? "border-[var(--rsm-blue)] bg-[rgb(var(--rsm-blue-rgb)/0.12)] text-[var(--rsm-blue)] dark:border-[#79d7ff] dark:text-[#79d7ff]"
+                      : "border-slate-300 bg-transparent text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800",
+                    disabled
+                      ? "cursor-not-allowed border-slate-200 text-slate-300 hover:bg-transparent dark:border-slate-800 dark:text-slate-600"
+                      : "",
+                  ].join(" ")}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
+          <div className="grid min-w-0 flex-1 grid-cols-1 gap-6 md:grid-cols-3">
             <MetricCard
               compact
               label="Probabilidad de fuga"
@@ -184,95 +245,45 @@ export function KpiBar({
               value={isNum(currentBonus) ? eur.format(currentBonus) : "-"}
               helperText="Bonus vigente registrado"
             />
+          </div>
 
-            <MetricCard
-              compact
-              label="Brecha Salarial (Mercado)"
-              value={isNum(salaryVsAvgPct) ? fmtPct(salaryVsAvgPct) : "-"}
-              valueTone={
-                isNum(salaryVsAvgPct)
-                  ? salaryVsAvgPct < 0
-                    ? "down"
-                    : "up"
-                  : "neutral"
-              }
-              helperText={
-                isNum(raiseAmount)
-                  ? `Aumento propuesto: ${eur.format(raiseAmount)}`
-                  : undefined
-              }
-            />
+          <div className="min-w-0 border-t border-slate-200/80 pt-5 dark:border-slate-700/80 xl:w-[560px] xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+              <MetricCard
+                compact
+                label="% vs subida media"
+                value={isNum(salaryVsAvgPct) ? fmtPct(salaryVsAvgPct) : "—"}
+                valueTone={
+                  isNum(salaryVsAvgPct)
+                    ? toneFromNumber(salaryVsAvgPct)
+                    : "neutral"
+                }
+                helperText={
+                  isNum(salaryIncreaseReference)
+                    ? `Ref. ${eur.format(salaryIncreaseReference)}`
+                    : "Sin referencia disponible"
+                }
+              />
 
-            <MetricCard
-              compact
-              label="% vs Bonus Promedio"
-              value={isNum(bonusVsAvgPct) ? fmtPct(bonusVsAvgPct) : "-"}
-              valueTone={
-                isNum(bonusVsAvgPct)
-                  ? bonusVsAvgPct < 0
-                    ? "down"
-                    : "up"
-                  : "neutral"
-              }
-              helperText="Comparado con la referencia de bonus"
-            />
-
-            <MetricCard
-              compact
-              label="Aumento Propuesto"
-              value={isNum(raiseAmount) ? eur.format(raiseAmount) : "-"}
-              helperText="Diferencia frente al salario actual"
-            />
+              <MetricCard
+                compact
+                label="% vs bonus promedio"
+                value={isNum(bonusVsAvgPct) ? fmtPct(bonusVsAvgPct) : "—"}
+                valueTone={
+                  isNum(bonusVsAvgPct)
+                    ? toneFromNumber(bonusVsAvgPct)
+                    : "neutral"
+                }
+                helperText={
+                  isNum(bonusReference)
+                    ? `Ref. ${eur.format(bonusReference)}`
+                    : "Sin referencia disponible"
+                }
+              />
+            </div>
           </div>
         </div>
-      </section>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <MetricCard
-        label="Aumento propuesto"
-        value={isNum(raiseAmount) ? eur.format(raiseAmount) : "—"}
-        helperText="Diferencia frente al salario actual"
-      />
-
-      <MetricCard
-        label="% vs salario promedio"
-        value={isNum(salaryVsAvgPct) ? fmtPct(salaryVsAvgPct) : "—"}
-        valueTone={
-          isNum(salaryVsAvgPct) ? toneFromNumber(salaryVsAvgPct) : "neutral"
-        }
-        helperText="Comparado con la referencia salarial"
-      />
-
-      <MetricCard
-        label="% vs bonus promedio"
-        value={isNum(bonusVsAvgPct) ? fmtPct(bonusVsAvgPct) : "—"}
-        valueTone={
-          isNum(bonusVsAvgPct) ? toneFromNumber(bonusVsAvgPct) : "neutral"
-        }
-        helperText="Comparado con la referencia de bonus"
-      />
-
-      <MetricCard
-        label="Probabilidad de fuga"
-        value={
-          isNum(normalizedAttritionPct)
-            ? fmtPlainPct(normalizedAttritionPct)
-            : "—"
-        }
-        valueTone={
-          isNum(normalizedAttritionPct)
-            ? getAttritionTone(normalizedAttritionPct)
-            : "neutral"
-        }
-        helperText={
-          isNum(normalizedAttritionPct)
-            ? getAttritionHelperText(normalizedAttritionPct)
-            : undefined
-        }
-      />
-    </div>
+      </div>
+    </section>
   );
 }

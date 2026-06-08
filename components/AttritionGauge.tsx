@@ -12,15 +12,59 @@ const GaugeComponent = dynamic(
 
 type Props = {
   probability: number; // 0..1
+  comparisonProbability?: number | null;
   label?: string;
   minSize?: number;
   maxSize?: number;
 };
 
 const ATTRITION_THRESHOLD_PCT = 34.14;
+const OVERLAY_OUTER_RADIUS = 34.2;
+const OVERLAY_INNER_RADIUS = 7.5;
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function toGaugeAngle(value: number) {
+  return 180 - (value / 100) * 180;
+}
+
+function polarToCartesian(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number,
+) {
+  const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
+
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY - radius * Math.sin(angleInRadians),
+  };
+}
+
+function describeRingSectorPath(
+  centerX: number,
+  centerY: number,
+  outerRadius: number,
+  innerRadius: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  const outerStart = polarToCartesian(centerX, centerY, outerRadius, endAngle);
+  const outerEnd = polarToCartesian(centerX, centerY, outerRadius, startAngle);
+  const innerStart = polarToCartesian(centerX, centerY, innerRadius, startAngle);
+  const innerEnd = polarToCartesian(centerX, centerY, innerRadius, endAngle);
+  const largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? "0" : "1";
+
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerStart.x} ${innerStart.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${innerEnd.x} ${innerEnd.y}`,
+    "Z",
+  ].join(" ");
 }
 
 export function getAttritionRiskMeta(probability: number) {
@@ -53,6 +97,7 @@ export function getAttritionRiskMeta(probability: number) {
 
 export function AttritionGauge({
   probability,
+  comparisonProbability = null,
   label,
   minSize = 170,
   maxSize = 230,
@@ -60,6 +105,13 @@ export function AttritionGauge({
   const { resolvedTheme } = useTheme();
   const safeProbability = clamp(probability ?? 0, 0, 1);
   const percentage = safeProbability * 100;
+  const safeComparisonProbability =
+    typeof comparisonProbability === "number" &&
+    Number.isFinite(comparisonProbability)
+      ? clamp(comparisonProbability, 0, 1)
+      : null;
+  const comparisonPercentage =
+    safeComparisonProbability != null ? safeComparisonProbability * 100 : null;
   const risk = getAttritionRiskMeta(safeProbability);
 
   const wrapRef = React.useRef<HTMLDivElement | null>(null);
@@ -86,59 +138,104 @@ export function AttritionGauge({
 
   const isCompact = size < 190;
   const pointerColor = resolvedTheme === "dark" ? "#F8FAFC" : "#00153D";
+  const overlayColor =
+    comparisonPercentage != null && comparisonPercentage > percentage
+      ? "rgba(63, 156, 53, 0.38)"
+      : "rgba(228, 0, 70, 0.34)";
+  const overlayDelta =
+    comparisonPercentage != null
+      ? Math.abs(comparisonPercentage - percentage)
+      : 0;
+  const hasComparisonOverlay =
+    comparisonPercentage != null && overlayDelta >= 0.02;
+  const overlayStartAngle =
+    comparisonPercentage != null
+      ? toGaugeAngle(Math.max(comparisonPercentage, percentage))
+      : 0;
+  const overlayEndAngle =
+    comparisonPercentage != null
+      ? toGaugeAngle(Math.min(comparisonPercentage, percentage))
+      : 0;
+  const overlaySectorPath = hasComparisonOverlay
+    ? describeRingSectorPath(
+        50,
+        56,
+        OVERLAY_OUTER_RADIUS,
+        OVERLAY_INNER_RADIUS,
+        overlayStartAngle,
+        overlayEndAngle,
+      )
+    : null;
 
   return (
     <div ref={wrapRef} className="w-full">
-      <div className="mx-auto" style={{ width: size }}>
-        <GaugeComponent
-          type="semicircle"
-          value={percentage}
-          minValue={0}
-          maxValue={100}
-          arc={{
-            width: isCompact ? 0.15 : 0.17,
-            padding: 0.004,
-            cornerRadius: 6,
-            subArcs: [
-              {
-                limit: ATTRITION_THRESHOLD_PCT,
-                color: "#3F9C35",
-                showTick: true,
-              },
-              { limit: 100, color: "#E40046", showTick: true },
-            ],
-          }}
-          pointer={{
-            type: "needle",
-            color: pointerColor,
-            length: isCompact ? 0.61 : 0.65,
-            width: isCompact ? 8 : 9,
-            elastic: true,
-            animationDelay: 0,
-          }}
-          marginInPercent={{ top: 0.08, bottom: 0.02, left: 0.06, right: 0.06 }}
-          labels={{
-            valueLabel: {
-              hide: true,
-            },
-            tickLabels: {
-              type: "outer",
-              defaultTickValueConfig: {
-                formatTextValue: (value: number) => `${Math.round(value)}`,
-                style: {
-                  fontSize: isCompact ? "10px" : "11px",
-                  fontWeight: "600",
-                  fill: "#888B8D",
+      <div className="mx-auto relative" style={{ width: size }}>
+        {hasComparisonOverlay && overlaySectorPath && (
+          <svg
+            viewBox="0 0 100 64"
+            className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible"
+            aria-hidden="true"
+          >
+            <path
+              d={overlaySectorPath}
+              fill={overlayColor}
+              opacity={resolvedTheme === "dark" ? 0.9 : 0.95}
+            />
+          </svg>
+        )}
+
+        <div className="relative z-10">
+          <GaugeComponent
+            type="semicircle"
+            value={percentage}
+            minValue={0}
+            maxValue={100}
+            arc={{
+              width: isCompact ? 0.15 : 0.17,
+              padding: 0.004,
+              cornerRadius: 6,
+              subArcs: [
+                {
+                  limit: ATTRITION_THRESHOLD_PCT,
+                  color: "#3F9C35",
+                  showTick: true,
                 },
-              },
-              ticks: [
-                { value: 0 },
-                { value: ATTRITION_THRESHOLD_PCT },
-                { value: 100 },
+                { limit: 100, color: "#E40046", showTick: true },
               ],
-            },
-          }}
-        />
+            }}
+            pointer={{
+              type: "needle",
+              color: pointerColor,
+              length: isCompact ? 0.61 : 0.65,
+              width: isCompact ? 8 : 9,
+              elastic: true,
+              animationDelay: 0,
+            }}
+            marginInPercent={{ top: 0.08, bottom: 0.02, left: 0.06, right: 0.06 }}
+            labels={{
+              valueLabel: {
+                hide: true,
+              },
+              tickLabels: {
+                type: "outer",
+                defaultTickValueConfig: {
+                  formatTextValue: (value: number) => `${Math.round(value)}`,
+                  style: {
+                    fontSize: isCompact ? "10px" : "11px",
+                    fontWeight: "600",
+                    fill: "#888B8D",
+                  },
+                },
+                ticks: [
+                  { value: 0 },
+                  { value: ATTRITION_THRESHOLD_PCT },
+                  { value: 100 },
+                ],
+              },
+            }}
+          />
+        </div>
+
       </div>
 
       <div className="-mt-2 flex flex-col items-center justify-center text-center">

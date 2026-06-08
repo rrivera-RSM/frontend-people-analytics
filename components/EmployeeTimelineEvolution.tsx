@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   Briefcase,
@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { useEmployeeTimelineEvolution } from "@/hooks/use-employee-timeline-evolution";
 import type {
-  EmployeeTimelineEvolutionResponse,
   EmployeeTimelineEvent,
   OrgChangePayload,
   SalaryChangePayload,
@@ -408,54 +408,8 @@ export function EmployeeTimelineEvolution({
   employeeId,
   demoMode = false,
 }: Props) {
-  const [data, setData] = useState<EmployeeTimelineEvolutionResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<TimelineViewMode>("snake");
-
-  useEffect(() => {
-    if (!employeeId) {
-      setData(null);
-      setError(null);
-      return;
-    }
-
-    let mounted = true;
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/employees/${employeeId}/timeline-evolution`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          throw new Error(`No se pudo cargar timeline (${res.status})`);
-        }
-
-        const json = (await res.json()) as EmployeeTimelineEvolutionResponse;
-        if (!mounted) return;
-        setData(json);
-      } catch (err) {
-        if (!mounted) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Error inesperado");
-        setData(null);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    void load();
-
-    return () => {
-      mounted = false;
-      controller.abort();
-    };
-  }, [employeeId]);
+  const { data, isLoading: loading, error } = useEmployeeTimelineEvolution(employeeId);
 
   const events = useMemo(() => data?.events ?? [], [data]);
   const groupedEvents = useMemo(() => groupEventsByDate(events), [events]);
@@ -495,7 +449,7 @@ export function EmployeeTimelineEvolution({
 
         {!loading && error && (
           <div className="rounded-md border border-[color:rgb(var(--rsm-red-rgb)/0.35)] bg-[rgb(var(--rsm-red-rgb)/0.08)] p-3 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
-            {error}
+            {error instanceof Error ? error.message : "Error inesperado"}
           </div>
         )}
 

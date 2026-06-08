@@ -25,6 +25,7 @@ import {
 
 import { MoneyInput } from "@/components/MoneyInput";
 import type { ProposalDraft } from "@/types/compensation";
+
 const schema = z.object({
   salaryCurrent: z.number().nonnegative(),
   includeBonus: z.boolean(),
@@ -124,6 +125,14 @@ function normalizeDraft(
   return {
     salaryCurrent:
       typeof draft?.salaryCurrent === "number" ? draft.salaryCurrent : 0,
+    currentBonus:
+      typeof draft?.currentBonus === "number" ? draft.currentBonus : undefined,
+    currentCategoryId:
+      typeof draft?.currentCategoryId === "number"
+        ? draft.currentCategoryId
+        : undefined,
+    currentCategory:
+      typeof draft?.currentCategory === "string" ? draft.currentCategory : "",
     proposedSalary:
       typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
     includeBonus:
@@ -144,6 +153,9 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
 
   return (
     a.salaryCurrent === b.salaryCurrent &&
+    a.currentBonus === b.currentBonus &&
+    a.currentCategoryId === b.currentCategoryId &&
+    a.currentCategory === b.currentCategory &&
     a.proposedSalary === b.proposedSalary &&
     a.includeBonus === b.includeBonus &&
     a.includeCategory === b.includeCategory &&
@@ -234,6 +246,9 @@ export function SalaryProposalForm({
 
     const nextDraft = normalizeDraft({
       salaryCurrent: value.salaryCurrent,
+      currentBonus: value.currentBonus,
+      currentCategoryId: value.currentCategoryId,
+      currentCategory: value.currentCategory,
       proposedSalary,
       includeBonus,
       includeCategory,
@@ -337,10 +352,6 @@ export function SalaryProposalForm({
             onSubmit={form.handleSubmit(() => undefined)}
             className="flex flex-1 flex-col"
           >
-            <div className="mb-5 rounded-lg border border-[color:rgb(var(--rsm-blue-rgb)/0.18)] bg-[rgb(var(--rsm-blue-rgb)/0.06)] px-4 py-3 text-sm text-[#005c86] dark:text-[#d8f6ff]">
-              Define solo las condiciones nuevas que quieres simular para el empleado.
-            </div>
-
             <div className="space-y-4">
               <div className="space-y-2.5">
                 <div className="text-sm font-semibold text-slate-900 dark:text-slate-100">

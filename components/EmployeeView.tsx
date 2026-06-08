@@ -7,7 +7,11 @@ import { SalaryProposalForm } from "./SalaryProposalForm";
 import { useEffect, useState, useMemo } from "react";
 import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
-import type { ProposalDraft, SimulationResult } from "@/types/compensation";
+import type {
+  ProposalDraft,
+  SalaryProposalBenchmarkScope,
+  SimulationResult,
+} from "@/types/compensation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Eye, EyeOff, MoreVertical } from "lucide-react";
 import { DecisionAttritionRiskPanel } from "@/components/DecisionAttritionRiskPanel";
@@ -17,10 +21,18 @@ import { AnimatePresence, motion } from "framer-motion";
 import { EmployeeTimelineEvolution } from "./EmployeeTimelineEvolution";
 
 import type {
-  EmployeeInsightsResponseApi,
   EmployeeInsightCode,
 } from "@/types/employee-insights";
 import { mapInsightsToViewModels } from "@/lib/employee-insights";
+import { useEmployeePanelData } from "@/hooks/use-employee-panel-data";
+import { useSalaryProposalBenchmarks } from "@/hooks/use-salary-proposal-benchmarks";
+import { useWarmChartLibraries } from "@/hooks/use-warm-chart-libraries";
+import {
+  buildSalaryProposalBenchmarkFilters,
+  buildSalaryProposalBenchmarkScope,
+  findSalaryProposalBenchmark,
+  sanitizeSalaryProposalBenchmarkScope,
+} from "@/lib/salary-proposal-benchmarks";
 import {
   getDemoSensitiveImageClassName,
 } from "@/lib/demo-mode";
@@ -31,40 +43,17 @@ type Props = {
   onToggleDemoMode?: () => void;
 };
 
-export type MonetaryInfo = {
-  salary: number;
-  bonus: number;
-};
-
-export type OnaData = {
-  percentile_1: number;
-  percentile_2: number;
-  percentile_3: number;
-  percentile_4: number;
-  closeness_centrality: number;
-  betweenness_centrality: number;
-  degree_centrality: number;
-  eigenvector_centrality: number;
-  ona_influence_id: number;
-  ona_category_id: number;
-};
-
 type EmployeeTab = "decision-intelligence" | "ona" | "desempeno";
 const TAB_ORDER: EmployeeTab[] = ["decision-intelligence", "ona", "desempeno"];
 
-const AVG = { avgSalary: 30000, avgBonus: 2000 };
-
-const fetchApi = async <T,>(url: string): Promise<T | null> => {
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    return res.ok ? res.json() : null;
-  } catch (error) {
-    console.error(`Fetch error: ${url}`, error);
-    return null;
-  }
-};
-
 const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
+const EMPTY_BENCHMARK_SCOPE: SalaryProposalBenchmarkScope = {
+  society: false,
+  department: false,
+  office: false,
+  category: false,
+};
 
 const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
   "active_influence_ci",
@@ -143,19 +132,23 @@ export function EmployeeView({
   demoMode = false,
   onToggleDemoMode,
 }: Props) {
-  const [monetaryInfo, setMonetaryInfo] = useState<MonetaryInfo | null>(null);
-  const [onaData, setOnaData] = useState<OnaData | null>(null);
-  const [insightsData, setInsightsData] =
-    useState<EmployeeInsightsResponseApi | null>(null);
-
   const [proposalDraft, setProposalDraft] = useState<ProposalDraft | null>(null);
+  const [benchmarkScope, setBenchmarkScope] =
+    useState<SalaryProposalBenchmarkScope>(EMPTY_BENCHMARK_SCOPE);
   const [activeTab, setActiveTab] = useState<EmployeeTab>("decision-intelligence");
   const [tabDirection, setTabDirection] = useState(1);
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const {
+    monetaryInfo,
+    onaData,
+    onaDataLoading,
+    insightsData,
+    insightsLoading,
+  } = useEmployeePanelData(employee?.id);
 
-  const [loading, setLoading] = useState(false);
+  useWarmChartLibraries(Boolean(employee?.id));
 
   const handleTabChange = (nextTab: EmployeeTab) => {
     if (nextTab === activeTab) return;
@@ -167,46 +160,10 @@ export function EmployeeView({
 
   useEffect(() => {
     if (!employee?.id) {
-      setMonetaryInfo(null);
-      setOnaData(null);
-      setInsightsData(null);
       setProposalDraft(null);
       setSimulationError(null);
       setSimulationResult(null);
-      return;
     }
-
-    let isMounted = true;
-    setLoading(true);
-
-    // limpiamos para evitar mostrar datos stale al cambiar de empleado
-    setMonetaryInfo(null);
-    setOnaData(null);
-    setInsightsData(null);
-    setProposalDraft(null);
-    setSimulationError(null);
-    setSimulationResult(null);
-
-    (async () => {
-      const [monetary, ona, insights] = await Promise.all([
-        fetchApi<MonetaryInfo>(`/api/employees/${employee.id}/monetary-info`),
-        fetchApi<OnaData>(`/api/ona/${employee.id}/active`),
-        fetchApi<EmployeeInsightsResponseApi>(
-          `/api/employees/${employee.id}/insights`,
-        ),
-      ]);
-
-      if (!isMounted) return;
-
-      setMonetaryInfo(monetary ?? null);
-      setOnaData(ona ?? null);
-      setInsightsData(insights ?? null);
-      setLoading(false);
-    })();
-
-    return () => {
-      isMounted = false;
-    };
   }, [employee?.id]);
 
   useEffect(() => {
@@ -218,6 +175,7 @@ export function EmployeeView({
     setProposalDraft({
       salaryCurrent: monetaryInfo.salary,
       currentBonus: monetaryInfo.bonus,
+      currentCategoryId: employee.category_id,
       currentCategory: employee.category_name ?? "",
       proposedSalary: round2(monetaryInfo.salary * 1.02),
       bonus: monetaryInfo.bonus,
@@ -233,6 +191,60 @@ export function EmployeeView({
     setSimulationResult(null);
   }, [proposalDraft]);
 
+  const benchmarkTarget = useMemo(() => {
+    if (!employee) return null;
+
+    return {
+      societyId: employee.society_id,
+      societyName: employee.society_name,
+      departmentId: employee.department_id,
+      departmentName: employee.department_name,
+      officeId: employee.office_id,
+      officeName: employee.office_name,
+      categoryId: employee.category_id,
+      categoryName: employee.category_name ?? null,
+    };
+  }, [employee]);
+
+  const availableBenchmarkScope = useMemo(() => {
+    return buildSalaryProposalBenchmarkScope(benchmarkTarget);
+  }, [benchmarkTarget]);
+
+  useEffect(() => {
+    setBenchmarkScope((currentScope) => {
+      const sanitizedScope = sanitizeSalaryProposalBenchmarkScope(
+        currentScope,
+        availableBenchmarkScope,
+      );
+
+      const hasActiveSelection = Object.values(sanitizedScope).some(Boolean);
+      return hasActiveSelection ? sanitizedScope : availableBenchmarkScope;
+    });
+  }, [availableBenchmarkScope, employee?.id]);
+
+  const selectedBenchmarkScope = useMemo(() => {
+    return sanitizeSalaryProposalBenchmarkScope(
+      benchmarkScope,
+      availableBenchmarkScope,
+    );
+  }, [availableBenchmarkScope, benchmarkScope]);
+
+  const benchmarkFilters = useMemo(() => {
+    return buildSalaryProposalBenchmarkFilters(benchmarkTarget);
+  }, [benchmarkTarget]);
+
+  const {
+    rows: employeeBenchmarkRows,
+  } = useSalaryProposalBenchmarks(benchmarkFilters, Boolean(employee?.id));
+
+  const selectedBenchmarkReference = useMemo(() => {
+    return findSalaryProposalBenchmark(
+      employeeBenchmarkRows,
+      benchmarkTarget,
+      selectedBenchmarkScope,
+    );
+  }, [employeeBenchmarkRows, benchmarkTarget, selectedBenchmarkScope]);
+
   const proposalKpis = useMemo(() => {
     if (!proposalDraft) return null;
 
@@ -246,9 +258,12 @@ export function EmployeeView({
         proposedSalary: proposalDraft.proposedSalary,
         bonus: effectiveBonus,
       },
-      AVG,
+      {
+        avgSalaryIncrease: selectedBenchmarkReference?.salary_increase_avg,
+        avgBonus: selectedBenchmarkReference?.bonus_avg,
+      },
     );
-  }, [proposalDraft]);
+  }, [proposalDraft, selectedBenchmarkReference]);
 
   const insightViewModels = useMemo(() => {
     return insightsData ? mapInsightsToViewModels(insightsData.insights) : [];
@@ -487,13 +502,18 @@ export function EmployeeView({
               <div className="mx-auto flex max-w-[1280px] flex-col gap-6">
                 <section>
                   <KpiBar
-                    variant="summary"
                     currentSalary={monetaryInfo?.salary}
                     currentBonus={monetaryInfo?.bonus}
-                    raiseAmount={proposalKpis?.raiseAmount}
-                    salaryVsAvgPct={proposalKpis?.salaryVsAvgPct}
-                    bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
                     attritionRate={employee.attrition_rate}
+                    salaryVsAvgPct={proposalKpis?.salaryIncreaseVsAvgPct}
+                    bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
+                    salaryIncreaseReference={
+                      selectedBenchmarkReference?.salary_increase_avg
+                    }
+                    bonusReference={selectedBenchmarkReference?.bonus_avg}
+                    benchmarkScope={selectedBenchmarkScope}
+                    availableBenchmarkScope={availableBenchmarkScope}
+                    onBenchmarkScopeChange={setBenchmarkScope}
                   />
                 </section>
 
@@ -558,7 +578,7 @@ export function EmployeeView({
                           transition={{ duration: 0.22, ease: "easeOut" }}
                           className="grid gap-5"
                         >
-                      {activeTab === "decision-intelligence" && proposalDraft && (
+                      {activeTab === "decision-intelligence" && (
                         <div className="grid gap-5">
                           <DecisionAttritionRiskPanel
                             currentProbability={employee.attrition_rate ?? null}
@@ -566,7 +586,13 @@ export function EmployeeView({
                             simulationError={simulationError}
                           />
 
-                          <DecisionInsightsCarousel insights={decisionInsights} />
+                          {insightsLoading ? (
+                            <div className="rounded-xl border border-slate-200 bg-[var(--exec-card)] p-6 text-sm text-slate-500 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35 dark:text-slate-400">
+                              Cargando insights de decisión…
+                            </div>
+                          ) : (
+                            <DecisionInsightsCarousel insights={decisionInsights} />
+                          )}
                         </div>
                       )}
 
@@ -579,7 +605,7 @@ export function EmployeeView({
 
                           <OnaRadarChart
                             data={onaData}
-                            loading={loading}
+                            loading={onaDataLoading}
                             insights={onaInsights}
                           />
                         </>
