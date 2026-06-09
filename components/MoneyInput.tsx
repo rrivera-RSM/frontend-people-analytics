@@ -32,6 +32,7 @@ type MoneyInputProps = {
   disabled?: boolean;
   readOnly?: boolean;
   placeholder?: string;
+  showZeroAsEmpty?: boolean;
   name?: string;
 };
 
@@ -42,34 +43,39 @@ export function MoneyInput({
   disabled,
   readOnly,
   placeholder,
+  showZeroAsEmpty = false,
   name,
 }: MoneyInputProps) {
+  const displayValue = React.useCallback(
+    (nextValue: number) =>
+      Number.isFinite(nextValue) && (!showZeroAsEmpty || nextValue !== 0)
+        ? formatEURNumber(nextValue)
+        : "",
+    [showZeroAsEmpty],
+  );
+
   const [raw, setRaw] = React.useState(() =>
-    Number.isFinite(value) ? formatEURNumber(value) : ""
+    displayValue(value)
   );
   const [isFocused, setIsFocused] = React.useState(false);
 
   // sincroniza desde RHF SOLO cuando NO estás editando
   React.useEffect(() => {
     if (isFocused) return;
-    setRaw(Number.isFinite(value) ? formatEURNumber(value) : "");
-  }, [value, isFocused]);
+    setRaw(displayValue(value));
+  }, [value, isFocused, displayValue]);
 
   const commit = React.useCallback(() => {
     if (isEffectivelyEmpty(raw)) {
-      // si tu schema NO permite vacío, aquí puedes decidir:
-      // - forzar 0
-      // - o dejarlo como el valor anterior
-      // Por ahora: forzamos 0 para no romper z.number()
       onChange(0);
-      setRaw(formatEURNumber(0));
+      setRaw(displayValue(0));
       return;
     }
 
     const numeric = parseEUR(raw);
     onChange(numeric);
     setRaw(formatEURNumber(numeric));
-  }, [raw, onChange]);
+  }, [raw, onChange, displayValue]);
 
   return (
     <div className="relative">

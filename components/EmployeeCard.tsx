@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CheckCircle2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Tooltip,
@@ -37,6 +38,7 @@ type Props = {
   compact?: boolean;
   demoMode?: boolean;
   showPhoto?: boolean;
+  hasSavedProposal?: boolean;
   onSelect?: (employee: EmployeeRow) => void;
 };
 
@@ -52,6 +54,7 @@ export function EmployeeCard({
   compact = false,
   demoMode = false,
   showPhoto = true,
+  hasSavedProposal = false,
   onSelect,
 }: Props) {
   const [failedPhotoId, setFailedPhotoId] = useState<number | null>(null);
@@ -94,7 +97,7 @@ export function EmployeeCard({
               aria-label={fullName}
               aria-pressed={selected}
               className={[
-                "w-full flex items-center justify-center",
+                "relative w-full flex items-center justify-center",
                 "rounded-xl p-2 transition-colors",
 
                 selected
@@ -106,8 +109,8 @@ export function EmployeeCard({
                 "focus-visible:ring-offset-2",
                 "focus-visible:ring-offset-[var(--background)]",
               ].join(" ")}
-            >
-              <Avatar
+              >
+                <Avatar
                 className={getDemoSensitiveImageClassName(
                   demoMode,
                   [
@@ -133,6 +136,15 @@ export function EmployeeCard({
                   {initials}
                 </AvatarFallback>
               </Avatar>
+              {hasSavedProposal && (
+                <span
+                  className="absolute bottom-1.5 right-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full border border-white bg-[var(--rsm-green)] text-white shadow-sm dark:border-slate-900"
+                  aria-label="Propuesta guardada"
+                  title="Propuesta guardada"
+                >
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                </span>
+              )}
             </button>
           </TooltipTrigger>
 
@@ -156,6 +168,12 @@ export function EmployeeCard({
               </div>
               <div className={attritionRateClasses}>{attritionRateLabel}</div>
             </div>
+            {hasSavedProposal && (
+              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[rgb(var(--rsm-green-rgb)/0.12)] px-2 py-0.5 text-[11px] font-semibold text-[var(--rsm-green)]">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Propuesta guardada
+              </div>
+            )}
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
               <span
                 className={getDemoSensitiveTextClassName(
@@ -243,7 +261,7 @@ export function EmployeeCard({
             "truncate text-sm font-semibold text-slate-800 dark:text-slate-100",
           )}
         >
-          {fullName}
+          <span>{fullName}</span>
         </div>
         <div className="mt-1 flex items-center justify-between gap-3">
           <div
@@ -256,6 +274,12 @@ export function EmployeeCard({
           </div>
           <div className={attritionRateClasses}>{attritionRateLabel}</div>
         </div>
+        {hasSavedProposal && (
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-[color:rgb(var(--rsm-green-rgb)/0.3)] bg-[rgb(var(--rsm-green-rgb)/0.1)] px-2 py-0.5 text-[11px] font-semibold text-[var(--rsm-green)] dark:text-[#8ed989]">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            Propuesta guardada
+          </div>
+        )}
 
         {extraInfoLabel ? (
           <div className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">

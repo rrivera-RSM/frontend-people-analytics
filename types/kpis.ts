@@ -1,11 +1,13 @@
 export type ProposalInputs = {
   salaryCurrent: number;
   proposedSalary: number;
+  proposedPercentageIncrease?: number;
   bonus: number;
 };
 
 export type ProposalAverages = {
   avgSalaryIncrease?: number | null;
+  avgSalaryIncreasePercentage?: number | null;
   avgBonus?: number | null;
 };
 
@@ -22,10 +24,18 @@ export function computeProposalKpis(
   const { salaryCurrent, proposedSalary, bonus } = inputs;
 
   const raiseAmount = proposedSalary - salaryCurrent;
+  const salaryIncreasePct =
+    typeof inputs.proposedPercentageIncrease === "number"
+      ? inputs.proposedPercentageIncrease
+      : salaryCurrent > 0
+        ? (raiseAmount / salaryCurrent) * 100
+        : null;
 
   const salaryIncreaseVsAvgPct =
-    typeof avgs.avgSalaryIncrease === "number" && avgs.avgSalaryIncrease > 0
-      ? ((raiseAmount - avgs.avgSalaryIncrease) / avgs.avgSalaryIncrease) * 100
+    typeof salaryIncreasePct === "number" &&
+    typeof avgs.avgSalaryIncreasePercentage === "number" &&
+    avgs.avgSalaryIncreasePercentage > 0
+      ? salaryIncreasePct - avgs.avgSalaryIncreasePercentage
       : null;
 
   const bonusVsAvgPct =

@@ -5,11 +5,13 @@ import type {
 } from "@/types/compensation";
 
 type DeltaTone = "up" | "down" | "neutral" | "danger" | "success";
+type HelperTone = DeltaTone | "info";
 
 type MetricCardProps = {
   label: string;
   value: string;
   valueTone?: DeltaTone;
+  helperTone?: HelperTone;
   helperText?: string;
   compact?: boolean;
 };
@@ -18,24 +20,27 @@ function MetricCard({
   label,
   value,
   valueTone = "neutral",
+  helperTone,
   helperText,
   compact = false,
 }: MetricCardProps) {
   const valueToneClasses: Record<DeltaTone, string> = {
-    up: "text-[var(--rsm-blue)] dark:text-[#79d7ff]",
+    up: "text-[var(--rsm-green)] dark:text-[#8ed989]",
     down: "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
     success: "text-[var(--rsm-green)] dark:text-[#8ed989]",
     danger: "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
     neutral: "text-slate-900 dark:text-slate-50",
   };
 
-  const helperToneClasses: Record<DeltaTone, string> = {
+  const helperToneClasses: Record<HelperTone, string> = {
     up: "text-[color:rgb(var(--rsm-green-rgb)/0.82)] dark:text-[#8ed989]",
     down: "text-[color:rgb(var(--rsm-red-rgb)/0.82)] dark:text-[#ff9ab8]",
     success: "text-[color:rgb(var(--rsm-green-rgb)/0.82)] dark:text-[#8ed989]",
     danger: "text-[color:rgb(var(--rsm-red-rgb)/0.82)] dark:text-[#ff9ab8]",
+    info: "text-[var(--rsm-blue)] dark:text-[#79d7ff]",
     neutral: "text-slate-500 dark:text-slate-400",
   };
+  const resolvedHelperTone = helperTone ?? valueTone;
 
   const trendIcon =
     valueTone === "up" ? (
@@ -69,7 +74,7 @@ function MetricCard({
         <div
           className={`mt-1 text-xs font-medium ${
             compact ? "line-clamp-2 max-w-[260px] leading-5" : ""
-          } ${helperToneClasses[valueTone]}`}
+          } ${helperToneClasses[resolvedHelperTone]}`}
         >
           <span>{helperText}</span>
         </div>
@@ -85,6 +90,7 @@ export type KpiBarProps = {
   salaryVsAvgPct?: number | null;
   bonusVsAvgPct?: number | null;
   salaryIncreaseReference?: number | null;
+  salaryIncreasePercentageReference?: number | null;
   bonusReference?: number | null;
   benchmarkScope?: SalaryProposalBenchmarkScope;
   availableBenchmarkScope?: SalaryProposalBenchmarkScope;
@@ -112,6 +118,25 @@ const fmtPct = (n: number) => {
 };
 
 const fmtPlainPct = (n: number) => `${n.toFixed(1)}%`;
+
+const formatSalaryIncreaseReference = (
+  salaryIncreaseReference?: number | null,
+  salaryIncreasePercentageReference?: number | null,
+) => {
+  const hasAmount = isNum(salaryIncreaseReference);
+  const hasPercentage = isNum(salaryIncreasePercentageReference);
+
+  if (hasAmount && hasPercentage) {
+    return `Ref. ${fmtPlainPct(
+      salaryIncreasePercentageReference,
+    )}  (${eur.format(salaryIncreaseReference)})`;
+  }
+
+  if (hasAmount) return `Ref. ${eur.format(salaryIncreaseReference)}`;
+  if (hasPercentage) return `Ref. ${fmtPlainPct(salaryIncreasePercentageReference)}`;
+
+  return "Sin referencia disponible";
+};
 
 const normalizeAttritionRate = (value: number) => {
   /**
@@ -143,6 +168,7 @@ export function KpiBar({
   salaryVsAvgPct,
   bonusVsAvgPct,
   salaryIncreaseReference,
+  salaryIncreasePercentageReference,
   bonusReference,
   benchmarkScope,
   availableBenchmarkScope,
@@ -258,10 +284,12 @@ export function KpiBar({
                     ? toneFromNumber(salaryVsAvgPct)
                     : "neutral"
                 }
+                helperTone="info"
                 helperText={
-                  isNum(salaryIncreaseReference)
-                    ? `Ref. ${eur.format(salaryIncreaseReference)}`
-                    : "Sin referencia disponible"
+                  formatSalaryIncreaseReference(
+                    salaryIncreaseReference,
+                    salaryIncreasePercentageReference,
+                  )
                 }
               />
 
@@ -274,6 +302,7 @@ export function KpiBar({
                     ? toneFromNumber(bonusVsAvgPct)
                     : "neutral"
                 }
+                helperTone="info"
                 helperText={
                   isNum(bonusReference)
                     ? `Ref. ${eur.format(bonusReference)}`

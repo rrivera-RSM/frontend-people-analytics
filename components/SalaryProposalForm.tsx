@@ -19,8 +19,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
   Banknote,
+  Check,
+  CheckCircle2,
   FlaskConical,
-  SlidersHorizontal,
 } from "lucide-react";
 
 import { MoneyInput } from "@/components/MoneyInput";
@@ -29,8 +30,10 @@ import type { ProposalDraft } from "@/types/compensation";
 const schema = z.object({
   salaryCurrent: z.number().nonnegative(),
   includeBonus: z.boolean(),
+  includeNextFiscalYearBonus: z.boolean(),
   includeCategory: z.boolean(),
   bonus: z.number().nonnegative(),
+  nextFiscalYearBonus: z.number().nonnegative(),
   category: z.string(),
   proposedSalary: z.number().nonnegative(),
   bonusPaymentMonth: z.string(),
@@ -43,8 +46,10 @@ const emptyDraft: ProposalDraft = {
   salaryCurrent: 0,
   proposedSalary: 0,
   bonus: 0,
+  nextFiscalYearBonus: 0,
   category: "",
   includeBonus: false,
+  includeNextFiscalYearBonus: false,
   includeCategory: false,
   bonusPaymentMonth: "",
   observations: "",
@@ -75,6 +80,14 @@ const CATEGORY_ORDER = [
 
 function normalizeCategoryValue(value: string | null | undefined) {
   return value?.trim().toLowerCase() ?? "";
+}
+
+function calculateIncreasePercentage(
+  salaryCurrent: number,
+  proposedSalary: number,
+) {
+  if (salaryCurrent <= 0) return 0;
+  return ((proposedSalary - salaryCurrent) / salaryCurrent) * 100;
 }
 
 function getAllowedCategoryOptions(currentCategory: string | null | undefined) {
@@ -115,7 +128,9 @@ const LoadingSkeleton = () => (
 type Props = {
   value: ProposalDraft | null;
   onChange: (value: ProposalDraft) => void;
+  onSave?: (value: ProposalDraft) => void;
   onOpenSimulation: () => void;
+  isSaved?: boolean;
   demoMode?: boolean;
 };
 
@@ -135,11 +150,26 @@ function normalizeDraft(
       typeof draft?.currentCategory === "string" ? draft.currentCategory : "",
     proposedSalary:
       typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
+    increasePercentage:
+      typeof draft?.increasePercentage === "number"
+        ? draft.increasePercentage
+        : calculateIncreasePercentage(
+            typeof draft?.salaryCurrent === "number" ? draft.salaryCurrent : 0,
+            typeof draft?.proposedSalary === "number" ? draft.proposedSalary : 0,
+          ),
     includeBonus:
       typeof draft?.includeBonus === "boolean" ? draft.includeBonus : false,
+    includeNextFiscalYearBonus:
+      typeof draft?.includeNextFiscalYearBonus === "boolean"
+        ? draft.includeNextFiscalYearBonus
+        : false,
     includeCategory:
       typeof draft?.includeCategory === "boolean" ? draft.includeCategory : false,
     bonus: typeof draft?.bonus === "number" ? draft.bonus : 0,
+    nextFiscalYearBonus:
+      typeof draft?.nextFiscalYearBonus === "number"
+        ? draft.nextFiscalYearBonus
+        : 0,
     category: typeof draft?.category === "string" ? draft.category : "",
     bonusPaymentMonth:
       typeof draft?.bonusPaymentMonth === "string" ? draft.bonusPaymentMonth : "",
@@ -157,9 +187,12 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
     a.currentCategoryId === b.currentCategoryId &&
     a.currentCategory === b.currentCategory &&
     a.proposedSalary === b.proposedSalary &&
+    a.increasePercentage === b.increasePercentage &&
     a.includeBonus === b.includeBonus &&
+    a.includeNextFiscalYearBonus === b.includeNextFiscalYearBonus &&
     a.includeCategory === b.includeCategory &&
     a.bonus === b.bonus &&
+    a.nextFiscalYearBonus === b.nextFiscalYearBonus &&
     a.category === b.category &&
     a.bonusPaymentMonth === b.bonusPaymentMonth &&
     a.observations === b.observations
@@ -169,7 +202,9 @@ function sameDraft(a: ProposalDraft | null, b: ProposalDraft | null) {
 export function SalaryProposalForm({
   value,
   onChange,
+  onSave,
   onOpenSimulation,
+  isSaved = false,
   demoMode = false,
 }: Props) {
   const form = useForm<FormValues>({
@@ -192,9 +227,19 @@ export function SalaryProposalForm({
     name: "bonus",
   });
 
+  const nextFiscalYearBonus = useWatch({
+    control: form.control,
+    name: "nextFiscalYearBonus",
+  });
+
   const includeBonus = useWatch({
     control: form.control,
     name: "includeBonus",
+  });
+
+  const includeNextFiscalYearBonus = useWatch({
+    control: form.control,
+    name: "includeNextFiscalYearBonus",
   });
 
   const category = useWatch({
@@ -250,9 +295,15 @@ export function SalaryProposalForm({
       currentCategoryId: value.currentCategoryId,
       currentCategory: value.currentCategory,
       proposedSalary,
+      increasePercentage: calculateIncreasePercentage(
+        value.salaryCurrent,
+        proposedSalary,
+      ),
       includeBonus,
+      includeNextFiscalYearBonus,
       includeCategory,
       bonus,
+      nextFiscalYearBonus,
       category,
       bonusPaymentMonth,
       observations,
@@ -266,7 +317,9 @@ export function SalaryProposalForm({
   }, [
     proposedSalary,
     includeBonus,
+    includeNextFiscalYearBonus,
     bonus,
+    nextFiscalYearBonus,
     includeCategory,
     category,
     bonusPaymentMonth,
@@ -277,22 +330,20 @@ export function SalaryProposalForm({
 
   const currentBonus = value?.currentBonus ?? value?.bonus ?? 0;
   const currentCategory = value?.currentCategory ?? value?.category ?? "";
-  const bonusAvailable = currentBonus > 0;
   const allowedCategoryOptions = getAllowedCategoryOptions(currentCategory);
 
   React.useEffect(() => {
-    if (!bonusAvailable && form.getValues("includeBonus")) {
-      form.setValue("includeBonus", false, { shouldDirty: true });
+    if (!includeBonus) {
+      form.setValue("bonus", currentBonus, { shouldDirty: true });
+      form.setValue("bonusPaymentMonth", "", { shouldDirty: true });
     }
-  }, [bonusAvailable, form]);
+  }, [includeBonus, currentBonus, form]);
 
   React.useEffect(() => {
-    if (!includeBonus) {
-      const nextMonth = bonusAvailable ? form.getValues("bonusPaymentMonth") : "";
-      form.setValue("bonus", currentBonus, { shouldDirty: true });
-      form.setValue("bonusPaymentMonth", nextMonth, { shouldDirty: true });
+    if (!includeNextFiscalYearBonus) {
+      form.setValue("nextFiscalYearBonus", 0, { shouldDirty: true });
     }
-  }, [includeBonus, currentBonus, form, bonusAvailable]);
+  }, [includeNextFiscalYearBonus, form]);
 
   React.useEffect(() => {
     if (!includeCategory) {
@@ -326,30 +377,87 @@ export function SalaryProposalForm({
   }
 
   const raiseAmount = proposedSalary - value.salaryCurrent;
-  const raisePct =
-    value.salaryCurrent > 0 ? (raiseAmount / value.salaryCurrent) * 100 : 0;
+  const raisePct = calculateIncreasePercentage(
+    value.salaryCurrent,
+    proposedSalary,
+  );
+  const hasProposedSalary = proposedSalary > 0;
+
+  const handleSave = (formValues: FormValues) => {
+    if (formValues.proposedSalary <= 0) return;
+
+    const nextDraft = normalizeDraft({
+      ...value,
+      ...formValues,
+      increasePercentage: calculateIncreasePercentage(
+        value.salaryCurrent,
+        formValues.proposedSalary,
+      ),
+    });
+
+    if (!sameDraft(nextDraft, normalizeDraft(value))) {
+      onChange(nextDraft);
+    }
+
+    onSave?.(nextDraft);
+  };
 
   return (
-    <Card className="min-h-[640px] border-slate-200 bg-[var(--exec-card)] py-0 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/80">
-      <CardHeader className="flex flex-row items-center justify-between gap-3 border-b border-slate-200 px-5 py-5 dark:border-slate-700/80">
+    <Card
+      className={cn(
+        "min-h-[640px] py-0 shadow-sm transition-colors duration-300",
+        isSaved
+          ? "border-[color:rgb(var(--rsm-green-rgb)/0.42)] bg-[linear-gradient(180deg,rgb(var(--rsm-green-rgb)/0.1),var(--exec-card)_30%)] shadow-[0_12px_32px_rgba(63,156,53,0.12)] dark:border-[color:rgb(var(--rsm-green-rgb)/0.5)] dark:bg-[linear-gradient(180deg,rgb(var(--rsm-green-rgb)/0.16),rgb(30,41,59)_34%)]"
+          : "border-slate-200 bg-[var(--exec-card)] dark:border-slate-700/90 dark:bg-slate-800/80",
+      )}
+    >
+      <CardHeader
+        className={cn(
+          "flex flex-row items-center justify-between gap-3 border-b px-5 py-5 transition-colors duration-300",
+          isSaved
+            ? "border-[color:rgb(var(--rsm-green-rgb)/0.28)]"
+            : "border-slate-200 dark:border-slate-700/80",
+        )}
+      >
         <div className="flex items-center gap-3">
-          <Banknote className="h-5 w-5 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
-          <CardTitle className="text-xl text-slate-900 dark:text-slate-50">Nueva propuesta</CardTitle>
+          <Banknote
+            className={cn(
+              "h-5 w-5",
+              isSaved
+                ? "text-[var(--rsm-green)] dark:text-[#8ed989]"
+                : "text-[var(--rsm-blue)] dark:text-[#79d7ff]",
+            )}
+          />
+          <div className="min-w-0">
+            <CardTitle className="text-xl text-slate-900 dark:text-slate-50">
+              Nueva propuesta
+            </CardTitle>
+            {isSaved && (
+              <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[color:rgb(var(--rsm-green-rgb)/0.3)] bg-[rgb(var(--rsm-green-rgb)/0.1)] px-2 py-0.5 text-xs font-semibold text-[var(--rsm-green)] dark:text-[#8ed989]">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Guardada
+              </div>
+            )}
+          </div>
         </div>
 
         <button
           type="button"
-          aria-label="Ajustes de compensación"
-          className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
+          aria-label="Simular impacto"
+          title="Simular impacto"
+          onClick={onOpenSimulation}
+          disabled={!hasProposedSalary}
+          className="inline-flex aspect-square h-16 flex-col items-center justify-center gap-1 rounded-lg bg-[var(--rsm-blue)] text-[10px] font-semibold leading-tight text-white shadow-[0_8px_24px_rgba(0,156,222,0.28)] transition-all duration-200 hover:bg-[#0086c0] disabled:cursor-not-allowed disabled:opacity-45"
         >
-          <SlidersHorizontal className="h-4 w-4" />
+          <FlaskConical className="h-5 w-5" />
+          <span className="text-center">Simular impacto</span>
         </button>
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col px-5 py-5">
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(() => undefined)}
+            onSubmit={form.handleSubmit(handleSave)}
             className="flex flex-1 flex-col"
           >
             <div className="space-y-4">
@@ -369,6 +477,8 @@ export function SalaryProposalForm({
                           }
                           onChange={field.onChange}
                           onBlur={field.onBlur}
+                          placeholder="Introduce la propuesta salarial aquí"
+                          showZeroAsEmpty
                         />
                       </FormControl>
                       <FormMessage />
@@ -378,15 +488,21 @@ export function SalaryProposalForm({
                 <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>Variación propuesta</span>
                   <span className="font-medium text-[var(--rsm-blue)] dark:text-[#79d7ff]">
-                    {raiseAmount >= 0 ? "+" : ""}
-                    {new Intl.NumberFormat("es-ES", {
-                      style: "currency",
-                      currency: "EUR",
-                      minimumFractionDigits: 2,
-                    }).format(raiseAmount)}
-                    {" · "}
-                    {raisePct >= 0 ? "+" : ""}
-                    {raisePct.toFixed(1)}%
+                    {hasProposedSalary ? (
+                      <>
+                        {raiseAmount >= 0 ? "+" : ""}
+                        {new Intl.NumberFormat("es-ES", {
+                          style: "currency",
+                          currency: "EUR",
+                          minimumFractionDigits: 2,
+                        }).format(raiseAmount)}
+                        {" · "}
+                        {raisePct >= 0 ? "+" : ""}
+                        {raisePct.toFixed(1)}%
+                      </>
+                    ) : (
+                      "Pendiente"
+                    )}
                   </span>
                 </div>
               </div>
@@ -396,7 +512,6 @@ export function SalaryProposalForm({
                   <input
                     type="checkbox"
                     checked={Boolean(includeBonus)}
-                    disabled={!bonusAvailable}
                     onChange={(event) => {
                       form.setValue("includeBonus", event.target.checked, {
                         shouldDirty: true,
@@ -416,7 +531,9 @@ export function SalaryProposalForm({
                           value={includeBonus ? field.value ?? 0 : currentBonus}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
-                          disabled={!includeBonus || !bonusAvailable}
+                          disabled={!includeBonus}
+                          placeholder="Introduce el bonus de desempeño"
+                          showZeroAsEmpty
                         />
                       </FormControl>
                       <FormMessage />
@@ -439,7 +556,7 @@ export function SalaryProposalForm({
                           value={(field.value as string) ?? ""}
                           onChange={field.onChange}
                           onBlur={field.onBlur}
-                          disabled={!includeBonus || !bonusAvailable}
+                          disabled={!includeBonus}
                           className={cn(
                             "h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs outline-none transition-[color,box-shadow]",
                             "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]",
@@ -453,6 +570,43 @@ export function SalaryProposalForm({
                             </option>
                           ))}
                         </select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2.5 border-t border-slate-200 pt-4 dark:border-slate-700">
+                <label className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(includeNextFiscalYearBonus)}
+                    onChange={(event) => {
+                      form.setValue(
+                        "includeNextFiscalYearBonus",
+                        event.target.checked,
+                        { shouldDirty: true },
+                      );
+                    }}
+                    className="h-3.5 w-3.5 rounded border-slate-300 text-[var(--rsm-blue)] focus:ring-[var(--rsm-blue)] dark:border-slate-600 dark:bg-slate-900"
+                  />
+                  <span>Bonus para próximo ejercicio fiscal</span>
+                </label>
+                <FormField
+                  control={form.control}
+                  name="nextFiscalYearBonus"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <MoneyInput
+                          value={field.value ?? 0}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          disabled={!includeNextFiscalYearBonus}
+                          placeholder="Introduce el bonus previsto"
+                          showZeroAsEmpty
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -552,15 +706,22 @@ export function SalaryProposalForm({
 
             <div className="mt-auto border-t border-slate-200 pt-5 dark:border-slate-700">
               <Button
-                type="button"
+                type="submit"
                 className={cn(
-                  "h-12 w-full gap-2 rounded-lg bg-[var(--rsm-blue)] text-base font-semibold text-white transition-all duration-200 hover:bg-[#0086c0]",
-                  "shadow-[0_8px_24px_rgba(0,156,222,0.28)]",
+                  "h-12 w-full gap-2 rounded-lg bg-[var(--rsm-green)] text-base font-semibold text-white transition-all duration-200 hover:bg-[#2f7d28]",
+                  "shadow-[0_8px_24px_rgba(63,156,53,0.28)]",
+                  isSaved
+                    ? "bg-[#2f7d28] shadow-[0_8px_24px_rgba(63,156,53,0.18)]"
+                    : "",
                 )}
-                onClick={onOpenSimulation}
+                disabled={!hasProposedSalary}
               >
-                <FlaskConical className="h-4 w-4" />
-                Simular impacto
+                {isSaved ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                {isSaved ? "Propuesta guardada" : "Guardar Propuesta"}
               </Button>
             </div>
           </form>

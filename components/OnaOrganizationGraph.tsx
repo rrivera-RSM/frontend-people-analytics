@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, RefObject } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOnaRelations } from "@/hooks/use-ona-relations";
 import type {
@@ -49,7 +50,7 @@ type ForceLink = GraphEdge & {
 };
 
 type ForceGraph2DProps = {
-  ref?: React.RefObject<ForceGraphRef | null>;
+  ref?: RefObject<ForceGraphRef | null>;
   graphData: { nodes: ForceNode[]; links: ForceLink[] };
   width: number;
   height: number;
@@ -97,17 +98,40 @@ const CATEGORY_PRIORITY: Record<OnaCategory, number> = {
 
 const CATEGORY_COLORS: Record<OnaCategory, string> = {
   central: "#3F9C35",
-  hipo: "#34A798",
+  hipo: "#3F9C35",
   intermediary: "#F1B434",
   peripheral: "#E40046",
 };
 
 const CATEGORY_LABELS: Record<OnaCategory, string> = {
   central: "Central",
-  hipo: "Hipo",
-  intermediary: "Intermediary",
-  peripheral: "Peripheral",
+  hipo: "Central",
+  intermediary: "Intermediario",
+  peripheral: "Periférico",
 };
+
+type OnaDisplayCategory = Exclude<OnaCategory, "hipo">;
+
+const CATEGORY_LEGEND: Array<{
+  category: OnaDisplayCategory;
+  description: string;
+}> = [
+  {
+    category: "central",
+    description:
+      "Personas con una alta integración e influencia dentro de la red.",
+  },
+  {
+    category: "intermediary",
+    description:
+      "Personas con un nivel medio de conexión y colaboración.",
+  },
+  {
+    category: "peripheral",
+    description:
+      "Personas con menor nivel de interacción dentro de la red.",
+  },
+];
 
 type ViewMode = "employee" | "organization";
 
@@ -155,7 +179,7 @@ function normalizeOnaCategory(value: unknown): OnaCategory | null {
   const normalized = value.trim().toLowerCase();
 
   if (normalized === "central") return "central";
-  if (normalized === "hipo") return "hipo";
+  if (normalized === "hipo") return "central";
   if (normalized === "intermediary" || normalized === "intermediario") {
     return "intermediary";
   }
@@ -171,9 +195,44 @@ function resolveNodeColor(category: OnaCategory | null) {
   return CATEGORY_COLORS[category];
 }
 
-function resolveCategoryLabel(category: OnaCategory | null) {
-  if (!category) return "Sin categorizar";
-  return CATEGORY_LABELS[category];
+function getDisplayCategory(
+  category: OnaCategory | null,
+): OnaDisplayCategory | null {
+  if (!category) return null;
+  return category === "hipo" ? "central" : category;
+}
+
+function LegendPersonIcon({
+  color,
+  active,
+}: {
+  color: string;
+  active: boolean;
+}) {
+  return (
+    <span
+      className={[
+        "relative inline-flex h-10 w-10 shrink-0 items-center justify-center",
+        active ? "scale-105" : "",
+      ].join(" ")}
+      aria-hidden="true"
+    >
+      {active && (
+        <span
+          className="absolute inset-0 rounded-full"
+          style={{ backgroundColor: `${color}22` }}
+        />
+      )}
+      <span
+        className="absolute top-1.5 h-3.5 w-3.5 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+      <span
+        className="absolute bottom-1.5 h-[18px] w-6 rounded-t-full rounded-b-sm"
+        style={{ backgroundColor: color }}
+      />
+    </span>
+  );
 }
 
 function drawRoundedRect(
@@ -491,6 +550,9 @@ export function OnaOrganizationGraph({
   const selectedNode = useMemo(() => {
     return forceGraphData?.nodes.find((node) => node.isSelected) ?? null;
   }, [forceGraphData]);
+  const selectedDisplayCategory = getDisplayCategory(
+    selectedNode?.onaCategory ?? null,
+  );
 
   const applyCameraMode = useMemo(
     () => (mode: ViewMode) => {
@@ -536,34 +598,7 @@ export function OnaOrganizationGraph({
           <CardTitle className="text-base leading-tight text-slate-900 dark:text-slate-100">
             {title}
           </CardTitle>
-          <div className="inline-flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#009CDE]" />
-              Empleado seleccionado (halo)
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#3F9C35]" />
-              Central
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#34A798]" />
-              Hipo
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#F1B434]" />
-              Intermediary
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#E40046]" />
-              Peripheral
-            </span>
-          </div>
         </div>
-        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
-          Vista agregada de relaciones dentro de la sociedad. La posicion de cada
-          nodo se toma de `graph_x_coordinate` y `graph_y_coordinate`, mientras el
-          color se basa en `ona_category`.
-        </p>
       </CardHeader>
 
       <CardContent className="px-3 pb-3 pt-0">
@@ -585,38 +620,50 @@ export function OnaOrganizationGraph({
           </div>
         ) : (
           <div className="space-y-3">
-            {selectedNode && (
-              <div
-                className="flex items-center justify-between rounded-xl border px-4 py-3"
-                style={{
-                  borderColor: `${selectedNode.color}55`,
-                  background: `linear-gradient(135deg, ${selectedNode.color}18, rgba(0,21,61,0.78))`,
-                }}
-              >
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
-                    Posicion organizacional
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
-                    {resolveCategoryLabel(selectedNode.onaCategory)}
-                  </div>
-                </div>
+            <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700/90 dark:bg-slate-900/35 md:grid-cols-3">
+              {CATEGORY_LEGEND.map((item) => {
+                const color = CATEGORY_COLORS[item.category];
+                const isSelectedCategory =
+                  selectedDisplayCategory === item.category;
 
-                <div
-                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold text-slate-800 dark:text-slate-50"
-                  style={{
-                    borderColor: `${selectedNode.color}66`,
-                    backgroundColor: `${selectedNode.color}22`,
-                  }}
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: selectedNode.color }}
-                  />
-                  {resolveCategoryLabel(selectedNode.onaCategory)}
-                </div>
-              </div>
-            )}
+                return (
+                  <div
+                    key={item.category}
+                    className={[
+                      "flex min-w-0 items-start gap-3 rounded-md border px-3 py-2.5 transition-colors",
+                      isSelectedCategory
+                        ? "border-[color:var(--legend-color)] bg-white shadow-sm dark:bg-slate-800/80"
+                        : "border-transparent bg-transparent",
+                    ].join(" ")}
+                    style={
+                      {
+                        "--legend-color": `${color}88`,
+                      } as CSSProperties
+                    }
+                  >
+                    <LegendPersonIcon color={color} active={isSelectedCategory} />
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                          {CATEGORY_LABELS[item.category]}
+                        </span>
+                        {isSelectedCategory && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-normal text-white"
+                            style={{ backgroundColor: color }}
+                          >
+                            Empleado seleccionado
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs leading-4 text-slate-500 dark:text-slate-400">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
             <div className="relative overflow-hidden rounded-xl border border-slate-300 bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(244,248,250,0.95))] dark:border-slate-700 dark:bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.11),transparent_30%),linear-gradient(180deg,rgba(0,21,61,0.64),rgba(6,17,38,0.9))]">
               <div className="absolute right-3 top-3 z-10 inline-flex items-center rounded-lg border border-slate-300/80 bg-slate-100/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">

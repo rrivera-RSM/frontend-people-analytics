@@ -13,6 +13,7 @@ type Props = {
   offset?: number;
   collapsed?: boolean;
   demoMode?: boolean;
+  savedProposalEmployeeIds?: ReadonlySet<number>;
   onSelectEmployee?: (employee: EmployeeRow | null) => void;
   onToggleCollapse?: (collapsed: boolean) => void;
 };
@@ -36,6 +37,7 @@ export function EmployeesSidebar({
   onToggleCollapse,
   collapsed = false,
   demoMode = false,
+  savedProposalEmployeeIds,
 }: Props) {
   const [status, setStatus] = useState<CallStatus>("idle");
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
@@ -171,8 +173,6 @@ export function EmployeesSidebar({
         status={status}
         count={visibleEmployees.length}
         isSearching={isSearching}
-        office={office}
-        department={department}
         riskFilter={riskFilter}
         onRiskFilterChange={setRiskFilter}
       />
@@ -200,6 +200,7 @@ export function EmployeesSidebar({
               demoMode={demoMode}
               showPhoto={showEmployeePhotos}
               selected={emp.id === selectedId}
+              hasSavedProposal={savedProposalEmployeeIds?.has(emp.id) ?? false}
               onSelect={(e) => {
                 setSelectedId(e.id);
                 onSelectEmployee?.(e);
@@ -223,8 +224,6 @@ function Header({
   status,
   count,
   isSearching,
-  office,
-  department,
   riskFilter,
   onRiskFilterChange,
 }: {
@@ -235,8 +234,6 @@ function Header({
   status: CallStatus;
   count: number;
   isSearching: boolean;
-  office: string;
-  department: string;
   riskFilter: RiskFilter;
   onRiskFilterChange: (filter: RiskFilter) => void;
 }) {
@@ -257,20 +254,6 @@ function Header({
           <div className="mb-3 flex flex-col items-center gap-2">
             <CompanyMark className="h-8 w-auto" />
             <ThemeToggle />
-          </div>
-        )}
-
-        {!collapsed && (
-          <div className="mb-5">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Contexto
-            </div>
-            <div className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-100">
-              Estás viendo:
-            </div>
-            <div className="mt-1 text-sm font-semibold text-[var(--rsm-blue)] dark:text-[#79d7ff]">
-              {department} · {office}
-            </div>
           </div>
         )}
 

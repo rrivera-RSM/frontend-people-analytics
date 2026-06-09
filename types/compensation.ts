@@ -5,8 +5,11 @@ export type ProposalDraft = {
   currentCategory?: string;
   proposedSalary: number;
   bonus: number;
+  nextFiscalYearBonus?: number;
   category: string;
   includeBonus?: boolean;
+  includeNextFiscalYearBonus?: boolean;
+  increasePercentage?: number;
   includeCategory?: boolean;
   bonusPaymentMonth?: string;
   observations?: string;
@@ -29,6 +32,7 @@ export type SalaryProposalBenchmarkRow = {
   category_id: number | null;
   category_name: string | null;
   salary_increase_avg: number | null;
+  salary_increase_percentage_avg: number | null;
   bonus_avg: number | null;
 };
 

@@ -41,12 +41,12 @@ type Props = {
   employee: EmployeeRow | null;
   demoMode?: boolean;
   onToggleDemoMode?: () => void;
+  savedProposalEmployeeIds?: ReadonlySet<number>;
+  onProposalSavedChange?: (employeeId: number, isSaved: boolean) => void;
 };
 
 type EmployeeTab = "decision-intelligence" | "ona" | "desempeno";
 const TAB_ORDER: EmployeeTab[] = ["decision-intelligence", "ona", "desempeno"];
-
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 const EMPTY_BENCHMARK_SCOPE: SalaryProposalBenchmarkScope = {
   society: false,
@@ -131,6 +131,8 @@ export function EmployeeView({
   employee,
   demoMode = false,
   onToggleDemoMode,
+  savedProposalEmployeeIds,
+  onProposalSavedChange,
 }: Props) {
   const [proposalDraft, setProposalDraft] = useState<ProposalDraft | null>(null);
   const [benchmarkScope, setBenchmarkScope] =
@@ -177,10 +179,12 @@ export function EmployeeView({
       currentBonus: monetaryInfo.bonus,
       currentCategoryId: employee.category_id,
       currentCategory: employee.category_name ?? "",
-      proposedSalary: round2(monetaryInfo.salary * 1.02),
+      proposedSalary: 0,
       bonus: monetaryInfo.bonus,
+      nextFiscalYearBonus: 0,
       category: employee.category_name ?? "",
       includeBonus: monetaryInfo.bonus > 0,
+      includeNextFiscalYearBonus: false,
       includeCategory: false,
     });
   }, [employee, monetaryInfo]);
@@ -252,17 +256,29 @@ export function EmployeeView({
       ? proposalDraft.bonus
       : proposalDraft.currentBonus ?? proposalDraft.bonus;
 
-    return computeProposalKpis(
+    const kpis = computeProposalKpis(
       {
         salaryCurrent: proposalDraft.salaryCurrent,
+        proposedPercentageIncrease: proposalDraft.increasePercentage,
         proposedSalary: proposalDraft.proposedSalary,
         bonus: effectiveBonus,
       },
       {
         avgSalaryIncrease: selectedBenchmarkReference?.salary_increase_avg,
+        avgSalaryIncreasePercentage:
+          selectedBenchmarkReference?.salary_increase_percentage_avg,
         avgBonus: selectedBenchmarkReference?.bonus_avg,
       },
     );
+
+    return {
+      ...kpis,
+      salaryIncreaseVsAvgPct:
+        proposalDraft.increasePercentage &&
+        proposalDraft.increasePercentage > 0
+          ? kpis.salaryIncreaseVsAvgPct
+          : null,
+    };
   }, [proposalDraft, selectedBenchmarkReference]);
 
   const insightViewModels = useMemo(() => {
@@ -294,6 +310,26 @@ export function EmployeeView({
   const attritionIsHigh = attritionPct != null && attritionPct >= 34.14;
   const demoModeLabel = demoMode ? "Desactivar modo demo" : "Activar modo demo";
   const DemoModeIcon = demoMode ? EyeOff : Eye;
+  const isProposalSaved =
+    employee?.id != null && savedProposalEmployeeIds?.has(employee.id)
+      ? true
+      : false;
+
+  const handleProposalDraftChange = (nextDraft: ProposalDraft) => {
+    setProposalDraft(nextDraft);
+
+    if (employee?.id != null && isProposalSaved) {
+      onProposalSavedChange?.(employee.id, false);
+    }
+  };
+
+  const handleProposalSave = (nextDraft: ProposalDraft) => {
+    setProposalDraft(nextDraft);
+
+    if (employee?.id != null) {
+      onProposalSavedChange?.(employee.id, true);
+    }
+  };
 
   const runSimulation = async () => {
     if (!employee || !proposalDraft || simulationLoading) return;
@@ -510,6 +546,9 @@ export function EmployeeView({
                     salaryIncreaseReference={
                       selectedBenchmarkReference?.salary_increase_avg
                     }
+                    salaryIncreasePercentageReference={
+                      selectedBenchmarkReference?.salary_increase_percentage_avg
+                    }
                     bonusReference={selectedBenchmarkReference?.bonus_avg}
                     benchmarkScope={selectedBenchmarkScope}
                     availableBenchmarkScope={availableBenchmarkScope}
@@ -520,8 +559,10 @@ export function EmployeeView({
                 <section className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
                   <SalaryProposalForm
                     demoMode={demoMode}
+                    isSaved={isProposalSaved}
                     value={proposalDraft}
-                    onChange={setProposalDraft}
+                    onChange={handleProposalDraftChange}
+                    onSave={handleProposalSave}
                     onOpenSimulation={() => {
                       handleTabChange("decision-intelligence");
                       void runSimulation();

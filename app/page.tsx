@@ -11,6 +11,9 @@ export default function EmployeesPage() {
   const [selected, setSelected] = useState<EmployeeRow | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
+  const [savedProposalEmployeeIds, setSavedProposalEmployeeIds] = useState<
+    ReadonlySet<number>
+  >(new Set());
 
   const { status } = useSession();
   const started = useRef(false);
@@ -39,6 +42,7 @@ export default function EmployeesPage() {
                 office="Barcelona"
                 collapsed={collapsed}
                 demoMode={demoMode}
+                savedProposalEmployeeIds={savedProposalEmployeeIds}
                 onToggleCollapse={(c) => setCollapsed(c)}
                 department="PEOPLE & CULTURE"
                 society="RSM SPAIN SERVICIOS ADMINISTRATIVOS, SL"
@@ -76,6 +80,20 @@ export default function EmployeesPage() {
               <EmployeeView
                 employee={selected}
                 demoMode={demoMode}
+                savedProposalEmployeeIds={savedProposalEmployeeIds}
+                onProposalSavedChange={(employeeId, isSaved) => {
+                  setSavedProposalEmployeeIds((current) => {
+                    const next = new Set(current);
+
+                    if (isSaved) {
+                      next.add(employeeId);
+                    } else {
+                      next.delete(employeeId);
+                    }
+
+                    return next;
+                  });
+                }}
                 onToggleDemoMode={() => setDemoMode((current) => !current)}
               />
             </div>
