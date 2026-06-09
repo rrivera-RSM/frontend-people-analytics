@@ -5,7 +5,7 @@ import React, { useMemo, useRef, useLayoutEffect, useState } from "react";
 import type { ApexOptions } from "apexcharts";
 import { Info } from "lucide-react";
 
-import type { OnaData } from "./EmployeeView";
+import type { OnaData } from "@/types/employee-data";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import type { EmployeeInsightViewModel } from "@/types/employee-insights";
 import { InsightChipsInline } from "./employee-insights/InsightChipsInline";
@@ -33,28 +33,28 @@ const ONA_LABEL_HELP = [
   {
     short: "CI",
     full: "Compartir información",
-    colorClass: "bg-sky-400",
+    colorClass: "bg-[var(--rsm-blue)]",
     description:
       "Mide hasta qué punto esta persona es percibida como una fuente útil para compartir y mover información dentro de la organización.",
   },
   {
     short: "AT",
     full: "Apoyo técnico",
-    colorClass: "bg-cyan-400",
+    colorClass: "bg-[var(--rsm-turquoise)]",
     description:
       "Refleja el reconocimiento de esta persona como apoyo experto o referente para resolver dudas técnicas o profesionales.",
   },
   {
     short: "AP",
     full: "Apoyo personal",
-    colorClass: "bg-violet-400",
+    colorClass: "bg-[var(--rsm-purple)]",
     description:
       "Indica el nivel de confianza o cercanía percibida para apoyar a otras personas en situaciones personales o relacionales.",
   },
   {
     short: "IN",
     full: "Inspiración",
-    colorClass: "bg-amber-400",
+    colorClass: "bg-[var(--rsm-yellow)]",
     description:
       "Representa la capacidad de inspirar, influir o movilizar a otras personas dentro de la organización.",
   },
@@ -72,8 +72,8 @@ function clamp(n: number, min: number, max: number) {
 export default function OnaRadarChart({
   data,
   title = "Análisis de Red Organizacional (ONA)",
-  color = "#67e8f9",
-  fillColor = "#009cde",
+  color = "#009CDE",
+  fillColor = "#34A798",
   loading = false,
   insights = [],
 }: Props) {
@@ -159,7 +159,7 @@ export default function OnaRadarChart({
         redrawOnWindowResize: true,
         redrawOnParentResize: true,
         background: "transparent",
-        foreColor: "#94a3b8",
+        foreColor: "#888B8D",
       },
       grid: {
         padding: {
@@ -175,7 +175,7 @@ export default function OnaRadarChart({
           style: {
             fontSize: labelFontSize,
             fontWeight: 600,
-            colors: ["#cbd5e1", "#cbd5e1", "#cbd5e1", "#cbd5e1"],
+            colors: ["#63666A", "#63666A", "#63666A", "#63666A"],
           },
           offsetY: 0,
         },
@@ -200,7 +200,7 @@ export default function OnaRadarChart({
       markers: {
         size: compact ? 3 : 3.5,
         colors: [color],
-        strokeColors: "#e2e8f0",
+        strokeColors: "#FFFFFF",
         strokeWidth: 2,
         hover: { size: compact ? 5 : 6 },
       },
@@ -209,16 +209,16 @@ export default function OnaRadarChart({
         style: {
           fontSize: valueFontSize,
           fontWeight: 600,
-          colors: ["#e2e8f0"],
+          colors: ["#FFFFFF"],
         },
         background: {
           enabled: true,
           borderRadius: 4,
           padding: 3,
           opacity: 0.74,
-          foreColor: "#e2e8f0",
+          foreColor: "#FFFFFF",
           borderWidth: 0,
-          backgroundColor: "rgba(15, 23, 42, 0.76)",
+          backgroundColor: "rgba(0, 21, 61, 0.82)",
         },
         dropShadow: {
           enabled: false,
@@ -233,12 +233,12 @@ export default function OnaRadarChart({
         radar: {
           size: radarSize,
           polygons: {
-            strokeColors: "rgba(148, 163, 184, 0.18)",
-            connectorColors: "rgba(148, 163, 184, 0.18)",
+            strokeColors: "rgba(136, 139, 141, 0.24)",
+            connectorColors: "rgba(136, 139, 141, 0.24)",
             fill: {
               colors: [
-                "rgba(148, 163, 184, 0.05)",
-                "rgba(148, 163, 184, 0.02)",
+                "rgba(0, 156, 222, 0.06)",
+                "rgba(52, 167, 152, 0.04)",
               ],
             },
           },
@@ -305,10 +305,14 @@ export default function OnaRadarChart({
       </CardHeader>
 
       <CardContent className="px-3 pt-0 pb-3">
-        {!data ? (
+        {loading ? (
+          <div className="min-h-[180px] grid place-items-center text-sm">
+            Cargando…
+          </div>
+        ) : !data ? (
           <div className="min-h-[180px] grid place-items-center">
             <div className="flex items-center gap-2 text-center">
-              <span className="text-[#68646c] text-sm">
+              <span className="text-[var(--rsm-dark-grey)] text-sm">
                 Sin valores de ONA activo
               </span>
 
@@ -334,13 +338,9 @@ export default function OnaRadarChart({
               </div>
             </div>
           </div>
-        ) : loading ? (
-          <div className="min-h-[180px] grid place-items-center text-sm">
-            Cargando…
-          </div>
         ) : (
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1.35fr_1fr]">
-            <div ref={wrapRef} className="w-full overflow-hidden rounded-xl border border-slate-200/70 bg-slate-50/45 p-2 dark:border-slate-800/80 dark:bg-slate-900/25">
+            <div ref={wrapRef} className="w-full overflow-hidden rounded-xl border border-slate-300/70 bg-slate-200/45 p-2 dark:border-slate-800/80 dark:bg-slate-900/25">
               <div className="mx-auto flex w-full justify-center overflow-hidden">
                 <Chart
                   options={options}
@@ -352,7 +352,7 @@ export default function OnaRadarChart({
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200/80 bg-slate-50/55 p-3 dark:border-slate-800/80 dark:bg-slate-900/25">
+            <div className="rounded-xl border border-slate-300/80 bg-slate-200/45 p-3 dark:border-slate-800/80 dark:bg-slate-900/25">
               <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                 Interpretación ONA
               </div>
@@ -360,7 +360,7 @@ export default function OnaRadarChart({
                 {onaItemsWithValue.map((item) => (
                   <div
                     key={item.short}
-                    className="rounded-lg border border-slate-200/90 bg-white/70 p-2.5 dark:border-slate-700/70 dark:bg-slate-900/55"
+                    className="rounded-lg border border-slate-300/90 bg-slate-100/85 p-2.5 dark:border-slate-700/70 dark:bg-slate-900/55"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function OnaRadarChart({
                           {item.full}
                         </span>
                       </div>
-                      <span className="rounded-full border border-slate-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                      <span className="rounded-full border border-slate-300/80 bg-slate-200/80 px-2 py-0.5 text-[11px] font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                         {item.value.toFixed(1)}%
                       </span>
                     </div>

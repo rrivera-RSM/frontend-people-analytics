@@ -2,10 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties, RefObject } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useOnaRelations } from "@/hooks/use-ona-relations";
 import type {
   OnaCategory,
-  OnaRelationNodeApi,
   OnaRelationsApiResponse,
 } from "@/types/ona-relations";
 
@@ -49,7 +50,7 @@ type ForceLink = GraphEdge & {
 };
 
 type ForceGraph2DProps = {
-  ref?: React.RefObject<ForceGraphRef | null>;
+  ref?: RefObject<ForceGraphRef | null>;
   graphData: { nodes: ForceNode[]; links: ForceLink[] };
   width: number;
   height: number;
@@ -96,18 +97,41 @@ const CATEGORY_PRIORITY: Record<OnaCategory, number> = {
 };
 
 const CATEGORY_COLORS: Record<OnaCategory, string> = {
-  central: "#22c55e",
-  hipo: "#a3e635",
-  intermediary: "#f59e0b",
-  peripheral: "#ef4444",
+  central: "#3F9C35",
+  hipo: "#3F9C35",
+  intermediary: "#F1B434",
+  peripheral: "#E40046",
 };
 
 const CATEGORY_LABELS: Record<OnaCategory, string> = {
   central: "Central",
-  hipo: "Hipo",
-  intermediary: "Intermediary",
-  peripheral: "Peripheral",
+  hipo: "Central",
+  intermediary: "Intermediario",
+  peripheral: "Periférico",
 };
+
+type OnaDisplayCategory = Exclude<OnaCategory, "hipo">;
+
+const CATEGORY_LEGEND: Array<{
+  category: OnaDisplayCategory;
+  description: string;
+}> = [
+  {
+    category: "central",
+    description:
+      "Personas con una alta integración e influencia dentro de la red.",
+  },
+  {
+    category: "intermediary",
+    description:
+      "Personas con un nivel medio de conexión y colaboración.",
+  },
+  {
+    category: "peripheral",
+    description:
+      "Personas con menor nivel de interacción dentro de la red.",
+  },
+];
 
 type ViewMode = "employee" | "organization";
 
@@ -155,7 +179,7 @@ function normalizeOnaCategory(value: unknown): OnaCategory | null {
   const normalized = value.trim().toLowerCase();
 
   if (normalized === "central") return "central";
-  if (normalized === "hipo") return "hipo";
+  if (normalized === "hipo") return "central";
   if (normalized === "intermediary" || normalized === "intermediario") {
     return "intermediary";
   }
@@ -167,13 +191,48 @@ function normalizeOnaCategory(value: unknown): OnaCategory | null {
 }
 
 function resolveNodeColor(category: OnaCategory | null) {
-  if (!category) return "#fbbf24";
+  if (!category) return "#888B8D";
   return CATEGORY_COLORS[category];
 }
 
-function resolveCategoryLabel(category: OnaCategory | null) {
-  if (!category) return "Sin categorizar";
-  return CATEGORY_LABELS[category];
+function getDisplayCategory(
+  category: OnaCategory | null,
+): OnaDisplayCategory | null {
+  if (!category) return null;
+  return category === "hipo" ? "central" : category;
+}
+
+function LegendPersonIcon({
+  color,
+  active,
+}: {
+  color: string;
+  active: boolean;
+}) {
+  return (
+    <span
+      className={[
+        "relative inline-flex h-10 w-10 shrink-0 items-center justify-center",
+        active ? "scale-105" : "",
+      ].join(" ")}
+      aria-hidden="true"
+    >
+      {active && (
+        <span
+          className="absolute inset-0 rounded-full"
+          style={{ backgroundColor: `${color}22` }}
+        />
+      )}
+      <span
+        className="absolute top-1.5 h-3.5 w-3.5 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+      <span
+        className="absolute bottom-1.5 h-[18px] w-6 rounded-t-full rounded-b-sm"
+        style={{ backgroundColor: color }}
+      />
+    </span>
+  );
 }
 
 function drawRoundedRect(
@@ -435,54 +494,16 @@ export function OnaOrganizationGraph({
   societyId,
   title = "Red organizacional de la sociedad",
 }: Props) {
-  const [data, setData] = useState<OnaRelationsApiResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const forceGraphRef = useRef<ForceGraphRef | null>(null);
   const [graphSize, setGraphSize] = useState({ width: 960, height: 420 });
   const [viewMode, setViewMode] = useState<ViewMode>("employee");
   const [pulseTick, setPulseTick] = useState(0);
-
-  useEffect(() => {
-    if (!employeeId || !societyId) {
-      setData(null);
-      setError(null);
-      return;
-    }
-
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/ona/relations?society_id=${societyId}`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          throw new Error(`No se pudo cargar la red ONA (${response.status})`);
-        }
-
-        const payload = (await response.json()) as OnaRelationsApiResponse;
-        setData(payload);
-      } catch (err) {
-        if (!(err instanceof DOMException && err.name === "AbortError")) {
-          setError(
-            err instanceof Error ? err.message : "No se pudo cargar la red ONA",
-          );
-        }
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void load();
-    return () => controller.abort();
-  }, [employeeId, societyId]);
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useOnaRelations(societyId);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -529,6 +550,9 @@ export function OnaOrganizationGraph({
   const selectedNode = useMemo(() => {
     return forceGraphData?.nodes.find((node) => node.isSelected) ?? null;
   }, [forceGraphData]);
+  const selectedDisplayCategory = getDisplayCategory(
+    selectedNode?.onaCategory ?? null,
+  );
 
   const applyCameraMode = useMemo(
     () => (mode: ViewMode) => {
@@ -574,96 +598,81 @@ export function OnaOrganizationGraph({
           <CardTitle className="text-base leading-tight text-slate-900 dark:text-slate-100">
             {title}
           </CardTitle>
-          <div className="inline-flex items-center gap-3 text-[11px] text-slate-500 dark:text-slate-400">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-cyan-400" />
-              Empleado seleccionado (halo)
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-green-500" />
-              Central
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-lime-400" />
-              Hipo
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-              Intermediary
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500" />
-              Peripheral
-            </span>
-          </div>
         </div>
-        <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
-          Vista agregada de relaciones dentro de la sociedad. La posicion de cada
-          nodo se toma de `graph_x_coordinate` y `graph_y_coordinate`, mientras el
-          color se basa en `ona_category`.
-        </p>
       </CardHeader>
 
       <CardContent className="px-3 pb-3 pt-0">
         {!societyId ? (
-          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
+          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-200/50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
             Este empleado no tiene `society_id` disponible para construir la red.
           </div>
         ) : loading ? (
-          <div className="grid min-h-[260px] place-items-center rounded-xl border border-slate-300 bg-slate-50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
+          <div className="grid min-h-[260px] place-items-center rounded-xl border border-slate-300 bg-slate-200/50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
             Cargando red organizacional...
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-700 dark:text-red-300">
-            {error}
+          <div className="rounded-xl border border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.1)] p-4 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
+            {error instanceof Error ? error.message : "No se pudo cargar la red ONA"}
           </div>
         ) : !hasGraph ? (
-          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
+          <div className="grid min-h-[260px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-200/50 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/30 dark:text-slate-400">
             No hay suficientes relaciones ONA para representar esta sociedad.
           </div>
         ) : (
           <div className="space-y-3">
-            {selectedNode && (
-              <div
-                className="flex items-center justify-between rounded-xl border px-4 py-3"
-                style={{
-                  borderColor: `${selectedNode.color}55`,
-                  background: `linear-gradient(135deg, ${selectedNode.color}18, rgba(15,23,42,0.78))`,
-                }}
-              >
-                <div>
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 dark:text-slate-300">
-                    Posicion organizacional
-                  </div>
-                  <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-50">
-                    {resolveCategoryLabel(selectedNode.onaCategory)}
-                  </div>
-                </div>
+            <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700/90 dark:bg-slate-900/35 md:grid-cols-3">
+              {CATEGORY_LEGEND.map((item) => {
+                const color = CATEGORY_COLORS[item.category];
+                const isSelectedCategory =
+                  selectedDisplayCategory === item.category;
 
-                <div
-                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold text-slate-800 dark:text-slate-50"
-                  style={{
-                    borderColor: `${selectedNode.color}66`,
-                    backgroundColor: `${selectedNode.color}22`,
-                  }}
-                >
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: selectedNode.color }}
-                  />
-                  {resolveCategoryLabel(selectedNode.onaCategory)}
-                </div>
-              </div>
-            )}
+                return (
+                  <div
+                    key={item.category}
+                    className={[
+                      "flex min-w-0 items-start gap-3 rounded-md border px-3 py-2.5 transition-colors",
+                      isSelectedCategory
+                        ? "border-[color:var(--legend-color)] bg-white shadow-sm dark:bg-slate-800/80"
+                        : "border-transparent bg-transparent",
+                    ].join(" ")}
+                    style={
+                      {
+                        "--legend-color": `${color}88`,
+                      } as CSSProperties
+                    }
+                  >
+                    <LegendPersonIcon color={color} active={isSelectedCategory} />
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">
+                          {CATEGORY_LABELS[item.category]}
+                        </span>
+                        {isSelectedCategory && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-normal text-white"
+                            style={{ backgroundColor: color }}
+                          >
+                            Empleado seleccionado
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs leading-4 text-slate-500 dark:text-slate-400">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-            <div className="relative overflow-hidden rounded-xl border border-slate-300 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(241,245,249,0.95))] dark:border-slate-700 dark:bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_30%),linear-gradient(180deg,rgba(15,23,42,0.55),rgba(2,6,23,0.85))]">
-              <div className="absolute right-3 top-3 z-10 inline-flex items-center rounded-lg border border-slate-300/80 bg-white/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+            <div className="relative overflow-hidden rounded-xl border border-slate-300 bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.95),rgba(244,248,250,0.95))] dark:border-slate-700 dark:bg-[radial-gradient(circle_at_top,rgba(0,156,222,0.11),transparent_30%),linear-gradient(180deg,rgba(0,21,61,0.64),rgba(6,17,38,0.9))]">
+              <div className="absolute right-3 top-3 z-10 inline-flex items-center rounded-lg border border-slate-300/80 bg-slate-100/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
                 <button
                   type="button"
                   onClick={() => setViewMode("employee")}
                   className={`rounded-md px-2.5 py-1 font-medium transition ${
                     viewMode === "employee"
-                      ? "bg-cyan-500 text-white"
+                      ? "bg-[#009CDE] text-white"
                       : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
@@ -674,14 +683,14 @@ export function OnaOrganizationGraph({
                   onClick={() => setViewMode("organization")}
                   className={`rounded-md px-2.5 py-1 font-medium transition ${
                     viewMode === "organization"
-                      ? "bg-cyan-500 text-white"
+                      ? "bg-[#009CDE] text-white"
                       : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
                   }`}
                 >
                   Organización centrada
                 </button>
               </div>
-              <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-lg border border-slate-300/80 bg-white/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
+              <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-lg border border-slate-300/80 bg-slate-100/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
                 <button
                   type="button"
                   onClick={() => applyCameraMode(viewMode)}
@@ -715,8 +724,8 @@ export function OnaOrganizationGraph({
                       const source = link.source as ForceNode;
                       const target = link.target as ForceNode;
                       return source.isSelected || target.isSelected
-                        ? "rgba(34, 211, 238, 0.42)"
-                        : "rgba(148, 163, 184, 0.12)";
+                        ? "rgba(0, 156, 222, 0.42)"
+                        : "rgba(136, 139, 141, 0.14)";
                     }}
                     linkWidth={(link) => {
                       const source = link.source as ForceNode;
@@ -736,8 +745,8 @@ export function OnaOrganizationGraph({
                       const source = link.source as ForceNode;
                       const target = link.target as ForceNode;
                       return source.isSelected || target.isSelected
-                        ? "rgba(34, 211, 238, 0.82)"
-                        : "rgba(148, 163, 184, 0.24)";
+                        ? "rgba(0, 156, 222, 0.84)"
+                        : "rgba(136, 139, 141, 0.26)";
                     }}
                     nodeCanvasObjectMode={() => "replace"}
                     nodeCanvasObject={(node, ctx, globalScale) => {
@@ -759,11 +768,11 @@ export function OnaOrganizationGraph({
                       if (node.isSelected) {
                         ctx.beginPath();
                         ctx.arc(0, 0, radius * (2.2 + pulse * 0.22), 0, 2 * Math.PI);
-                        ctx.fillStyle = "rgba(34, 211, 238, 0.12)";
+                        ctx.fillStyle = "rgba(0, 156, 222, 0.14)";
                         ctx.fill();
                         ctx.beginPath();
                         ctx.arc(0, 0, radius * 1.6, 0, 2 * Math.PI);
-                        ctx.strokeStyle = "rgba(34, 211, 238, 0.52)";
+                        ctx.strokeStyle = "rgba(0, 156, 222, 0.56)";
                         ctx.lineWidth = 1.5;
                         ctx.stroke();
                         ctx.beginPath();

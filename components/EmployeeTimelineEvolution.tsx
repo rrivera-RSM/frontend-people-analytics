@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   Briefcase,
@@ -12,8 +12,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
+import { useEmployeeTimelineEvolution } from "@/hooks/use-employee-timeline-evolution";
 import type {
-  EmployeeTimelineEvolutionResponse,
   EmployeeTimelineEvent,
   OrgChangePayload,
   SalaryChangePayload,
@@ -22,6 +22,7 @@ import type {
 
 type Props = {
   employeeId: number | null | undefined;
+  demoMode?: boolean;
 };
 
 type TimelineViewMode = "snake" | "by_type";
@@ -39,6 +40,7 @@ type TimelineGroup = {
 type TimelineTrend = {
   delta: number;
   direction: "up" | "down" | "flat";
+  label?: string;
 };
 
 type EvaluationLevel = {
@@ -50,6 +52,13 @@ type TimelineSummary = {
   text: string;
   trend?: TimelineTrend;
   level?: EvaluationLevel;
+  sensitive?: boolean;
+  redactedText?: string;
+};
+
+type SalarySnapshot = {
+  salary: number | null;
+  bonus: number | null;
 };
 
 function formatDate(iso: string | null | undefined) {
@@ -79,6 +88,55 @@ function formatMoney(value: number | null | undefined) {
   }).format(value);
 }
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function formatMoneyDelta(value: number) {
+  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
+  return `${sign}${formatMoney(Math.abs(value))}`;
+}
+
+function getSalarySnapshot(payload: SalaryChangePayload): SalarySnapshot {
+  return {
+    salary: isFiniteNumber(payload.salary) ? payload.salary : null,
+    bonus: isFiniteNumber(payload.bonus) ? payload.bonus : null,
+  };
+}
+
+function getSalaryTrend(
+  current: SalarySnapshot,
+  previous: SalarySnapshot | null,
+): TimelineTrend | undefined {
+  if (!previous || current.salary == null || previous.salary == null) {
+    return undefined;
+  }
+
+  const salaryDelta = current.salary - previous.salary;
+  const bonusDelta =
+    current.bonus != null && previous.bonus != null
+      ? current.bonus - previous.bonus
+      : null;
+
+  const parts: string[] = [];
+  if (salaryDelta !== 0) {
+    parts.push(`${formatMoneyDelta(salaryDelta)} salario`);
+  }
+  if (bonusDelta != null && bonusDelta !== 0) {
+    parts.push(`${formatMoneyDelta(bonusDelta)} bonus`);
+  }
+
+  const referenceDelta = salaryDelta !== 0 ? salaryDelta : bonusDelta ?? 0;
+  const direction =
+    referenceDelta > 0 ? "up" : referenceDelta < 0 ? "down" : "flat";
+
+  return {
+    delta: referenceDelta,
+    direction,
+    label: parts.length > 0 ? parts.join(" · ") : "Sin cambios",
+  };
+}
+
 function getEvaluationScore(payload: EvaluationPayload) {
   return typeof payload.final_score === "number" &&
     Number.isFinite(payload.final_score) &&
@@ -91,20 +149,20 @@ function getEvaluationLevel(score: number): EvaluationLevel {
   if (score >= 90) {
     return {
       label: "Alto",
-      toneClassName: "text-emerald-700 dark:text-emerald-300",
+      toneClassName: "text-[var(--rsm-green)] dark:text-[#8ed989]",
     };
   }
 
   if (score >= 75) {
     return {
       label: "Medio",
-      toneClassName: "text-amber-700 dark:text-amber-300",
+      toneClassName: "text-[#9f6f00] dark:text-[#ffe29c]",
     };
   }
 
   return {
     label: "Bajo",
-    toneClassName: "text-rose-700 dark:text-rose-300",
+    toneClassName: "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
   };
 }
 
@@ -112,6 +170,7 @@ function getEventSummary(
   event: EmployeeTimelineEvent,
   occurrenceIndex = 0,
   previousEvaluationScore: number | null = null,
+  previousSalarySnapshot: SalarySnapshot | null = null,
 ): TimelineSummary {
   switch (event.event_type) {
     case "org_change": {
@@ -121,25 +180,66 @@ function getEventSummary(
       const office = payload.office_name?.trim();
 
       if (occurrenceIndex === 0) {
-        if (category) return { text: `Categoría inicial: ${category}` };
-        if (department) return { text: `Departamento inicial: ${department}` };
-        if (office) return { text: `Oficina inicial: ${office}` };
+        if (category) {
+          return {
+            text: `Categoría inicial: ${category}`,
+            sensitive: true,
+            redactedText: "Categoría inicial censurada",
+          };
+        }
+        if (department) {
+          return {
+            text: `Departamento inicial: ${department}`,
+            sensitive: true,
+            redactedText: "Departamento inicial censurado",
+          };
+        }
+        if (office) {
+          return {
+            text: `Oficina inicial: ${office}`,
+            sensitive: true,
+            redactedText: "Oficina inicial censurada",
+          };
+        }
       }
 
-      if (category) return { text: `Ascendido a ${category}` };
-      if (department) return { text: `Cambio a ${department}` };
-      if (office) return { text: `Traslado a ${office}` };
+      if (category) {
+        return {
+          text: `Ascendido a ${category}`,
+          sensitive: true,
+          redactedText: "Cambio de categoría censurado",
+        };
+      }
+      if (department) {
+        return {
+          text: `Cambio a ${department}`,
+          sensitive: true,
+          redactedText: "Cambio de departamento censurado",
+        };
+      }
+      if (office) {
+        return {
+          text: `Traslado a ${office}`,
+          sensitive: true,
+          redactedText: "Traslado de oficina censurado",
+        };
+      }
       return { text: "Cambio organizativo" };
     }
     case "salary_change": {
       const payload = event.payload as unknown as SalaryChangePayload;
       const salary = formatMoney(payload.salary);
       const bonus = payload.bonus ? ` · Bonus ${formatMoney(payload.bonus)}` : "";
+      const trend = getSalaryTrend(
+        getSalarySnapshot(payload),
+        previousSalarySnapshot,
+      );
       return {
         text:
           occurrenceIndex === 0
             ? `Salario inicial: ${salary}${bonus}`
             : `Salario actualizado a ${salary}${bonus}`,
+        trend: occurrenceIndex === 0 ? undefined : trend,
       };
     }
     case "evaluation": {
@@ -179,28 +279,28 @@ function getEventMeta(eventType: string) {
   if (eventType === "org_change") {
     return {
       Icon: Briefcase,
-      dotClassName: "bg-cyan-600 text-white ring-cyan-100 dark:ring-cyan-900/50",
-      labelClassName: "text-cyan-700 dark:text-cyan-300",
+      dotClassName: "bg-[#009CDE] text-white ring-[#009CDE]/18 dark:ring-[#009CDE]/35",
+      labelClassName: "text-[#007db2] dark:text-[#79d7ff]",
     };
   }
   if (eventType === "salary_change") {
     return {
       Icon: Euro,
-      dotClassName: "bg-emerald-600 text-white ring-emerald-100 dark:ring-emerald-900/50",
-      labelClassName: "text-emerald-700 dark:text-emerald-300",
+      dotClassName: "bg-[#3F9C35] text-white ring-[#3F9C35]/18 dark:ring-[#3F9C35]/35",
+      labelClassName: "text-[#2f7c28] dark:text-[#8ed989]",
     };
   }
   if (eventType === "evaluation") {
     return {
       Icon: LineChart,
-      dotClassName: "bg-amber-500 text-white ring-amber-100 dark:ring-amber-900/50",
-      labelClassName: "text-amber-700 dark:text-amber-300",
+      dotClassName: "bg-[#F1B434] text-[#00153D] ring-[#F1B434]/22 dark:ring-[#F1B434]/35",
+      labelClassName: "text-[#9f6f00] dark:text-[#ffe29c]",
     };
   }
   return {
     Icon: Sparkles,
-    dotClassName: "bg-slate-500 text-white ring-slate-100 dark:ring-slate-800",
-    labelClassName: "text-slate-700 dark:text-slate-300",
+    dotClassName: "bg-[#888B8D] text-white ring-[#888B8D]/18 dark:ring-[#888B8D]/30",
+    labelClassName: "text-[#63666A] dark:text-[#d9dcde]",
   };
 }
 
@@ -221,21 +321,33 @@ function groupEventsByDate(events: EmployeeTimelineEvent[]) {
   const groups = new Map<string, TimelineGroup>();
   const typeCounts = new Map<string, number>();
   let lastEvaluationScore: number | null = null;
+  let lastSalarySnapshot: SalarySnapshot | null = null;
 
   sortEventsAscending(events).forEach((event) => {
     const key = getDateKey(event.event_at);
     const existing = groups.get(key);
     const occurrenceIndex = typeCounts.get(event.event_type) ?? 0;
-    const payload = event.payload as unknown as EvaluationPayload;
-    const summary = getEventSummary(event, occurrenceIndex, lastEvaluationScore);
+    const evaluationPayload = event.payload as unknown as EvaluationPayload;
+    const summary = getEventSummary(
+      event,
+      occurrenceIndex,
+      lastEvaluationScore,
+      lastSalarySnapshot,
+    );
 
     typeCounts.set(event.event_type, occurrenceIndex + 1);
 
     if (event.event_type === "evaluation") {
-      const score = getEvaluationScore(payload);
+      const score = getEvaluationScore(evaluationPayload);
       if (score != null) {
         lastEvaluationScore = score;
       }
+    }
+
+    if (event.event_type === "salary_change") {
+      lastSalarySnapshot = getSalarySnapshot(
+        event.payload as unknown as SalaryChangePayload,
+      );
     }
 
     if (existing) {
@@ -292,55 +404,12 @@ function buildLanes(events: EmployeeTimelineEvent[]) {
   }));
 }
 
-export function EmployeeTimelineEvolution({ employeeId }: Props) {
-  const [data, setData] = useState<EmployeeTimelineEvolutionResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+export function EmployeeTimelineEvolution({
+  employeeId,
+  demoMode = false,
+}: Props) {
   const [viewMode, setViewMode] = useState<TimelineViewMode>("snake");
-
-  useEffect(() => {
-    if (!employeeId) {
-      setData(null);
-      setError(null);
-      return;
-    }
-
-    let mounted = true;
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/employees/${employeeId}/timeline-evolution`, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!res.ok) {
-          throw new Error(`No se pudo cargar timeline (${res.status})`);
-        }
-
-        const json = (await res.json()) as EmployeeTimelineEvolutionResponse;
-        if (!mounted) return;
-        setData(json);
-      } catch (err) {
-        if (!mounted) return;
-        if (err instanceof DOMException && err.name === "AbortError") return;
-        setError(err instanceof Error ? err.message : "Error inesperado");
-        setData(null);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    }
-
-    void load();
-
-    return () => {
-      mounted = false;
-      controller.abort();
-    };
-  }, [employeeId]);
+  const { data, isLoading: loading, error } = useEmployeeTimelineEvolution(employeeId);
 
   const events = useMemo(() => data?.events ?? [], [data]);
   const groupedEvents = useMemo(() => groupEventsByDate(events), [events]);
@@ -348,7 +417,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
   const hasMultipleTypes = lanes.length > 1;
 
   return (
-    <Card className="bg-slate-50 dark:bg-slate-900/40">
+    <Card className="bg-[var(--exec-card)] dark:bg-slate-900/40">
       <CardHeader className="space-y-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
@@ -358,7 +427,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
             </p>
           </div>
 
-          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
+          <div className="flex items-center gap-3 rounded-full border border-slate-200 bg-slate-100/85 px-3 py-2 text-sm shadow-sm dark:border-slate-700 dark:bg-slate-900/70">
             <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
               Agrupar por tipo
             </span>
@@ -379,8 +448,8 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
         )}
 
         {!loading && error && (
-          <div className="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200">
-            {error}
+          <div className="rounded-md border border-[color:rgb(var(--rsm-red-rgb)/0.35)] bg-[rgb(var(--rsm-red-rgb)/0.08)] p-3 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
+            {error instanceof Error ? error.message : "Error inesperado"}
           </div>
         )}
 
@@ -389,7 +458,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
         )}
 
         {!loading && !error && groupedEvents.length > 0 && viewMode === "snake" && (
-          <TimelineSnake groups={groupedEvents} />
+          <TimelineSnake demoMode={demoMode} groups={groupedEvents} />
         )}
 
         {!loading && !error && groupedEvents.length > 0 && viewMode === "by_type" && (
@@ -400,7 +469,7 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
               return (
                 <section
                   key={lane.eventType}
-                  className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/50"
+                  className="rounded-2xl border border-slate-200 bg-slate-100/70 p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900/50"
                 >
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
@@ -413,7 +482,11 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
                     </div>
                     <div className={`h-2.5 w-2.5 rounded-full ${meta.dotClassName.split(" ")[0]}`} />
                   </div>
-                  <TimelineSnake groups={lane.groups} compact />
+                  <TimelineSnake
+                    compact
+                    demoMode={demoMode}
+                    groups={lane.groups}
+                  />
                 </section>
               );
             })}
@@ -427,9 +500,11 @@ export function EmployeeTimelineEvolution({ employeeId }: Props) {
 function TimelineSnake({
   groups,
   compact = false,
+  demoMode = false,
 }: {
   groups: TimelineGroup[];
   compact?: boolean;
+  demoMode?: boolean;
 }) {
   if (!groups.length) return null;
 
@@ -441,12 +516,14 @@ function TimelineSnake({
           const isLeft = index % 2 === 0;
           const isMixed = new Set(group.eventTypes).size > 1;
           const meta = getEventMeta(isMixed ? "mixed" : group.primaryType);
+          const visibleSummaries = group.summaries.map((item) =>
+            demoMode && item.sensitive ? item.redactedText ?? item.text : item.text,
+          );
           const summaryText =
-            group.summaries.length <= 2
-              ? group.summaries.map((item) => item.text).join(" · ")
-              : `${group.summaries
+            visibleSummaries.length <= 2
+              ? visibleSummaries.join(" · ")
+              : `${visibleSummaries
                   .slice(0, 2)
-                  .map((item) => item.text)
                   .join(" · ")} +${group.summaries.length - 2} más`;
           const primaryTrend =
             group.summaries.length === 1 ? group.summaries[0]?.trend : undefined;
@@ -553,9 +630,9 @@ function TimelineCard({
               className={[
                 "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
                 trend.direction === "up"
-                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+                  ? "bg-[rgb(var(--rsm-green-rgb)/0.14)] text-[var(--rsm-green)] dark:bg-[rgb(var(--rsm-green-rgb)/0.22)] dark:text-[#8ed989]"
                   : trend.direction === "down"
-                    ? "bg-rose-100 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300"
+                    ? "bg-[rgb(var(--rsm-red-rgb)/0.12)] text-[var(--rsm-red)] dark:bg-[rgb(var(--rsm-red-rgb)/0.22)] dark:text-[#ff9ab8]"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
               ].join(" ")}
               aria-label={
@@ -574,8 +651,8 @@ function TimelineCard({
                 <ArrowRight className="h-3 w-3" />
               )}
               <span>
-                {trend.direction === "up" && trend.delta > 0 ? "+" : ""}
-                {trend.delta.toFixed(2)}
+                {trend.label ??
+                  `${trend.direction === "up" && trend.delta > 0 ? "+" : ""}${trend.delta.toFixed(2)}`}
               </span>
             </span>
           )}

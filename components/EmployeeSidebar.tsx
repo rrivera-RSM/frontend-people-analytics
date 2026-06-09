@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import { EmployeeCard, type EmployeeRow } from "./EmployeeCard";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -12,6 +12,8 @@ type Props = {
   limit?: number;
   offset?: number;
   collapsed?: boolean;
+  demoMode?: boolean;
+  savedProposalEmployeeIds?: ReadonlySet<number>;
   onSelectEmployee?: (employee: EmployeeRow | null) => void;
   onToggleCollapse?: (collapsed: boolean) => void;
 };
@@ -20,7 +22,7 @@ type CallStatus = "idle" | "loading" | "success" | "error";
 type RiskFilter = "all" | "high";
 
 const SIDEBAR_CLASSES = {
-  base: "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]",
+  base: "relative flex h-full shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[var(--exec-sidebar)]",
   expanded: "w-[320px]",
   collapsed: "w-[76px]",
 } as const;
@@ -34,6 +36,8 @@ export function EmployeesSidebar({
   onSelectEmployee,
   onToggleCollapse,
   collapsed = false,
+  demoMode = false,
+  savedProposalEmployeeIds,
 }: Props) {
   const [status, setStatus] = useState<CallStatus>("idle");
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
@@ -41,6 +45,7 @@ export function EmployeesSidebar({
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [riskFilter, setRiskFilter] = useState<RiskFilter>("all");
+  const [showEmployeePhotos, setShowEmployeePhotos] = useState(false);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -48,6 +53,7 @@ export function EmployeesSidebar({
     async function load() {
       setStatus("loading");
       setError(null);
+      setShowEmployeePhotos(false);
 
       try {
         const params = new URLSearchParams({
@@ -63,7 +69,6 @@ export function EmployeesSidebar({
           {
             method: "GET",
             headers: { Accept: "application/json" },
-            cache: "no-store",
             signal: controller.signal,
           },
         );
@@ -73,18 +78,22 @@ export function EmployeesSidebar({
         }
 
         const rows = (await res.json()) as EmployeeRow[];
-        setEmployees(Array.isArray(rows) ? rows : []);
+        const normalizedRows = Array.isArray(rows) ? rows : [];
 
-        if (rows.length > 0) {
+        if (normalizedRows.length > 0) {
           const selected =
-            rows.find((r) => r.id === selectedId) || rows[0];
+            normalizedRows.find((r) => r.id === selectedId) || normalizedRows[0];
           setSelectedId(selected.id);
           onSelectEmployee?.(selected);
         } else {
           setSelectedId(null);
           onSelectEmployee?.(null);
         }
-        setStatus("success");
+
+        startTransition(() => {
+          setEmployees(normalizedRows);
+          setStatus("success");
+        });
       } catch (e: unknown) {
         if (!(e instanceof DOMException && e.name === "AbortError")) {
           setError(e instanceof Error ? e.message : "Unknown error");
@@ -97,6 +106,31 @@ export function EmployeesSidebar({
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [office, department, society, limit, offset]);
+
+  useEffect(() => {
+    if (status !== "success" || employees.length === 0) return;
+
+    let cancelled = false;
+
+    const enablePhotos = () => {
+      if (!cancelled) setShowEmployeePhotos(true);
+    };
+
+    // Dejamos que la vista principal dispare sus fetches primero.
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      const idleId = window.requestIdleCallback(enablePhotos, { timeout: 1200 });
+      return () => {
+        cancelled = true;
+        window.cancelIdleCallback(idleId);
+      };
+    }
+
+    const timeoutId = window.setTimeout(enablePhotos, 350);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [employees.length, status]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const isSearching = normalizedQuery.length > 0;
@@ -139,21 +173,19 @@ export function EmployeesSidebar({
         status={status}
         count={visibleEmployees.length}
         isSearching={isSearching}
-        office={office}
-        department={department}
         riskFilter={riskFilter}
         onRiskFilterChange={setRiskFilter}
       />
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2">
         {status === "error" && !collapsed && (
-          <pre className="whitespace-pre-wrap break-words rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+          <pre className="whitespace-pre-wrap break-words rounded-xl border border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.08)] p-3 text-xs text-[var(--rsm-red)]">
             {error}
           </pre>
         )}
 
         {status === "success" && visibleEmployees.length === 0 && !collapsed && (
-          <div className="rounded-xl border border-slate-200 bg-white/80 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
+          <div className="rounded-xl border border-slate-200 bg-slate-100/80 p-3 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
             {isSearching
               ? `No hay resultados para "${query.trim()}".`
               : "No hay empleados para estos filtros."}
@@ -165,7 +197,10 @@ export function EmployeesSidebar({
             <EmployeeCard
               key={emp.id}
               employee={emp}
+              demoMode={demoMode}
+              showPhoto={showEmployeePhotos}
               selected={emp.id === selectedId}
+              hasSavedProposal={savedProposalEmployeeIds?.has(emp.id) ?? false}
               onSelect={(e) => {
                 setSelectedId(e.id);
                 onSelectEmployee?.(e);
@@ -189,8 +224,6 @@ function Header({
   status,
   count,
   isSearching,
-  office,
-  department,
   riskFilter,
   onRiskFilterChange,
 }: {
@@ -201,13 +234,11 @@ function Header({
   status: CallStatus;
   count: number;
   isSearching: boolean;
-  office: string;
-  department: string;
   riskFilter: RiskFilter;
   onRiskFilterChange: (filter: RiskFilter) => void;
 }) {
   return (
-    <div className="sticky top-0 z-10 border-b border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[#0b1322]">
+    <div className="sticky top-0 z-10 border-b border-slate-200 bg-[var(--exec-sidebar)] dark:border-slate-700/80 dark:bg-[var(--exec-sidebar)]">
       <div className={`px-4 pt-5 ${collapsed ? "pb-2" : "pb-4"}`}>
         {!collapsed ? (
           <div className="mb-6 flex items-start justify-between">
@@ -223,20 +254,6 @@ function Header({
           <div className="mb-3 flex flex-col items-center gap-2">
             <CompanyMark className="h-8 w-auto" />
             <ThemeToggle />
-          </div>
-        )}
-
-        {!collapsed && (
-          <div className="mb-5">
-            <div className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">
-              Contexto
-            </div>
-            <div className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-100">
-              Estás viendo:
-            </div>
-            <div className="mt-1 text-sm font-semibold text-cyan-700 dark:text-cyan-300">
-              {department} · {office}
-            </div>
           </div>
         )}
 
@@ -257,14 +274,14 @@ function Header({
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Buscar por email, nombre..."
-              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
+              className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-[var(--rsm-blue)] focus:ring-2 focus:ring-[rgb(var(--rsm-blue-rgb)/0.16)] dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-100"
             />
           </label>
         ) : (
           <button
             type="button"
             onClick={() => onToggleCollapse?.(!collapsed)}
-            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="mt-2 inline-flex h-10 w-full items-center justify-center rounded-lg border border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300 dark:hover:bg-slate-800"
             aria-label="Expandir para buscar"
             title="Expandir para buscar"
           >
@@ -333,8 +350,8 @@ function Chip({
       onClick={onClick}
       className={`rounded-md px-3 py-1 text-xs font-medium border transition-colors ${
         active
-          ? "border-blue-500 bg-blue-500 text-white"
-          : "border-slate-300 bg-white text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          ? "border-[var(--rsm-blue)] bg-[var(--rsm-blue)] text-white"
+          : "border-slate-300 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
       }`}
     >
       {children}

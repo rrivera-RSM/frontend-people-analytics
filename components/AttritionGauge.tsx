@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import dynamic from "next/dynamic";
+import { useTheme } from "next-themes";
+import { cn } from "@/lib/utils";
 
 const GaugeComponent = dynamic(
   () => import("react-gauge-component"),
@@ -10,32 +12,106 @@ const GaugeComponent = dynamic(
 
 type Props = {
   probability: number; // 0..1
+  comparisonProbability?: number | null;
   label?: string;
   minSize?: number;
   maxSize?: number;
 };
 
+const ATTRITION_THRESHOLD_PCT = 34.14;
+const OVERLAY_OUTER_RADIUS = 34.2;
+const OVERLAY_INNER_RADIUS = 7.5;
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
+}
+
+function toGaugeAngle(value: number) {
+  return 180 - (value / 100) * 180;
+}
+
+function polarToCartesian(
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number,
+) {
+  const angleInRadians = (angleInDegrees * Math.PI) / 180.0;
+
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY - radius * Math.sin(angleInRadians),
+  };
+}
+
+function describeRingSectorPath(
+  centerX: number,
+  centerY: number,
+  outerRadius: number,
+  innerRadius: number,
+  startAngle: number,
+  endAngle: number,
+) {
+  const outerStart = polarToCartesian(centerX, centerY, outerRadius, endAngle);
+  const outerEnd = polarToCartesian(centerX, centerY, outerRadius, startAngle);
+  const innerStart = polarToCartesian(centerX, centerY, innerRadius, startAngle);
+  const innerEnd = polarToCartesian(centerX, centerY, innerRadius, endAngle);
+  const largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? "0" : "1";
+
+  return [
+    `M ${outerStart.x} ${outerStart.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${largeArcFlag} 0 ${outerEnd.x} ${outerEnd.y}`,
+    `L ${innerStart.x} ${innerStart.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${largeArcFlag} 1 ${innerEnd.x} ${innerEnd.y}`,
+    "Z",
+  ].join(" ");
 }
 
 export function getAttritionRiskMeta(probability: number) {
   const pct = probability * 100;
 
-  if (pct <= 10) return { label: "Muy bajo", colorClass: "text-emerald-600 dark:text-emerald-300" };
-  if (pct <= 20) return { label: "Bajo", colorClass: "text-lime-600 dark:text-lime-300" };
-  if (pct <= 35) return { label: "Medio", colorClass: "text-amber-600 dark:text-amber-300" };
-  return { label: "Alto", colorClass: "text-rose-600 dark:text-rose-300" };
+  if (pct < ATTRITION_THRESHOLD_PCT) {
+    return {
+      label: "Bajo riesgo",
+      colorClass: "rsm-risk-very-low",
+      accentClass:
+        "text-[var(--rsm-green)] dark:text-[#8ed989]",
+      badgeClass:
+        "border-[color:rgb(var(--rsm-green-rgb)/0.25)] bg-[rgb(var(--rsm-green-rgb)/0.12)] text-[var(--rsm-green)] dark:border-[rgb(var(--rsm-green-rgb)/0.28)] dark:bg-[rgb(var(--rsm-green-rgb)/0.18)] dark:text-[#8ed989]",
+      surfaceClass:
+        "border-[color:rgb(var(--rsm-green-rgb)/0.24)] bg-[linear-gradient(180deg,rgba(63,156,53,0.10),rgba(63,156,53,0.03))] dark:border-[rgb(var(--rsm-green-rgb)/0.24)] dark:bg-[linear-gradient(180deg,rgba(63,156,53,0.16),rgba(63,156,53,0.05))]",
+    };
+  }
+
+  return {
+    label: "Alto riesgo",
+    colorClass: "rsm-risk-high",
+    accentClass:
+      "text-[var(--rsm-red)] dark:text-[#ff9ab8]",
+    badgeClass:
+      "border-[color:rgb(var(--rsm-red-rgb)/0.24)] bg-[rgb(var(--rsm-red-rgb)/0.11)] text-[var(--rsm-red)] dark:border-[rgb(var(--rsm-red-rgb)/0.28)] dark:bg-[rgb(var(--rsm-red-rgb)/0.18)] dark:text-[#ff9ab8]",
+    surfaceClass:
+      "border-[color:rgb(var(--rsm-red-rgb)/0.24)] bg-[linear-gradient(180deg,rgba(228,0,70,0.09),rgba(228,0,70,0.03))] dark:border-[rgb(var(--rsm-red-rgb)/0.24)] dark:bg-[linear-gradient(180deg,rgba(228,0,70,0.15),rgba(228,0,70,0.05))]",
+  };
 }
 
 export function AttritionGauge({
   probability,
+  comparisonProbability = null,
   label,
   minSize = 170,
   maxSize = 230,
 }: Props) {
+  const { resolvedTheme } = useTheme();
   const safeProbability = clamp(probability ?? 0, 0, 1);
   const percentage = safeProbability * 100;
+  const safeComparisonProbability =
+    typeof comparisonProbability === "number" &&
+    Number.isFinite(comparisonProbability)
+      ? clamp(comparisonProbability, 0, 1)
+      : null;
+  const comparisonPercentage =
+    safeComparisonProbability != null ? safeComparisonProbability * 100 : null;
   const risk = getAttritionRiskMeta(safeProbability);
 
   const wrapRef = React.useRef<HTMLDivElement | null>(null);
@@ -61,70 +137,123 @@ export function AttritionGauge({
   }, [minSize, maxSize]);
 
   const isCompact = size < 190;
+  const pointerColor = resolvedTheme === "dark" ? "#F8FAFC" : "#00153D";
+  const overlayColor =
+    comparisonPercentage != null && comparisonPercentage > percentage
+      ? "rgba(63, 156, 53, 0.38)"
+      : "rgba(228, 0, 70, 0.34)";
+  const overlayDelta =
+    comparisonPercentage != null
+      ? Math.abs(comparisonPercentage - percentage)
+      : 0;
+  const hasComparisonOverlay =
+    comparisonPercentage != null && overlayDelta >= 0.02;
+  const overlayStartAngle =
+    comparisonPercentage != null
+      ? toGaugeAngle(Math.max(comparisonPercentage, percentage))
+      : 0;
+  const overlayEndAngle =
+    comparisonPercentage != null
+      ? toGaugeAngle(Math.min(comparisonPercentage, percentage))
+      : 0;
+  const overlaySectorPath = hasComparisonOverlay
+    ? describeRingSectorPath(
+        50,
+        56,
+        OVERLAY_OUTER_RADIUS,
+        OVERLAY_INNER_RADIUS,
+        overlayStartAngle,
+        overlayEndAngle,
+      )
+    : null;
 
   return (
     <div ref={wrapRef} className="w-full">
-      <div
-        className="mx-auto rounded-xl border border-slate-200/80 bg-slate-50/70 px-2 pt-2 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/35"
-        style={{ width: size }}
-      >
-        <GaugeComponent
-          type="semicircle"
-          value={percentage}
-          minValue={0}
-          maxValue={100}
-          arc={{
-            width: isCompact ? 0.16 : 0.18,
-            padding: 0.006,
-            cornerRadius: 7,
-            subArcs: [
-              { limit: 10, color: "#22c55e", showTick: true },
-              { limit: 20, color: "#eab308", showTick: true },
-              { limit: 35, color: "#f97316", showTick: true },
-              { limit: 100, color: "#ef4444", showTick: true },
-            ],
-          }}
-          pointer={{
-            type: "needle",
-            color: "#22d3ee",
-            length: isCompact ? 0.62 : 0.66,
-            width: isCompact ? 8 : 10,
-            elastic: true,
-            animationDelay: 0,
-          }}
-          marginInPercentage={{ top: 0.08, bottom: 0.02, left: 0.06, right: 0.06 }}
-          labels={{
-            valueLabel: {
-              hide: true,
-            },
-            tickLabels: {
-              type: "outer",
-              defaultTickValueConfig: {
-                formatTextValue: (value: number) => `${Math.round(value)}`,
-                style: {
-                  fontSize: isCompact ? "10px" : "11px",
-                  fontWeight: "600",
-                  fill: "#94a3b8",
+      <div className="mx-auto relative" style={{ width: size }}>
+        {hasComparisonOverlay && overlaySectorPath && (
+          <svg
+            viewBox="0 0 100 64"
+            className="pointer-events-none absolute inset-0 z-0 h-full w-full overflow-visible"
+            aria-hidden="true"
+          >
+            <path
+              d={overlaySectorPath}
+              fill={overlayColor}
+              opacity={resolvedTheme === "dark" ? 0.9 : 0.95}
+            />
+          </svg>
+        )}
+
+        <div className="relative z-10">
+          <GaugeComponent
+            type="semicircle"
+            value={percentage}
+            minValue={0}
+            maxValue={100}
+            arc={{
+              width: isCompact ? 0.15 : 0.17,
+              padding: 0.004,
+              cornerRadius: 6,
+              subArcs: [
+                {
+                  limit: ATTRITION_THRESHOLD_PCT,
+                  color: "#3F9C35",
+                  showTick: true,
                 },
-              },
-              ticks: [
-                { value: 0 },
-                { value: 10 },
-                { value: 20 },
-                { value: 35 },
-                { value: 100 },
+                { limit: 100, color: "#E40046", showTick: true },
               ],
-            },
-          }}
-        />
+            }}
+            pointer={{
+              type: "needle",
+              color: pointerColor,
+              length: isCompact ? 0.61 : 0.65,
+              width: isCompact ? 8 : 9,
+              elastic: true,
+              animationDelay: 0,
+            }}
+            marginInPercent={{ top: 0.08, bottom: 0.02, left: 0.06, right: 0.06 }}
+            labels={{
+              valueLabel: {
+                hide: true,
+              },
+              tickLabels: {
+                type: "outer",
+                defaultTickValueConfig: {
+                  formatTextValue: (value: number) => `${Math.round(value)}`,
+                  style: {
+                    fontSize: isCompact ? "10px" : "11px",
+                    fontWeight: "600",
+                    fill: "#888B8D",
+                  },
+                },
+                ticks: [
+                  { value: 0 },
+                  { value: ATTRITION_THRESHOLD_PCT },
+                  { value: 100 },
+                ],
+              },
+            }}
+          />
+        </div>
+
       </div>
 
-      <div className="-mt-1 flex flex-col items-center justify-center text-center">
-        <div className={isCompact ? "text-2xl font-semibold text-slate-800 dark:text-slate-100" : "text-3xl font-semibold text-slate-800 dark:text-slate-100"}>
+      <div className="-mt-2 flex flex-col items-center justify-center text-center">
+        <div
+          className={cn(
+            isCompact ? "text-2xl" : "text-3xl",
+            "font-semibold text-slate-900 dark:text-slate-50",
+          )}
+        >
           {percentage.toFixed(1)}%
         </div>
 
-        <div className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${risk.colorClass} border-current/25 bg-white/60 dark:bg-slate-900/50`}>
+        <div
+          className={cn(
+            "rounded-full border px-2.5 py-0.5 text-xs font-semibold",
+            risk.badgeClass,
+          )}
+        >
           {risk.label}
         </div>
 

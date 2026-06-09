@@ -7,9 +7,13 @@ import { SalaryProposalForm } from "./SalaryProposalForm";
 import { useEffect, useState, useMemo } from "react";
 import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
-import type { ProposalDraft, SimulationResult } from "@/types/compensation";
+import type {
+  ProposalDraft,
+  SalaryProposalBenchmarkScope,
+  SimulationResult,
+} from "@/types/compensation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Download, MoreVertical } from "lucide-react";
+import { Eye, EyeOff, MoreVertical } from "lucide-react";
 import { DecisionAttritionRiskPanel } from "@/components/DecisionAttritionRiskPanel";
 import { DecisionInsightsCarousel } from "@/components/employee-insights/DecisionInsightsCarousel";
 import { OnaOrganizationGraph } from "./OnaOrganizationGraph";
@@ -17,60 +21,54 @@ import { AnimatePresence, motion } from "framer-motion";
 import { EmployeeTimelineEvolution } from "./EmployeeTimelineEvolution";
 
 import type {
-  EmployeeInsightsResponseApi,
   EmployeeInsightCode,
 } from "@/types/employee-insights";
 import { mapInsightsToViewModels } from "@/lib/employee-insights";
+import { useEmployeePanelData } from "@/hooks/use-employee-panel-data";
+import { useSalaryProposalBenchmarks } from "@/hooks/use-salary-proposal-benchmarks";
+import { useWarmChartLibraries } from "@/hooks/use-warm-chart-libraries";
+import {
+  buildSalaryProposalBenchmarkFilters,
+  buildSalaryProposalBenchmarkScope,
+  findSalaryProposalBenchmark,
+  sanitizeSalaryProposalBenchmarkScope,
+} from "@/lib/salary-proposal-benchmarks";
+import {
+  getDemoSensitiveImageClassName,
+} from "@/lib/demo-mode";
 
 type Props = {
   employee: EmployeeRow | null;
-};
-
-export type MonetaryInfo = {
-  salary: number;
-  bonus: number;
-};
-
-export type OnaData = {
-  percentile_1: number;
-  percentile_2: number;
-  percentile_3: number;
-  percentile_4: number;
-  closeness_centrality: number;
-  betweenness_centrality: number;
-  degree_centrality: number;
-  eigenvector_centrality: number;
-  ona_influence_id: number;
-  ona_category_id: number;
+  demoMode?: boolean;
+  onToggleDemoMode?: () => void;
+  savedProposalEmployeeIds?: ReadonlySet<number>;
+  onProposalSavedChange?: (employeeId: number, isSaved: boolean) => void;
 };
 
 type EmployeeTab = "decision-intelligence" | "ona" | "desempeno";
 const TAB_ORDER: EmployeeTab[] = ["decision-intelligence", "ona", "desempeno"];
 
-const AVG = { avgSalary: 30000, avgBonus: 2000 };
-
-const fetchApi = async <T,>(url: string): Promise<T | null> => {
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    return res.ok ? res.json() : null;
-  } catch (error) {
-    console.error(`Fetch error: ${url}`, error);
-    return null;
-  }
+const EMPTY_BENCHMARK_SCOPE: SalaryProposalBenchmarkScope = {
+  society: false,
+  department: false,
+  office: false,
+  category: false,
 };
 
-const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
+  "active_influence_ci",
+  "active_influence_at",
+  "active_influence_ap",
+  "active_influence_in",
+]);
 
-const PERFORMANCE_CHART_CODES = new Set<EmployeeInsightCode>([
+const DECISION_EXCLUDED_CODES = new Set<EmployeeInsightCode>([
   "high_solid_performance",
   "hidden_risk",
   "potential",
   "stagnant",
   "recovery",
   "critical",
-]);
-
-const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
   "active_influence_ci",
   "active_influence_at",
   "active_influence_ap",
@@ -117,20 +115,42 @@ function normalizeAttritionRate(value?: number | null) {
   return value <= 1 ? value * 100 : value;
 }
 
-export function EmployeeView({ employee }: Props) {
-  const [monetaryInfo, setMonetaryInfo] = useState<MonetaryInfo | null>(null);
-  const [onaData, setOnaData] = useState<OnaData | null>(null);
-  const [insightsData, setInsightsData] =
-    useState<EmployeeInsightsResponseApi | null>(null);
+const compactMoneyFormatter = new Intl.NumberFormat("es-ES", {
+  style: "currency",
+  currency: "EUR",
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0,
+});
 
+function formatMoneyCompact(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "—";
+  return compactMoneyFormatter.format(value);
+}
+
+export function EmployeeView({
+  employee,
+  demoMode = false,
+  onToggleDemoMode,
+  savedProposalEmployeeIds,
+  onProposalSavedChange,
+}: Props) {
   const [proposalDraft, setProposalDraft] = useState<ProposalDraft | null>(null);
+  const [benchmarkScope, setBenchmarkScope] =
+    useState<SalaryProposalBenchmarkScope>(EMPTY_BENCHMARK_SCOPE);
   const [activeTab, setActiveTab] = useState<EmployeeTab>("decision-intelligence");
   const [tabDirection, setTabDirection] = useState(1);
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const {
+    monetaryInfo,
+    onaData,
+    onaDataLoading,
+    insightsData,
+    insightsLoading,
+  } = useEmployeePanelData(employee?.id);
 
-  const [loading, setLoading] = useState(false);
+  useWarmChartLibraries(Boolean(employee?.id));
 
   const handleTabChange = (nextTab: EmployeeTab) => {
     if (nextTab === activeTab) return;
@@ -142,46 +162,10 @@ export function EmployeeView({ employee }: Props) {
 
   useEffect(() => {
     if (!employee?.id) {
-      setMonetaryInfo(null);
-      setOnaData(null);
-      setInsightsData(null);
       setProposalDraft(null);
       setSimulationError(null);
       setSimulationResult(null);
-      return;
     }
-
-    let isMounted = true;
-    setLoading(true);
-
-    // limpiamos para evitar mostrar datos stale al cambiar de empleado
-    setMonetaryInfo(null);
-    setOnaData(null);
-    setInsightsData(null);
-    setProposalDraft(null);
-    setSimulationError(null);
-    setSimulationResult(null);
-
-    (async () => {
-      const [monetary, ona, insights] = await Promise.all([
-        fetchApi<MonetaryInfo>(`/api/employees/${employee.id}/monetary-info`),
-        fetchApi<OnaData>(`/api/ona/${employee.id}/active`),
-        fetchApi<EmployeeInsightsResponseApi>(
-          `/api/employees/${employee.id}/insights`,
-        ),
-      ]);
-
-      if (!isMounted) return;
-
-      setMonetaryInfo(monetary ?? null);
-      setOnaData(ona ?? null);
-      setInsightsData(insights ?? null);
-      setLoading(false);
-    })();
-
-    return () => {
-      isMounted = false;
-    };
   }, [employee?.id]);
 
   useEffect(() => {
@@ -192,9 +176,16 @@ export function EmployeeView({ employee }: Props) {
 
     setProposalDraft({
       salaryCurrent: monetaryInfo.salary,
-      proposedSalary: round2(monetaryInfo.salary * 1.02),
+      currentBonus: monetaryInfo.bonus,
+      currentCategoryId: employee.category_id,
+      currentCategory: employee.category_name ?? "",
+      proposedSalary: 0,
       bonus: monetaryInfo.bonus,
+      nextFiscalYearBonus: 0,
       category: employee.category_name ?? "",
+      includeBonus: monetaryInfo.bonus > 0,
+      includeNextFiscalYearBonus: false,
+      includeCategory: false,
     });
   }, [employee, monetaryInfo]);
 
@@ -204,28 +195,95 @@ export function EmployeeView({ employee }: Props) {
     setSimulationResult(null);
   }, [proposalDraft]);
 
+  const benchmarkTarget = useMemo(() => {
+    if (!employee) return null;
+
+    return {
+      societyId: employee.society_id,
+      societyName: employee.society_name,
+      departmentId: employee.department_id,
+      departmentName: employee.department_name,
+      officeId: employee.office_id,
+      officeName: employee.office_name,
+      categoryId: employee.category_id,
+      categoryName: employee.category_name ?? null,
+    };
+  }, [employee]);
+
+  const availableBenchmarkScope = useMemo(() => {
+    return buildSalaryProposalBenchmarkScope(benchmarkTarget);
+  }, [benchmarkTarget]);
+
+  useEffect(() => {
+    setBenchmarkScope((currentScope) => {
+      const sanitizedScope = sanitizeSalaryProposalBenchmarkScope(
+        currentScope,
+        availableBenchmarkScope,
+      );
+
+      const hasActiveSelection = Object.values(sanitizedScope).some(Boolean);
+      return hasActiveSelection ? sanitizedScope : availableBenchmarkScope;
+    });
+  }, [availableBenchmarkScope, employee?.id]);
+
+  const selectedBenchmarkScope = useMemo(() => {
+    return sanitizeSalaryProposalBenchmarkScope(
+      benchmarkScope,
+      availableBenchmarkScope,
+    );
+  }, [availableBenchmarkScope, benchmarkScope]);
+
+  const benchmarkFilters = useMemo(() => {
+    return buildSalaryProposalBenchmarkFilters(benchmarkTarget);
+  }, [benchmarkTarget]);
+
+  const {
+    rows: employeeBenchmarkRows,
+  } = useSalaryProposalBenchmarks(benchmarkFilters, Boolean(employee?.id));
+
+  const selectedBenchmarkReference = useMemo(() => {
+    return findSalaryProposalBenchmark(
+      employeeBenchmarkRows,
+      benchmarkTarget,
+      selectedBenchmarkScope,
+    );
+  }, [employeeBenchmarkRows, benchmarkTarget, selectedBenchmarkScope]);
+
   const proposalKpis = useMemo(() => {
     if (!proposalDraft) return null;
 
-    return computeProposalKpis(
+    const effectiveBonus = proposalDraft.includeBonus
+      ? proposalDraft.bonus
+      : proposalDraft.currentBonus ?? proposalDraft.bonus;
+
+    const kpis = computeProposalKpis(
       {
         salaryCurrent: proposalDraft.salaryCurrent,
+        proposedPercentageIncrease: proposalDraft.increasePercentage,
         proposedSalary: proposalDraft.proposedSalary,
-        bonus: proposalDraft.bonus,
+        bonus: effectiveBonus,
       },
-      AVG,
+      {
+        avgSalaryIncrease: selectedBenchmarkReference?.salary_increase_avg,
+        avgSalaryIncreasePercentage:
+          selectedBenchmarkReference?.salary_increase_percentage_avg,
+        avgBonus: selectedBenchmarkReference?.bonus_avg,
+      },
     );
-  }, [proposalDraft]);
+
+    return {
+      ...kpis,
+      salaryIncreaseVsAvgPct:
+        proposalDraft.increasePercentage &&
+        proposalDraft.increasePercentage > 0
+          ? kpis.salaryIncreaseVsAvgPct
+          : null,
+    };
+  }, [proposalDraft, selectedBenchmarkReference]);
 
   const insightViewModels = useMemo(() => {
     return insightsData ? mapInsightsToViewModels(insightsData.insights) : [];
   }, [insightsData]);
-
-  const performanceInsights = useMemo(() => {
-    return insightViewModels.filter((insight) =>
-      PERFORMANCE_CHART_CODES.has(insight.code),
-    );
-  }, [insightViewModels]);
 
   const onaInsights = useMemo(() => {
     return insightViewModels.filter((insight) =>
@@ -233,19 +291,15 @@ export function EmployeeView({ employee }: Props) {
     );
   }, [insightViewModels]);
 
+  const decisionInsights = useMemo(() => {
+    return insightViewModels.filter(
+      (insight) => !DECISION_EXCLUDED_CODES.has(insight.code),
+    );
+  }, [insightViewModels]);
+
   const fullName = employee
     ? `${employee.first_name} ${employee.last_name}`.trim()
     : "Selecciona un empleado";
-
-  const employeeMeta = useMemo(() => {
-    if (!employee) return [];
-
-    return [
-      employee.category_name,
-      employee.department_name,
-      employee.office_name,
-    ].filter(Boolean);
-  }, [employee]);
 
   const tenureLabel = useMemo(
     () => getTenureLabel(employee?.joined_at),
@@ -254,6 +308,28 @@ export function EmployeeView({ employee }: Props) {
 
   const attritionPct = normalizeAttritionRate(employee?.attrition_rate);
   const attritionIsHigh = attritionPct != null && attritionPct >= 34.14;
+  const demoModeLabel = demoMode ? "Desactivar modo demo" : "Activar modo demo";
+  const DemoModeIcon = demoMode ? EyeOff : Eye;
+  const isProposalSaved =
+    employee?.id != null && savedProposalEmployeeIds?.has(employee.id)
+      ? true
+      : false;
+
+  const handleProposalDraftChange = (nextDraft: ProposalDraft) => {
+    setProposalDraft(nextDraft);
+
+    if (employee?.id != null && isProposalSaved) {
+      onProposalSavedChange?.(employee.id, false);
+    }
+  };
+
+  const handleProposalSave = (nextDraft: ProposalDraft) => {
+    setProposalDraft(nextDraft);
+
+    if (employee?.id != null) {
+      onProposalSavedChange?.(employee.id, true);
+    }
+  };
 
   const runSimulation = async () => {
     if (!employee || !proposalDraft || simulationLoading) return;
@@ -264,8 +340,12 @@ export function EmployeeView({ employee }: Props) {
       const payload = {
         employee_id: employee.id,
         new_salary: proposalDraft.proposedSalary,
-        new_bonus: proposalDraft.bonus,
-        ...(proposalDraft.category ? { new_category: proposalDraft.category } : {}),
+        ...(proposalDraft.includeBonus
+          ? { new_bonus: proposalDraft.bonus }
+          : {}),
+        ...(proposalDraft.includeCategory && proposalDraft.category
+          ? { new_category: proposalDraft.category }
+          : {}),
       };
 
       const res = await fetch("/api/predictive_attrition/simulate", {
@@ -300,7 +380,9 @@ export function EmployeeView({ employee }: Props) {
       setSimulationResult({
         attritionProbability: simulationItem.probability,
         simulatedSalary: proposalDraft.proposedSalary,
-        simulatedBonus: proposalDraft.bonus,
+        simulatedBonus: proposalDraft.includeBonus
+          ? proposalDraft.bonus
+          : proposalDraft.currentBonus ?? proposalDraft.bonus,
         simulatedAt: new Date().toISOString(),
       });
     } catch (err) {
@@ -318,9 +400,9 @@ export function EmployeeView({ employee }: Props) {
       <section className="min-w-0 flex-1 min-h-0 h-full overflow-y-auto border-l border-slate-200 bg-[var(--exec-bg)] [background-image:var(--exec-employee-view)] dark:border-slate-700/80">
         <div className="min-h-full flex flex-col">
           {/* Header */}
-          <header className="shrink-0 border-b border-slate-200 bg-[var(--exec-top)] px-6 py-5 shadow-sm dark:border-slate-700/80 dark:bg-[#0f1728]">
+          <header className="shrink-0 border-b border-slate-200 bg-[var(--exec-top)] px-6 py-5 shadow-sm dark:border-slate-700/80 dark:bg-[var(--exec-top)]">
             {!employee ? (
-              <div className="flex min-h-[92px] items-center">
+              <div className="flex min-h-[92px] items-center justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                     Vista de empleado
@@ -329,33 +411,74 @@ export function EmployeeView({ employee }: Props) {
                     {fullName}
                   </h1>
                 </div>
+                <button
+                  type="button"
+                  aria-label={demoModeLabel}
+                  title={demoModeLabel}
+                  onClick={onToggleDemoMode}
+                  className={[
+                    "inline-flex h-12 w-12 items-center justify-center rounded-lg border transition-colors",
+                    demoMode
+                      ? "border-[var(--rsm-blue)] bg-[rgb(var(--rsm-blue-rgb)/0.12)] text-[var(--rsm-blue)] hover:bg-[rgb(var(--rsm-blue-rgb)/0.18)] dark:border-[#79d7ff] dark:text-[#79d7ff]"
+                      : "border-slate-300 bg-[var(--exec-card)] text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                  ].join(" ")}
+                >
+                  <DemoModeIcon className="h-5 w-5" />
+                </button>
               </div>
             ) : (
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div className="flex min-w-0 items-center gap-4">
-                  <Avatar className="h-16 w-16 border-2 border-slate-300 bg-cyan-500 shadow-[0_0_0_3px_rgba(34,211,238,0.12)] dark:border-slate-700">
+                  <Avatar
+                    className={getDemoSensitiveImageClassName(
+                      demoMode,
+                      "h-16 w-16 border-2 border-slate-300 bg-[var(--rsm-blue)] shadow-[0_0_0_3px_rgba(0,156,222,0.14)] dark:border-slate-700",
+                    )}
+                  >
                     <AvatarImage
                       src={`/api/employees/${employee.id}/photo`}
                       alt={`${fullName} avatar`}
                     />
-                    <AvatarFallback className="bg-cyan-500 text-lg font-bold text-white">
+                    <AvatarFallback className="bg-[var(--rsm-blue)] text-lg font-bold text-white">
                       {getInitials(employee)}
                     </AvatarFallback>
                   </Avatar>
 
                   <div className="min-w-0">
-                    <h1 className="truncate text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
+                    <h1
+                      className={[
+                        "truncate text-3xl font-bold tracking-tight",
+                        demoMode
+                          ? "inline-flex max-w-full rounded-sm bg-slate-950 px-3 py-1 text-transparent shadow-[0_2px_0_rgba(15,23,42,0.18)] dark:bg-slate-100"
+                          : "text-slate-900 dark:text-slate-50",
+                      ].join(" ")}
+                    >
                       {fullName}
                     </h1>
                     <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
-                      {employeeMeta.map((item) => (
-                        <span
-                          key={item}
-                          className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700"
-                        >
-                          {item}
-                        </span>
-                      ))}
+                      {demoMode ? (
+                        <>
+                          <span className="border-r border-slate-300 pr-3 font-medium text-[var(--rsm-blue)] last:border-r-0 dark:border-slate-700 dark:text-[#79d7ff]">
+                            Salario: {formatMoneyCompact(monetaryInfo?.salary)}
+                          </span>
+                          <span className="border-r border-slate-300 pr-3 font-medium text-[var(--rsm-blue)] last:border-r-0 dark:border-slate-700 dark:text-[#79d7ff]">
+                            Bonus: {formatMoneyCompact(monetaryInfo?.bonus)}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {[employee.category_name, employee.department_name, employee.office_name]
+                            .filter(Boolean)
+                            .map((item) => (
+                              <span
+                                key={item}
+                                className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700"
+                              >
+                                {item}
+                              </span>
+                            ))}
+                        </>
+                      )}
                       {tenureLabel && (
                         <span className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700">
                           Seniority: {tenureLabel.replace(" en la firma", "")}
@@ -371,8 +494,8 @@ export function EmployeeView({ employee }: Props) {
                       className={[
                         "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
                         attritionIsHigh
-                          ? "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300"
-                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                          ? "border-[color:rgb(var(--rsm-red-rgb)/0.3)] bg-[rgb(var(--rsm-red-rgb)/0.1)] text-[var(--rsm-red)] dark:text-[#ff9ab8]"
+                          : "border-[color:rgb(var(--rsm-green-rgb)/0.3)] bg-[rgb(var(--rsm-green-rgb)/0.1)] text-[var(--rsm-green)] dark:text-[#8ed989]",
                       ].join(" ")}
                     >
                       Riesgo de fuga {attritionPct.toFixed(1)}%
@@ -381,15 +504,22 @@ export function EmployeeView({ employee }: Props) {
 
                   <button
                     type="button"
-                    aria-label="Descargar informe"
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    aria-label={demoModeLabel}
+                    title={demoModeLabel}
+                    onClick={onToggleDemoMode}
+                    className={[
+                      "inline-flex h-12 w-12 items-center justify-center rounded-lg border transition-colors",
+                      demoMode
+                        ? "border-[var(--rsm-blue)] bg-[rgb(var(--rsm-blue-rgb)/0.12)] text-[var(--rsm-blue)] hover:bg-[rgb(var(--rsm-blue-rgb)/0.18)] dark:border-[#79d7ff] dark:text-[#79d7ff]"
+                        : "border-slate-300 bg-[var(--exec-card)] text-slate-500 hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100",
+                    ].join(" ")}
                   >
-                    <Download className="h-5 w-5" />
+                    <DemoModeIcon className="h-5 w-5" />
                   </button>
                   <button
                     type="button"
                     aria-label="Más acciones"
-                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-white text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                    className="inline-flex h-12 w-12 items-center justify-center rounded-lg border border-slate-300 bg-[var(--exec-card)] text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/70 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
                   >
                     <MoreVertical className="h-5 w-5" />
                   </button>
@@ -401,40 +531,53 @@ export function EmployeeView({ employee }: Props) {
           {/* Body */}
           <div className="flex-1 min-h-0 overflow-x-hidden p-6">
             {!employee ? (
-              <div className="grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-white/80 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+              <div className="grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-[var(--exec-card)] text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
                 Selecciona un empleado para ver detalles
               </div>
             ) : (
               <div className="mx-auto flex max-w-[1280px] flex-col gap-6">
                 <section>
                   <KpiBar
-                    variant="summary"
-                    raiseAmount={proposalKpis?.raiseAmount}
-                    salaryVsAvgPct={proposalKpis?.salaryVsAvgPct}
-                    bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
+                    currentSalary={monetaryInfo?.salary}
+                    currentBonus={monetaryInfo?.bonus}
                     attritionRate={employee.attrition_rate}
+                    salaryVsAvgPct={proposalKpis?.salaryIncreaseVsAvgPct}
+                    bonusVsAvgPct={proposalKpis?.bonusVsAvgPct}
+                    salaryIncreaseReference={
+                      selectedBenchmarkReference?.salary_increase_avg
+                    }
+                    salaryIncreasePercentageReference={
+                      selectedBenchmarkReference?.salary_increase_percentage_avg
+                    }
+                    bonusReference={selectedBenchmarkReference?.bonus_avg}
+                    benchmarkScope={selectedBenchmarkScope}
+                    availableBenchmarkScope={availableBenchmarkScope}
+                    onBenchmarkScopeChange={setBenchmarkScope}
                   />
                 </section>
 
                 <section className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
                   <SalaryProposalForm
+                    demoMode={demoMode}
+                    isSaved={isProposalSaved}
                     value={proposalDraft}
-                    onChange={setProposalDraft}
+                    onChange={handleProposalDraftChange}
+                    onSave={handleProposalSave}
                     onOpenSimulation={() => {
                       handleTabChange("decision-intelligence");
                       void runSimulation();
                     }}
                   />
 
-                  <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white/85 shadow-sm dark:border-slate-700/90 dark:bg-slate-800/60">
-                    <div className="flex border-b border-slate-200 bg-slate-50/75 dark:border-slate-700/90 dark:bg-slate-900/35">
+                  <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-800/60">
+                    <div className="flex border-b border-slate-200 bg-slate-200/65 dark:border-slate-700/90 dark:bg-slate-900/35">
                       <button
                         type="button"
                         onClick={() => handleTabChange("decision-intelligence")}
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "decision-intelligence"
-                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            ? "border-b-2 border-[var(--rsm-blue)] font-semibold text-slate-900 dark:border-[#79d7ff] dark:text-slate-100"
                             : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
@@ -446,7 +589,7 @@ export function EmployeeView({ employee }: Props) {
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "ona"
-                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            ? "border-b-2 border-[var(--rsm-blue)] font-semibold text-slate-900 dark:border-[#79d7ff] dark:text-slate-100"
                             : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
@@ -458,7 +601,7 @@ export function EmployeeView({ employee }: Props) {
                         className={[
                           "px-6 py-3 text-sm",
                           activeTab === "desempeno"
-                            ? "border-b-2 border-cyan-500 font-semibold text-slate-900 dark:border-cyan-400 dark:text-slate-100"
+                            ? "border-b-2 border-[var(--rsm-blue)] font-semibold text-slate-900 dark:border-[#79d7ff] dark:text-slate-100"
                             : "font-medium text-slate-500 dark:text-slate-400",
                         ].join(" ")}
                       >
@@ -476,7 +619,7 @@ export function EmployeeView({ employee }: Props) {
                           transition={{ duration: 0.22, ease: "easeOut" }}
                           className="grid gap-5"
                         >
-                      {activeTab === "decision-intelligence" && proposalDraft && (
+                      {activeTab === "decision-intelligence" && (
                         <div className="grid gap-5">
                           <DecisionAttritionRiskPanel
                             currentProbability={employee.attrition_rate ?? null}
@@ -484,7 +627,13 @@ export function EmployeeView({ employee }: Props) {
                             simulationError={simulationError}
                           />
 
-                          <DecisionInsightsCarousel insights={insightViewModels} />
+                          {insightsLoading ? (
+                            <div className="rounded-xl border border-slate-200 bg-[var(--exec-card)] p-6 text-sm text-slate-500 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35 dark:text-slate-400">
+                              Cargando insights de decisión…
+                            </div>
+                          ) : (
+                            <DecisionInsightsCarousel insights={decisionInsights} />
+                          )}
                         </div>
                       )}
 
@@ -497,7 +646,7 @@ export function EmployeeView({ employee }: Props) {
 
                           <OnaRadarChart
                             data={onaData}
-                            loading={loading}
+                            loading={onaDataLoading}
                             insights={onaInsights}
                           />
                         </>
@@ -505,11 +654,11 @@ export function EmployeeView({ employee }: Props) {
 
                       {activeTab === "desempeno" && (
                         <div className="space-y-5">
-                          <EmployeeProgressChart
+                          <EmployeeProgressChart employeeId={employee?.id} />
+                          <EmployeeTimelineEvolution
+                            demoMode={demoMode}
                             employeeId={employee?.id}
-                            insights={performanceInsights}
                           />
-                          <EmployeeTimelineEvolution employeeId={employee?.id} />
                         </div>
                       )}
                         </motion.div>

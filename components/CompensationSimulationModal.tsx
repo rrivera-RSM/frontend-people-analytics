@@ -106,8 +106,10 @@ export function CompensationSimulationModal({
       const payload = {
         employee_id: employee.id,
         new_salary: localSalary,
-        new_bonus: localBonus,
-        ...(draft.category ? { new_category: draft.category } : {}),
+        ...(draft.includeBonus ? { new_bonus: localBonus } : {}),
+        ...(draft.includeCategory && draft.category
+          ? { new_category: draft.category }
+          : {}),
       };
 
       const res = await fetch("/api/predictive_attrition/simulate", {
@@ -287,7 +289,7 @@ export function CompensationSimulationModal({
                 )}
 
                 {error && (
-                  <div className="rounded-md border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+                  <div className="rounded-md border border-[color:rgb(var(--rsm-red-rgb)/0.4)] bg-[rgb(var(--rsm-red-rgb)/0.1)] p-4 text-sm text-[var(--rsm-red)] dark:text-[#ff9ab8]">
                     {error}
                   </div>
                 )}

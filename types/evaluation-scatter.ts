@@ -18,4 +18,3 @@ export type EvaluationScatterLatestCycleResponse = {
   total_points: number;
   points: EvaluationScatterPoint[];
 };
-``

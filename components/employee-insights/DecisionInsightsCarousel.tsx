@@ -76,18 +76,12 @@ export function DecisionInsightsCarousel({
     return () => window.clearTimeout(id);
   }, [autoPlayIntervalMs, canAutoPlay, goNext, index]);
 
-  if (!insights.length) {
-    return (
-      <section className="grid min-h-[360px] place-items-center rounded-xl border border-dashed border-slate-300 bg-slate-50/80 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/35 dark:text-slate-400">
-        Sin insights disponibles
-      </section>
-    );
-  }
+  if (!insights.length) return null;
 
   const activeInsight = insights[index];
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50/80 shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-700/80">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
@@ -99,7 +93,7 @@ export function DecisionInsightsCarousel({
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="rounded-full border border-slate-200 bg-white/70 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
+          <span className="rounded-full border border-slate-200 bg-slate-100/80 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300">
             {index + 1}/{insights.length}
           </span>
           {autoPlay && insights.length > 1 && (
@@ -130,7 +124,7 @@ export function DecisionInsightsCarousel({
               type="button"
               aria-label="Insight anterior"
               onClick={goPrev}
-              className="absolute left-4 top-1/2 z-30 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/85 text-slate-600 shadow-sm transition-colors hover:bg-white hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:text-slate-50"
+              className="absolute left-4 top-1/2 z-30 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-slate-100/90 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:text-slate-50"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -138,7 +132,7 @@ export function DecisionInsightsCarousel({
               type="button"
               aria-label="Insight siguiente"
               onClick={goNext}
-              className="absolute right-4 top-1/2 z-30 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/85 text-slate-600 shadow-sm transition-colors hover:bg-white hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:text-slate-50"
+              className="absolute right-4 top-1/2 z-30 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-slate-100/90 text-slate-600 shadow-sm transition-colors hover:bg-slate-50 hover:text-slate-950 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300 dark:hover:text-slate-50"
             >
               <ChevronRight className="h-5 w-5" />
             </button>
@@ -146,7 +140,7 @@ export function DecisionInsightsCarousel({
         )}
 
         <div className="absolute inset-x-0 top-4 text-center">
-          <span className="rounded-full border border-slate-200 bg-white/70 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
+          <span className="rounded-full border border-slate-200 bg-slate-100/80 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-300">
             {getFamilyLabel(activeInsight)}
           </span>
         </div>
@@ -196,7 +190,7 @@ export function DecisionInsightsCarousel({
                 <motion.div
                   className={
                     isActive
-                      ? "h-full drop-shadow-[0_18px_34px_rgba(15,23,42,0.18)] dark:drop-shadow-[0_20px_44px_rgba(0,0,0,0.45)]"
+                      ? "h-full drop-shadow-[0_18px_34px_rgba(0,21,61,0.18)] dark:drop-shadow-[0_20px_44px_rgba(0,0,0,0.45)]"
                       : "pointer-events-none h-full blur-[0.2px]"
                   }
                   animate={
@@ -237,7 +231,7 @@ export function DecisionInsightsCarousel({
               onClick={() => goToIndex(dotIndex)}
               className={`h-2 rounded-full transition-all ${
                 dotIndex === index
-                  ? "w-7 bg-cyan-500"
+                  ? "w-7 bg-[var(--rsm-blue)]"
                   : "w-2 bg-slate-300 hover:bg-slate-400 dark:bg-slate-600 dark:hover:bg-slate-500"
               }`}
             />

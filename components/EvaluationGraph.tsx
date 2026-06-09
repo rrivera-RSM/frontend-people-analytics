@@ -32,16 +32,16 @@ type ScatterDatum = {
 };
 
 const TOKENS = {
-  axis: "#94A3B8",
-  grid: "rgba(148, 163, 184, 0.12)",
+  axis: "#888B8D",
+  grid: "rgba(136, 139, 141, 0.16)",
 
-  other: "#475569", // slate
-  society: "#3B82F6", // blue
-  department: "#06B6D4", // cyan
-  selected: "#3f9c35" , // corporate green
+  other: "rgba(136, 139, 141, 0.42)",
+  society: "rgba(0, 156, 222, 0.62)",
+  department: "rgba(52, 167, 152, 0.8)",
+  selected: "#00153D",
 
-  selectedRing: "rgba(63, 156, 53, 0.4)",
-  tooltipBg: "#0F172A",
+  selectedRing: "#F1B434",
+  tooltipBg: "#00153D",
 };
 
 function isValidNumber(value: unknown): value is number {
@@ -206,7 +206,7 @@ export default function EvaluationGraph({
         background: "transparent",
         foreColor: TOKENS.axis,
         fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto",
+          "Arial, Helvetica Neue, Helvetica, ui-sans-serif, system-ui, sans-serif",
       },
       legend: {
         show: true,
@@ -258,7 +258,7 @@ export default function EvaluationGraph({
         crosshairs: {
           show: true,
           stroke: {
-            color: "rgba(148, 163, 184, 0.15)",
+            color: "rgba(0, 156, 222, 0.18)",
             width: 1,
             dashArray: 2,
           },
@@ -287,8 +287,8 @@ export default function EvaluationGraph({
         axisTicks: { show: false },
       },
       markers: {
-        size: [3, 4, 5, 8],
-        strokeWidth: [0, 0, 0, 3],
+        size: [3, 4, 5, 11],
+        strokeWidth: [0, 0, 0, 4],
         strokeColors: [
           "transparent",
           "transparent",
@@ -319,9 +319,9 @@ export default function EvaluationGraph({
               background: ${TOKENS.tooltipBg};
               color: #fff;
               border-radius: 12px;
-              font-family: Inter, system-ui;
+              font-family: Arial, Helvetica Neue, Helvetica, system-ui, sans-serif;
               font-size: 12px;
-              box-shadow: 0 8px 20px rgba(15, 23, 42, 0.24);
+              box-shadow: 0 8px 20px rgba(0, 21, 61, 0.28);
               border: 1px solid rgba(255,255,255,0.08);
             ">
               <div style="font-weight: 700; margin-bottom: 6px;">
@@ -386,7 +386,7 @@ export default function EvaluationGraph({
               Cargando evaluación comparativa…
             </div>
           ) : error ? (
-            <div className="h-full grid place-items-center text-sm text-red-400">
+            <div className="h-full grid place-items-center text-sm text-[var(--rsm-red)]">
               No se pudo cargar la distribución del último ejercicio.
             </div>
           ) : showEmpty ? (

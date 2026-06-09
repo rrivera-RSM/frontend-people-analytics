@@ -26,7 +26,7 @@ export function SidebarCollapseToggle({
         "hover:bg-zinc-100 hover:text-zinc-700",
         "dark:bg-zinc-950/60 dark:border-zinc-800 dark:text-zinc-400",
         "dark:hover:bg-zinc-900 dark:hover:text-zinc-200",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--rsm-blue)] focus-visible:ring-offset-2",
         "dark:focus-visible:ring-offset-zinc-950",
       ].join(" ")}
     >
