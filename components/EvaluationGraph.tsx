@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { ApexAxisChartSeries, ApexOptions } from "apexcharts";
+import type { ApexOptions } from "apexcharts";
 
 import { Card, CardTitle, CardContent, CardHeader } from "@/components/ui/card";
 import { InsightChipsInline } from "@/components/employee-insights/InsightChipsInline";
@@ -399,7 +399,7 @@ export default function EvaluationGraph({
             <>
               <ReactApexChart
                 options={options}
-                series={series as ApexAxisChartSeries}
+                series={series as ApexOptions["series"]}
                 type="scatter"
                 height={height}
                 width="100%"

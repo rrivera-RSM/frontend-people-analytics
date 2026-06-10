@@ -251,7 +251,7 @@ function getEventSummary(
       }
 
       const currentLevel = getEvaluationLevel(score);
-      const trend =
+      const trend: TimelineTrend | undefined =
         previousEvaluationScore != null
           ? {
               delta: Number((score - previousEvaluationScore).toFixed(2)),
