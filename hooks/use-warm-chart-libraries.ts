@@ -2,10 +2,20 @@
 
 import { useEffect } from "react";
 
+type BrowserWindowWithIdleCallback = Window &
+  typeof globalThis & {
+    requestIdleCallback?: (
+      callback: IdleRequestCallback,
+      options?: IdleRequestOptions,
+    ) => number;
+    cancelIdleCallback?: (handle: number) => void;
+  };
+
 export function useWarmChartLibraries(enabled: boolean) {
   useEffect(() => {
     if (!enabled || typeof window === "undefined") return;
 
+    const browserWindow = window as BrowserWindowWithIdleCallback;
     let cancelled = false;
 
     const warm = () => {
@@ -16,18 +26,18 @@ export function useWarmChartLibraries(enabled: boolean) {
       void import("react-force-graph-2d");
     };
 
-    if ("requestIdleCallback" in window) {
-      const idleId = window.requestIdleCallback(warm, { timeout: 1500 });
+    if (typeof browserWindow.requestIdleCallback === "function") {
+      const idleId = browserWindow.requestIdleCallback(warm, { timeout: 1500 });
       return () => {
         cancelled = true;
-        window.cancelIdleCallback(idleId);
+        browserWindow.cancelIdleCallback?.(idleId);
       };
     }
 
-    const timeoutId = window.setTimeout(warm, 350);
+    const timeoutId = browserWindow.setTimeout(warm, 350);
     return () => {
       cancelled = true;
-      window.clearTimeout(timeoutId);
+      browserWindow.clearTimeout(timeoutId);
     };
   }, [enabled]);
 }

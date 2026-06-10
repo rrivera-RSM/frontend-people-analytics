@@ -2,11 +2,12 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties, RefObject } from "react";
+import type { ComponentType, CSSProperties, RefObject } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOnaRelations } from "@/hooks/use-ona-relations";
 import type {
   OnaCategory,
+  OnaRelationNodeApi,
   OnaRelationsApiResponse,
 } from "@/types/ona-relations";
 
@@ -82,7 +83,10 @@ type ForceGraphRef = {
 };
 
 const ForceGraph2D = dynamic<ForceGraph2DProps>(
-  () => import("react-force-graph-2d"),
+  () =>
+    import("react-force-graph-2d").then(
+      (mod) => mod.default as unknown as ComponentType<ForceGraph2DProps>,
+    ),
   { ssr: false },
 );
 

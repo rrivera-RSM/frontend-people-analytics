@@ -14,6 +14,19 @@ type InsightNarrative = {
   consumedKeys: string[];
 };
 
+type ActiveInfluenceCode =
+  | "active_influence_ci"
+  | "active_influence_at"
+  | "active_influence_ap"
+  | "active_influence_in";
+
+const ACTIVE_INFLUENCE_PERCENTILE_KEYS: Record<ActiveInfluenceCode, string> = {
+  active_influence_ci: "ona_percentile_1",
+  active_influence_at: "ona_percentile_2",
+  active_influence_ap: "ona_percentile_3",
+  active_influence_in: "ona_percentile_4",
+};
+
 function formatEvidenceValue(value: unknown): string {
   if (value == null) return "—";
 
@@ -168,12 +181,8 @@ function buildInsightNarrative(insight: EmployeeInsightViewModel): InsightNarrat
     case "active_influence_at":
     case "active_influence_ap":
     case "active_influence_in": {
-      const percentileKey = {
-        active_influence_ci: "ona_percentile_1",
-        active_influence_at: "ona_percentile_2",
-        active_influence_ap: "ona_percentile_3",
-        active_influence_in: "ona_percentile_4",
-      }[insight.code];
+      const percentileKey =
+        ACTIVE_INFLUENCE_PERCENTILE_KEYS[insight.code as ActiveInfluenceCode];
       const percentile = readNumber(evidence[percentileKey]);
       if (percentile == null) break;
       return {

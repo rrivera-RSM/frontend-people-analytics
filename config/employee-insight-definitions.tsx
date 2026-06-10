@@ -456,8 +456,8 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
     sortOrder: 235,
   },
 
-  upper_level_influence: {
-    code: "upper_level_influence",
+  upward_influence: {
+    code: "upward_influence",
     shortCode: "O12C",
     family: "ona",
     tone: "accent",
@@ -467,6 +467,9 @@ export const EMPLOYEE_INSIGHT_DEFINITIONS: Record<
       "Este empleado genera reconocimiento en niveles organizativos superiores, lo que indica credibilidad y capacidad de impacto por encima de su posición formal actual. Es una señal relevante de confianza ascendente y posible proyección hacia mayores niveles de responsabilidad.",
     formulaDescription:
       "Se identifica cuando el empleado recibe relaciones entrantes desde dos o más personas pertenecientes a categorías organizativas superiores a la suya.",
+    ...insightVisual("purple"),
+    visibleEvidenceKeys: ["n_upper_categories_in", "threshold"],
+    sortOrder: 240,
   },
 
   bridge_person: {

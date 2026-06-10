@@ -125,7 +125,7 @@ export function EmployeesSidebar({
       };
     }
 
-    const timeoutId = window.setTimeout(enablePhotos, 350);
+    const timeoutId = setTimeout(enablePhotos, 350);
     return () => {
       cancelled = true;
       window.clearTimeout(timeoutId);

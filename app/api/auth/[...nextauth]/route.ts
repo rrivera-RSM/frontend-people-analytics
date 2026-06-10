@@ -1,8 +1,22 @@
 
 import NextAuth, { type NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import AzureADProvider from "next-auth/providers/azure-ad";
 
-async function refreshAzureAccessToken(token: any) {
+type AzureJwt = JWT & {
+  accessToken?: string;
+  refreshToken?: string;
+  accessTokenExpires?: number;
+  error?: string;
+};
+
+type AzureRefreshResponse = {
+  access_token?: string;
+  expires_in?: number;
+  refresh_token?: string;
+};
+
+async function refreshAzureAccessToken(token: AzureJwt): Promise<AzureJwt> {
   try {
     const tenantId = process.env.AZURE_AD_TENANT_ID!;
     const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
@@ -11,7 +25,7 @@ async function refreshAzureAccessToken(token: any) {
       client_id: process.env.AZURE_AD_CLIENT_ID!,
       client_secret: process.env.AZURE_AD_CLIENT_SECRET!,
       grant_type: "refresh_token",
-      refresh_token: token.refreshToken,
+      refresh_token: token.refreshToken ?? "",
       // IMPORTANTE: pide los mismos scopes que en el login
       scope: [
         "openid",
@@ -28,8 +42,11 @@ async function refreshAzureAccessToken(token: any) {
       body,
     });
 
-    const refreshed = await resp.json();
+    const refreshed = (await resp.json()) as AzureRefreshResponse;
     if (!resp.ok) throw refreshed;
+    if (!refreshed.access_token || typeof refreshed.expires_in !== "number") {
+      throw refreshed;
+    }
 
     return {
       ...token,
@@ -39,7 +56,7 @@ async function refreshAzureAccessToken(token: any) {
       refreshToken: refreshed.refresh_token ?? token.refreshToken,
       error: undefined,
     };
-  } catch (e) {
+  } catch {
     return { ...token, error: "RefreshAccessTokenError" };
   }
 }

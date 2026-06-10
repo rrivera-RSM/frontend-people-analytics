@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 
-type MeResponse = Record<string, any> | null;
+type MeResponse = unknown;
 
 type CallStatus = "idle" | "loading" | "success" | "error";
 
@@ -58,8 +58,8 @@ export function AzureProfile() {
 
       setMe(body);
       setCallStatus("success");
-    } catch (e: any) {
-      setError(e?.message ?? "Unknown error");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Unknown error");
       setCallStatus("error");
     }
   }
@@ -76,7 +76,6 @@ export function AzureProfile() {
 
     // Al autenticar, refrescamos perfil automáticamente
     void fetchMe();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthed]);
 
   return (
