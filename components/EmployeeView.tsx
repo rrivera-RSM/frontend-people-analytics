@@ -9,6 +9,7 @@ import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type {
   ProposalDraft,
+  SalaryOfferPayload,
   SalaryProposalBenchmarkScope,
   SimulationResult,
 } from "@/types/compensation";
@@ -36,6 +37,7 @@ import {
 import {
   getDemoSensitiveImageClassName,
 } from "@/lib/demo-mode";
+import { saveSalaryOffer } from "@/lib/api/compensation";
 
 type Props = {
   employee: EmployeeRow | null;
@@ -142,6 +144,8 @@ export function EmployeeView({
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [proposalSaveLoading, setProposalSaveLoading] = useState(false);
+  const [proposalSaveError, setProposalSaveError] = useState<string | null>(null);
   const {
     monetaryInfo,
     onaData,
@@ -165,6 +169,8 @@ export function EmployeeView({
       setProposalDraft(null);
       setSimulationError(null);
       setSimulationResult(null);
+      setProposalSaveLoading(false);
+      setProposalSaveError(null);
     }
   }, [employee?.id]);
 
@@ -317,17 +323,54 @@ export function EmployeeView({
 
   const handleProposalDraftChange = (nextDraft: ProposalDraft) => {
     setProposalDraft(nextDraft);
+    setProposalSaveError(null);
 
     if (employee?.id != null && isProposalSaved) {
       onProposalSavedChange?.(employee.id, false);
     }
   };
 
-  const handleProposalSave = (nextDraft: ProposalDraft) => {
-    setProposalDraft(nextDraft);
+  const handleProposalSave = async (nextDraft: ProposalDraft) => {
+    if (!employee?.id || proposalSaveLoading) return;
 
-    if (employee?.id != null) {
+    setProposalDraft(nextDraft);
+    setProposalSaveLoading(true);
+    setProposalSaveError(null);
+
+    const payload: SalaryOfferPayload = {
+      employee_id: employee.id,
+      new_salary: nextDraft.proposedSalary,
+      ...(nextDraft.includeBonus && nextDraft.bonus > 0
+        ? {
+            new_bonus: nextDraft.bonus,
+            month_payment_bonus: nextDraft.bonusPaymentMonth?.trim() ?? "",
+          }
+        : {}),
+      ...(nextDraft.includeNextFiscalYearBonus &&
+      nextDraft.nextFiscalYearBonus &&
+      nextDraft.nextFiscalYearBonus > 0
+        ? { bonus_next_fy: nextDraft.nextFiscalYearBonus }
+        : {}),
+      ...(nextDraft.includeCategory && nextDraft.category.trim()
+        ? { new_category: nextDraft.category.trim() }
+        : {}),
+      ...(nextDraft.observations?.trim()
+        ? { observations: nextDraft.observations.trim() }
+        : {}),
+    };
+
+    try {
+      await saveSalaryOffer(payload);
       onProposalSavedChange?.(employee.id, true);
+    } catch (err) {
+      setProposalSaveError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo guardar la propuesta",
+      );
+      onProposalSavedChange?.(employee.id, false);
+    } finally {
+      setProposalSaveLoading(false);
     }
   };
 
@@ -560,6 +603,8 @@ export function EmployeeView({
                   <SalaryProposalForm
                     demoMode={demoMode}
                     isSaved={isProposalSaved}
+                    isSaving={proposalSaveLoading}
+                    saveError={proposalSaveError}
                     value={proposalDraft}
                     onChange={handleProposalDraftChange}
                     onSave={handleProposalSave}

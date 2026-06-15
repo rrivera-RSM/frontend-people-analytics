@@ -15,6 +15,29 @@ export type ProposalDraft = {
   observations?: string;
 };
 
+export type SalaryOfferPayload = {
+  employee_id: number;
+  new_salary: number;
+  new_bonus?: number;
+  month_payment_bonus?: string;
+  bonus_next_fy?: number;
+  new_category?: string;
+  observations?: string;
+};
+
+export type SalaryOffer = {
+  id: number;
+  employee_id: number;
+  new_salary: number;
+  new_bonus: number | null;
+  month_payment_bonus: string | null;
+  bonus_next_fy: number | null;
+  new_category: string | null;
+  observations: string | null;
+  aud_user_creation: string;
+  aud_creation_at: string;
+};
+
 export type SimulationResult = {
   attritionProbability: number; // 0..1
   simulatedSalary: number;

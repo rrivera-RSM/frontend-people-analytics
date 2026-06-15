@@ -1,5 +1,7 @@
-import { fetchJsonOrNull } from "@/lib/api/http";
+import { fetchJsonOrNull, postJson } from "@/lib/api/http";
 import type {
+  SalaryOffer,
+  SalaryOfferPayload,
   SalaryProposalBenchmarkFilters,
   SalaryProposalBenchmarkRow,
 } from "@/types/compensation";
@@ -26,4 +28,11 @@ export async function fetchSalaryProposalBenchmarks(
   );
 
   return Array.isArray(data) ? data : [];
+}
+
+export async function saveSalaryOffer(payload: SalaryOfferPayload) {
+  return postJson<SalaryOfferPayload, SalaryOffer>(
+    "/api/salary-proposal/offers",
+    payload,
+  );
 }
