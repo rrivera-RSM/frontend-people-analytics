@@ -10,6 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import type { EmployeeInsightViewModel } from "@/types/employee-insights";
 import { InsightChipsInline } from "./employee-insights/InsightChipsInline";
 import {
+  OnaParticipationWarningPill,
+  type OnaParticipationWarningDetails,
+} from "@/components/OnaParticipationWarningPill";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -25,6 +29,7 @@ type Props = {
   fillColor?: string;
   loading?: boolean;
   insights?: EmployeeInsightViewModel[];
+  participationWarning?: OnaParticipationWarningDetails | null;
 };
 
 const LABELS = ["CI", "AT", "AP", "IN"];
@@ -76,6 +81,7 @@ export default function OnaRadarChart({
   fillColor = "#34A798",
   loading = false,
   insights = [],
+  participationWarning = null,
 }: Props) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -301,7 +307,18 @@ export default function OnaRadarChart({
           </TooltipProvider>
         </div>
 
-        {insights.length > 0 && <InsightChipsInline insights={insights} />}
+        {insights.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <InsightChipsInline insights={insights} />
+            {participationWarning && (
+              <OnaParticipationWarningPill
+                {...participationWarning}
+                side="top"
+                align="start"
+              />
+            )}
+          </div>
+        )}
       </CardHeader>
 
       <CardContent className="px-3 pt-0 pb-3">

@@ -4,6 +4,10 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, CSSProperties, RefObject } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  OnaParticipationWarningPill,
+  type OnaParticipationWarningDetails,
+} from "@/components/OnaParticipationWarningPill";
 import { useOnaRelations } from "@/hooks/use-ona-relations";
 import type {
   OnaCategory,
@@ -15,6 +19,7 @@ type Props = {
   employeeId: number | null | undefined;
   societyId: number | null | undefined;
   title?: string;
+  participationWarning?: OnaParticipationWarningDetails | null;
 };
 
 type GraphNode = {
@@ -504,6 +509,7 @@ export function OnaOrganizationGraph({
   employeeId,
   societyId,
   title = "Red organizacional de la sociedad",
+  participationWarning = null,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const forceGraphRef = useRef<ForceGraphRef | null>(null);
@@ -648,10 +654,17 @@ export function OnaOrganizationGraph({
   return (
     <Card className="overflow-hidden border-slate-200 bg-[var(--exec-card)] py-2 dark:border-slate-700/90">
       <CardHeader className="space-y-3 px-4 py-2">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <CardTitle className="text-base leading-tight text-slate-900 dark:text-slate-100">
             {title}
           </CardTitle>
+          {participationWarning && (
+            <OnaParticipationWarningPill
+              {...participationWarning}
+              side="bottom"
+              align="end"
+            />
+          )}
         </div>
       </CardHeader>
 
