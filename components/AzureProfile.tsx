@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { fetchWithSessionRefresh } from "@/lib/api/http";
 
 type MeResponse = unknown;
 
@@ -40,7 +41,7 @@ export function AzureProfile() {
     // setMe(null);
 
     try {
-      const res = await fetch("/api/me", {
+      const res = await fetchWithSessionRefresh("/api/me", {
         method: "GET",
         headers: { Accept: "application/json" },
         cache: "no-store",

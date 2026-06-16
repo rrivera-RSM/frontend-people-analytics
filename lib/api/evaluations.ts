@@ -1,9 +1,9 @@
+import { fetchWithSessionRefresh } from "@/lib/api/http";
 import type { EvaluationScatterLatestCycleResponse } from "@/types/evaluation-scatter";
 
 export async function fetchLatestEvaluationScatter(): Promise<EvaluationScatterLatestCycleResponse> {
-  const res = await fetch("/api/evaluations/scatter/latest-cycle", {
+  const res = await fetchWithSessionRefresh("/api/evaluations/scatter/latest-cycle", {
     method: "GET",
-    credentials: "same-origin",
   });
 
   if (!res.ok) {

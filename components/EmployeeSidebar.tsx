@@ -11,6 +11,7 @@ import {
 import { startTransition, useEffect, useMemo, useState } from "react";
 import { EmployeeCard, type EmployeeRow } from "./EmployeeCard";
 import { ThemeToggle } from "./ThemeToggle";
+import { fetchWithSessionRefresh } from "@/lib/api/http";
 
 type Props = {
   office: string;
@@ -87,7 +88,7 @@ export function EmployeesSidebar({
           offset: "0",
         });
 
-        const res = await fetch(
+        const res = await fetchWithSessionRefresh(
           `/api/employees/people-culture/app-managers?${params.toString()}`,
           {
             method: "GET",
@@ -157,7 +158,7 @@ export function EmployeesSidebar({
           endpoint = `/api/employees/people-culture/impersonated-team?${params.toString()}`;
         }
 
-        const res = await fetch(endpoint, {
+        const res = await fetchWithSessionRefresh(endpoint, {
           method: "GET",
           headers: { Accept: "application/json" },
           signal: controller.signal,

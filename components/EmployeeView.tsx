@@ -36,6 +36,7 @@ import {
 import {
   getDemoSensitiveImageClassName,
 } from "@/lib/demo-mode";
+import { fetchWithSessionRefresh } from "@/lib/api/http";
 
 type Props = {
   employee: EmployeeRow | null;
@@ -348,13 +349,16 @@ export function EmployeeView({
           : {}),
       };
 
-      const res = await fetch("/api/predictive_attrition/simulate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetchWithSessionRefresh(
+        "/api/predictive_attrition/simulate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       const data = (await res.json()) as
         | Array<{ id: number; probability: number; stays: boolean }>
