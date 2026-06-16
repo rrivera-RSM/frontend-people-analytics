@@ -155,7 +155,7 @@ export default function OnaRadarChart({
       chart: {
         type: "radar",
         toolbar: { show: false },
-        animations: { enabled: true },
+        animations: { enabled: false },
         redrawOnWindowResize: true,
         redrawOnParentResize: true,
         background: "transparent",

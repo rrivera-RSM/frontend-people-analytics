@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ComponentType, CSSProperties, RefObject } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useOnaRelations } from "@/hooks/use-ona-relations";
@@ -50,9 +50,14 @@ type ForceLink = GraphEdge & {
   target: string | ForceNode;
 };
 
+type ForceGraphData = {
+  nodes: ForceNode[];
+  links: ForceLink[];
+};
+
 type ForceGraph2DProps = {
   ref?: RefObject<ForceGraphRef | null>;
-  graphData: { nodes: ForceNode[]; links: ForceLink[] };
+  graphData: ForceGraphData;
   width: number;
   height: number;
   backgroundColor?: string;
@@ -92,6 +97,8 @@ const ForceGraph2D = dynamic<ForceGraph2DProps>(
 
 const VIEWBOX_WIDTH = 1000;
 const VIEWBOX_HEIGHT = 540;
+const CAMERA_READY_TIMEOUT_MS = 10000;
+const CAMERA_READY_RETRY_MS = 100;
 
 const CATEGORY_PRIORITY: Record<OnaCategory, number> = {
   central: 1,
@@ -500,6 +507,9 @@ export function OnaOrganizationGraph({
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const forceGraphRef = useRef<ForceGraphRef | null>(null);
+  const forceGraphDataRef = useRef<ForceGraphData | null>(null);
+  const cameraRequestIdRef = useRef(0);
+  const isMountedRef = useRef(false);
   const [graphSize, setGraphSize] = useState({ width: 960, height: 420 });
   const [viewMode, setViewMode] = useState<ViewMode>("employee");
   const [pulseTick, setPulseTick] = useState(0);
@@ -508,6 +518,15 @@ export function OnaOrganizationGraph({
     isLoading: loading,
     error,
   } = useOnaRelations(societyId);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      cameraRequestIdRef.current += 1;
+    };
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -551,6 +570,10 @@ export function OnaOrganizationGraph({
     };
   }, [graph, employeeId]);
 
+  useEffect(() => {
+    forceGraphDataRef.current = forceGraphData;
+  }, [forceGraphData]);
+
   const selectedNode = useMemo(() => {
     return forceGraphData?.nodes.find((node) => node.isSelected) ?? null;
   }, [forceGraphData]);
@@ -558,40 +581,67 @@ export function OnaOrganizationGraph({
     selectedNode?.onaCategory ?? null,
   );
 
-  const applyCameraMode = useMemo(
-    () => (mode: ViewMode) => {
-      if (!forceGraphData || !forceGraphRef.current) return;
-      const selected = forceGraphData.nodes.find((node) => node.isSelected);
+  const waitForGraphReady = useCallback(async () => {
+    const deadline = Date.now() + CAMERA_READY_TIMEOUT_MS;
+
+    while (isMountedRef.current && Date.now() < deadline) {
+      const currentGraphData = forceGraphDataRef.current;
+      const graphInstance = forceGraphRef.current;
+
+      if (currentGraphData && graphInstance) {
+        return { currentGraphData, graphInstance };
+      }
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, CAMERA_READY_RETRY_MS);
+      });
+    }
+
+    return null;
+  }, []);
+
+  const applyCameraMode = useCallback(
+    async (mode: ViewMode) => {
+      const requestId = cameraRequestIdRef.current + 1;
+      cameraRequestIdRef.current = requestId;
+
+      const readyGraph = await waitForGraphReady();
+      if (!readyGraph || requestId !== cameraRequestIdRef.current) return;
+
+      const { currentGraphData, graphInstance } = readyGraph;
+      const selected = currentGraphData.nodes.find((node) => node.isSelected);
       const centerX = VIEWBOX_WIDTH / 2;
       const centerY = VIEWBOX_HEIGHT / 2;
 
       if (mode === "employee" && selected) {
-        forceGraphRef.current.centerAt(selected.x, selected.y, 450);
-        forceGraphRef.current.zoom(1.7, 450);
+        graphInstance.centerAt(selected.x, selected.y, 450);
+        graphInstance.zoom(1.7, 450);
         return;
       }
 
       const orgX =
-        forceGraphData.nodes.reduce((sum, node) => sum + node.x, 0) /
-        Math.max(1, forceGraphData.nodes.length);
+        currentGraphData.nodes.reduce((sum, node) => sum + node.x, 0) /
+        Math.max(1, currentGraphData.nodes.length);
       const orgY =
-        forceGraphData.nodes.reduce((sum, node) => sum + node.y, 0) /
-        Math.max(1, forceGraphData.nodes.length);
+        currentGraphData.nodes.reduce((sum, node) => sum + node.y, 0) /
+        Math.max(1, currentGraphData.nodes.length);
 
-      forceGraphRef.current.centerAt(
+      graphInstance.centerAt(
         Number.isFinite(orgX) ? orgX : centerX,
         Number.isFinite(orgY) ? orgY : centerY,
         250,
       );
-      forceGraphRef.current.zoomToFit(450, 56);
+      graphInstance.zoomToFit(450, 56);
     },
-    [forceGraphData],
+    [waitForGraphReady],
   );
 
   useEffect(() => {
-    const rafId = requestAnimationFrame(() => applyCameraMode(viewMode));
+    const rafId = requestAnimationFrame(() => {
+      void applyCameraMode(viewMode);
+    });
     return () => cancelAnimationFrame(rafId);
-  }, [applyCameraMode, viewMode, graphSize.width, graphSize.height]);
+  }, [applyCameraMode, viewMode, graphSize.width, graphSize.height, forceGraphData]);
 
   const hasGraph = Boolean(graph && graph.nodes.length > 0);
 
@@ -697,7 +747,9 @@ export function OnaOrganizationGraph({
               <div className="absolute left-3 top-3 z-10 inline-flex items-center gap-1 rounded-lg border border-slate-300/80 bg-slate-100/90 p-1 text-[11px] shadow-sm backdrop-blur dark:border-slate-700 dark:bg-slate-900/80">
                 <button
                   type="button"
-                  onClick={() => applyCameraMode(viewMode)}
+                  onClick={() => {
+                    void applyCameraMode(viewMode);
+                  }}
                   className="rounded-md px-2.5 py-1 font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   Recentrar

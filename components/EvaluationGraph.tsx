@@ -202,7 +202,7 @@ export default function EvaluationGraph({
         type: "scatter",
         toolbar: { show: false },
         zoom: { enabled: false },
-        animations: { enabled: true },
+        animations: { enabled: false },
         background: "transparent",
         foreColor: TOKENS.axis,
         fontFamily:
@@ -328,10 +328,10 @@ export default function EvaluationGraph({
                 ${formatBucketLabel(point.bucket)}
               </div>
               <div style="opacity: 0.9; margin-bottom: 4px;">
-                ONA overall percentile: <b>${point.x.toFixed(1)}</b>
+              Desempeño: <b>${point.x.toFixed(1)}</b>
               </div>
               <div style="opacity: 0.9; margin-bottom: 4px;">
-                Desempeño: <b>${point.y.toFixed(1)}</b>
+                Influencia: <b>${point.y.toFixed(1)}</b>
               </div>
               <div style="opacity: 0.7;">
                 Evaluación: ${formatDateLabel(point.evaluation_at)}
@@ -368,12 +368,6 @@ export default function EvaluationGraph({
               </div>
             )}
           </div>
-
-          {!isLoading && totalPoints > 0 && (
-            <div className="text-xs text-muted-foreground whitespace-nowrap">
-              {totalPoints} puntos
-            </div>
-          )}
         </div>
 
         {insights.length > 0 && <InsightChipsInline insights={insights} />}
@@ -395,6 +389,12 @@ export default function EvaluationGraph({
                 ? "Hay evaluaciones disponibles, pero falta el overall percentile de ONA para poder dibujar el scatter."
                 : "No hay datos de evaluaciones disponibles para el último ejercicio."}
             </div>
+          ) : selectedMissing ? (
+            <div className="h-full grid place-items-center px-6 text-center text-sm text-muted-foreground">
+              El empleado seleccionado no tiene evaluación en el último
+              ejercicio, por lo que no se puede resaltar su punto en la
+              distribución.
+            </div>
           ) : (
             <>
               <ReactApexChart
@@ -404,14 +404,6 @@ export default function EvaluationGraph({
                 height={height}
                 width="100%"
               />
-
-              {selectedMissing && (
-                <div className="mt-2 text-xs text-muted-foreground">
-                  El empleado seleccionado no tiene evaluación en el último
-                  ejercicio, por lo que no se puede resaltar su punto en la
-                  distribución.
-                </div>
-              )}
 
               {isFetching && !isLoading && (
                 <div className="mt-2 text-[11px] text-muted-foreground">
