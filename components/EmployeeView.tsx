@@ -4,11 +4,12 @@ import type { EmployeeRow } from "@/components/EmployeeCard";
 import EmployeeProgressChart from "@/components/EvaluationGraph";
 import OnaRadarChart from "./ActiveOnaRadarChart";
 import { SalaryProposalForm } from "./SalaryProposalForm";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type {
   ProposalDraft,
+  SalaryOffer,
   SalaryOfferPayload,
   SalaryProposalBenchmarkScope,
   SimulationResult,
@@ -37,7 +38,7 @@ import {
 import {
   getDemoSensitiveImageClassName,
 } from "@/lib/demo-mode";
-import { saveSalaryOffer } from "@/lib/api/compensation";
+import { fetchLatestSalaryOffer, saveSalaryOffer } from "@/lib/api/compensation";
 
 type Props = {
   employee: EmployeeRow | null;
@@ -117,6 +118,14 @@ function normalizeAttritionRate(value?: number | null) {
   return value <= 1 ? value * 100 : value;
 }
 
+function calculateIncreasePercentage(
+  salaryCurrent: number,
+  proposedSalary: number,
+) {
+  if (salaryCurrent <= 0) return 0;
+  return ((proposedSalary - salaryCurrent) / salaryCurrent) * 100;
+}
+
 const compactMoneyFormatter = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
@@ -127,6 +136,49 @@ const compactMoneyFormatter = new Intl.NumberFormat("es-ES", {
 function formatMoneyCompact(value?: number | null) {
   if (typeof value !== "number" || !Number.isFinite(value)) return "—";
   return compactMoneyFormatter.format(value);
+}
+
+function buildInitialProposalDraft(
+  employee: EmployeeRow,
+  monetaryInfo: { salary: number; bonus: number },
+): ProposalDraft {
+  return {
+    salaryCurrent: monetaryInfo.salary,
+    currentBonus: monetaryInfo.bonus,
+    currentCategoryId: employee.category_id,
+    currentCategory: employee.category_name ?? "",
+    proposedSalary: 0,
+    bonus: monetaryInfo.bonus,
+    nextFiscalYearBonus: 0,
+    category: employee.category_name ?? "",
+    includeBonus: monetaryInfo.bonus > 0,
+    includeNextFiscalYearBonus: false,
+    includeCategory: false,
+  };
+}
+
+function mapSalaryOfferToDraft(
+  baseDraft: ProposalDraft,
+  offer: SalaryOffer,
+): ProposalDraft {
+  const proposedSalary = offer.new_salary;
+
+  return {
+    ...baseDraft,
+    proposedSalary,
+    bonus: offer.new_bonus ?? baseDraft.currentBonus ?? baseDraft.bonus,
+    nextFiscalYearBonus: offer.bonus_next_fy ?? 0,
+    category: offer.new_category ?? baseDraft.currentCategory ?? baseDraft.category,
+    includeBonus: offer.new_bonus != null,
+    includeNextFiscalYearBonus: offer.bonus_next_fy != null,
+    includeCategory: Boolean(offer.new_category?.trim()),
+    bonusPaymentMonth: offer.month_payment_bonus ?? "",
+    observations: offer.observations ?? "",
+    increasePercentage: calculateIncreasePercentage(
+      baseDraft.salaryCurrent,
+      proposedSalary,
+    ),
+  };
 }
 
 export function EmployeeView({
@@ -153,6 +205,11 @@ export function EmployeeView({
     insightsData,
     insightsLoading,
   } = useEmployeePanelData(employee?.id);
+  const onProposalSavedChangeRef = useRef(onProposalSavedChange);
+
+  useEffect(() => {
+    onProposalSavedChangeRef.current = onProposalSavedChange;
+  }, [onProposalSavedChange]);
 
   useWarmChartLibraries(Boolean(employee?.id));
 
@@ -180,19 +237,45 @@ export function EmployeeView({
       return;
     }
 
-    setProposalDraft({
-      salaryCurrent: monetaryInfo.salary,
-      currentBonus: monetaryInfo.bonus,
-      currentCategoryId: employee.category_id,
-      currentCategory: employee.category_name ?? "",
-      proposedSalary: 0,
-      bonus: monetaryInfo.bonus,
-      nextFiscalYearBonus: 0,
-      category: employee.category_name ?? "",
-      includeBonus: monetaryInfo.bonus > 0,
-      includeNextFiscalYearBonus: false,
-      includeCategory: false,
-    });
+    let cancelled = false;
+    const employeeId = employee.id;
+    const employeeHasOffer = Boolean(employee.has_offer);
+    const baseDraft = buildInitialProposalDraft(employee, monetaryInfo);
+
+    setProposalDraft(baseDraft);
+    setProposalSaveError(null);
+
+    async function loadLatestSalaryOffer() {
+      try {
+        const latestOffer = await fetchLatestSalaryOffer(employeeId);
+
+        if (cancelled) return;
+
+        if (!latestOffer) {
+          onProposalSavedChangeRef.current?.(employeeId, false);
+          return;
+        }
+
+        setProposalDraft(mapSalaryOfferToDraft(baseDraft, latestOffer));
+        onProposalSavedChangeRef.current?.(employeeId, true);
+      } catch (err) {
+        if (cancelled) return;
+
+        if (employeeHasOffer) {
+          setProposalSaveError(
+            err instanceof Error
+              ? err.message
+              : "No se pudo recuperar la propuesta guardada",
+          );
+        }
+      }
+    }
+
+    void loadLatestSalaryOffer();
+
+    return () => {
+      cancelled = true;
+    };
   }, [employee, monetaryInfo]);
 
   useEffect(() => {

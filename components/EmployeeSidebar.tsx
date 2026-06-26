@@ -14,6 +14,7 @@ type Props = {
   collapsed?: boolean;
   demoMode?: boolean;
   savedProposalEmployeeIds?: ReadonlySet<number>;
+  onEmployeesLoaded?: (employees: EmployeeRow[]) => void;
   onSelectEmployee?: (employee: EmployeeRow | null) => void;
   onToggleCollapse?: (collapsed: boolean) => void;
 };
@@ -38,6 +39,7 @@ export function EmployeesSidebar({
   collapsed = false,
   demoMode = false,
   savedProposalEmployeeIds,
+  onEmployeesLoaded,
 }: Props) {
   const [status, setStatus] = useState<CallStatus>("idle");
   const [employees, setEmployees] = useState<EmployeeRow[]>([]);
@@ -79,6 +81,7 @@ export function EmployeesSidebar({
 
         const rows = (await res.json()) as EmployeeRow[];
         const normalizedRows = Array.isArray(rows) ? rows : [];
+        onEmployeesLoaded?.(normalizedRows);
 
         if (normalizedRows.length > 0) {
           const selected =
@@ -105,7 +108,7 @@ export function EmployeesSidebar({
     void load();
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [office, department, society, limit, offset]);
+  }, [office, department, society, limit, offset, onEmployeesLoaded]);
 
   useEffect(() => {
     if (status !== "success" || employees.length === 0) return;

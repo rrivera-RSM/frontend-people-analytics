@@ -36,3 +36,9 @@ export async function saveSalaryOffer(payload: SalaryOfferPayload) {
     payload,
   );
 }
+
+export async function fetchLatestSalaryOffer(employeeId: number) {
+  return fetchJsonOrNull<SalaryOffer>(
+    `/api/salary-proposal/offers?employee_id=${employeeId}`,
+  );
+}

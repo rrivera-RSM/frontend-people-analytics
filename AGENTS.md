@@ -14,11 +14,11 @@ Guia rapida para agentes que trabajen en este repositorio. Objetivo: reducir exp
 
 ## Comandos utiles
 
-- Instalar deps: `npm install`
-- Desarrollo: `npm run dev`
-- Lint: `npm run lint`
-- Build produccion: `npm run build`
-- Ejecutar build: `npm run start`
+- Instalar deps: `pnpm install`
+- Desarrollo: `pnpm run dev`
+- Lint: `pnpm run lint`
+- Build produccion: `pnpm run build`
+- Ejecutar build: `pnpm run start`
 
 ## Estructura base
 
@@ -38,7 +38,7 @@ Guia rapida para agentes que trabajen en este repositorio. Objetivo: reducir exp
 - Mantener `TypeScript` estricto: tipar props, retorno de funciones y datos externos.
 - Priorizar componentes y utilidades ya existentes antes de duplicar logica.
 - Si se agrega dependencias nuevas, justificar por que no alcanza con el stack actual.
-- Ejecutar `npm run lint` tras cambios relevantes y reportar resultado.
+- Ejecutar `pnpm run lint` tras cambios relevantes y reportar resultado.
 
 ## Checklist antes de cerrar una tarea
 
