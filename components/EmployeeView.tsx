@@ -5,6 +5,7 @@ import EmployeeProgressChart from "@/components/EvaluationGraph";
 import OnaRadarChart from "./ActiveOnaRadarChart";
 import { SalaryProposalForm } from "./SalaryProposalForm";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type {
@@ -38,8 +39,9 @@ import {
 import {
   getDemoSensitiveImageClassName,
 } from "@/lib/demo-mode";
-import { fetchWithSessionRefresh } from "@/lib/api/http";
 import { fetchLatestSalaryOffer, saveSalaryOffer } from "@/lib/api/compensation";
+import { fetchWithSessionRefresh } from "@/lib/api/http";
+import { fetchOnaParticipationRate } from "@/lib/api/ona";
 
 type Props = {
   employee: EmployeeRow | null;
@@ -127,6 +129,16 @@ function calculateIncreasePercentage(
   return ((proposedSalary - salaryCurrent) / salaryCurrent) * 100;
 }
 
+function formatParticipationRate(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return `${(value * 100).toFixed(0)}%`;
+}
+
+function formatParticipationCount(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return Number.isInteger(value) ? String(value) : value.toFixed(0);
+}
+
 const compactMoneyFormatter = new Intl.NumberFormat("es-ES", {
   style: "currency",
   currency: "EUR",
@@ -211,6 +223,29 @@ export function EmployeeView({
   useEffect(() => {
     onProposalSavedChangeRef.current = onProposalSavedChange;
   }, [onProposalSavedChange]);
+
+  const participationRateEnabled =
+    employee?.society_id != null && employee?.office_id != null;
+  const { data: onaParticipationRate } = useQuery({
+    queryKey: [
+      "ona",
+      "participation-rate",
+      employee?.society_id,
+      employee?.office_id,
+    ],
+    queryFn: () => {
+      if (employee?.society_id == null || employee.office_id == null) {
+        return Promise.resolve(null);
+      }
+
+      return fetchOnaParticipationRate(
+        employee.society_id,
+        employee.office_id,
+      );
+    },
+    enabled: participationRateEnabled,
+    staleTime: 1000 * 60 * 5,
+  });
 
   useWarmChartLibraries(Boolean(employee?.id));
 
@@ -398,6 +433,28 @@ export function EmployeeView({
 
   const attritionPct = normalizeAttritionRate(employee?.attrition_rate);
   const attritionIsHigh = attritionPct != null && attritionPct >= 34.14;
+  const participationRateValue =
+    typeof onaParticipationRate?.participation_rate === "number" &&
+    Number.isFinite(onaParticipationRate.participation_rate)
+      ? onaParticipationRate.participation_rate
+      : null;
+  const showParticipationWarning =
+    participationRateValue != null && participationRateValue < 0.5;
+  const participationRateLabel =
+    formatParticipationRate(participationRateValue);
+  const participationResponseLabel = formatParticipationCount(
+    onaParticipationRate?.response_count,
+  );
+  const participationEmployeeLabel = formatParticipationCount(
+    onaParticipationRate?.employee_count,
+  );
+  const onaParticipationWarning = showParticipationWarning
+    ? {
+        rateLabel: participationRateLabel,
+        responseLabel: participationResponseLabel,
+        employeeLabel: participationEmployeeLabel,
+      }
+    : null;
   const demoModeLabel = demoMode ? "Desactivar modo demo" : "Activar modo demo";
   const DemoModeIcon = demoMode ? EyeOff : Eye;
   const isProposalSaved =
@@ -775,12 +832,14 @@ export function EmployeeView({
                           <OnaOrganizationGraph
                             employeeId={employee.id}
                             societyId={employee.society_id ?? null}
+                            participationWarning={onaParticipationWarning}
                           />
 
                           <OnaRadarChart
                             data={onaData}
                             loading={onaDataLoading}
                             insights={onaInsights}
+                            participationWarning={onaParticipationWarning}
                           />
                         </>
                       )}

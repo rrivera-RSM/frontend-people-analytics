@@ -29,18 +29,52 @@ import {
 import { MoneyInput } from "@/components/MoneyInput";
 import type { ProposalDraft } from "@/types/compensation";
 
-const schema = z.object({
-  salaryCurrent: z.number().nonnegative(),
-  includeBonus: z.boolean(),
-  includeNextFiscalYearBonus: z.boolean(),
-  includeCategory: z.boolean(),
-  bonus: z.number().nonnegative(),
-  nextFiscalYearBonus: z.number().nonnegative(),
-  category: z.string(),
-  proposedSalary: z.number().nonnegative(),
-  bonusPaymentMonth: z.string(),
-  observations: z.string(),
-});
+const schema = z
+  .object({
+    salaryCurrent: z.number().nonnegative(),
+    includeBonus: z.boolean(),
+    includeNextFiscalYearBonus: z.boolean(),
+    includeCategory: z.boolean(),
+    bonus: z.number().nonnegative(),
+    nextFiscalYearBonus: z.number().nonnegative(),
+    category: z.string(),
+    proposedSalary: z.number().nonnegative(),
+    bonusPaymentMonth: z.string(),
+    observations: z.string(),
+  })
+  .superRefine((values, ctx) => {
+    if (values.proposedSalary <= 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Introduce una propuesta salarial",
+        path: ["proposedSalary"],
+      });
+    }
+
+    if (values.includeBonus && values.bonus <= 0) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Introduce el importe del bonus",
+        path: ["bonus"],
+      });
+    }
+
+    if (values.includeBonus && !values.bonusPaymentMonth.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Selecciona el mes de pago del bonus",
+        path: ["bonusPaymentMonth"],
+      });
+    }
+
+    if (values.includeCategory && !values.category.trim()) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Selecciona la nueva categoria",
+        path: ["category"],
+      });
+    }
+  });
 
 type FormValues = z.infer<typeof schema>;
 
@@ -717,7 +751,7 @@ export function SalaryProposalForm({
                   "h-12 w-full gap-2 rounded-lg bg-[var(--rsm-green)] text-base font-semibold text-white transition-all duration-200 hover:bg-[#2f7d28]",
                   "shadow-[0_8px_24px_rgba(63,156,53,0.28)]",
                   isSaved
-                    ? "bg-[#2f7d28] shadow-[0_8px_24px_rgba(63,156,53,0.18)]"
+                    ? "bg-[#2f7d28] shadow-[0_8px_24px_rgba(63,156,53,0.18)] disabled:opacity-100"
                     : "",
                 )}
                 disabled={!hasProposedSalary || isSaving || isSaved}
