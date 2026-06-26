@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
+
+export async function GET(req: NextRequest) {
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+
+  if (!token?.accessToken) {
+    return Response.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const search = req.nextUrl.searchParams;
+  const societyId = search.get("society_id");
+  const officeId = search.get("office_id");
+
+  if (!societyId || !officeId) {
+    return Response.json(
+      { message: "society_id and office_id are required" },
+      { status: 400 },
+    );
+  }
+
+  const backendBase = process.env.BACKEND_URL ?? "http://localhost:8000";
+  const params = new URLSearchParams({
+    society_id: societyId,
+    office_id: officeId,
+  });
+  const backendUrl = `${backendBase}/ona/participation-rate?${params.toString()}`;
+
+  const res = await fetch(backendUrl, {
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token.accessToken}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) return new NextResponse(null, { status: res.status });
+
+  const data = await res.json();
+
+  return NextResponse.json(data, {
+    status: 200,
+    headers: {
+      "Cache-Control": "private, max-age=300",
+    },
+  });
+}
