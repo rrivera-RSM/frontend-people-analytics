@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { MoneyInput } from "@/components/MoneyInput";
 import { EmployeeInsightsDeck } from "@/components/employee-insights/EmployeeInsightsDeck";
 import { AttritionGauge } from "@/components/AttritionGauge";
+import { fetchWithSessionRefresh } from "@/lib/api/http";
 
 type Props = {
   open: boolean;
@@ -112,13 +113,16 @@ export function CompensationSimulationModal({
           : {}),
       };
 
-      const res = await fetch("/api/predictive_attrition/simulate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const res = await fetchWithSessionRefresh(
+        "/api/predictive_attrition/simulate",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       const data = (await res.json()) as
         | ApiSimulationResponseItem[]
