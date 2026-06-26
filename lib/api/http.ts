@@ -54,12 +54,11 @@ export async function postJson<TPayload, TResponse>(
   url: string,
   payload: TPayload,
 ): Promise<TResponse> {
-  const res = await fetch(url, {
+  const res = await fetchWithSessionRefresh(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    credentials: "same-origin",
     body: JSON.stringify(payload),
   });
 

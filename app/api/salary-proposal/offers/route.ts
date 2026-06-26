@@ -15,8 +15,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ message: "Unauthorized" }, { status: 401 });
   }
 
-  const url = new URL(req.url);
-  const employeeId = Number(url.searchParams.get("employee_id"));
+  const employeeId = Number(req.nextUrl.searchParams.get("employee_id"));
 
   if (!Number.isInteger(employeeId) || employeeId <= 0) {
     return NextResponse.json(
@@ -64,6 +63,5 @@ export async function POST(req: NextRequest) {
   });
 
   const body = await readBackendBody(res);
-
   return NextResponse.json(body, { status: res.status });
 }

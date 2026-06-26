@@ -21,7 +21,7 @@ type Props = {
   offset?: number;
   collapsed?: boolean;
   demoMode?: boolean;
-  savedProposalEmployeeIds?: ReadonlySet<number>;
+  proposalSavedStatusByEmployeeId?: ReadonlyMap<number, boolean>;
   onEmployeesLoaded?: (employees: EmployeeRow[]) => void;
   onSelectEmployee?: (employee: EmployeeRow | null) => void;
   onToggleCollapse?: (collapsed: boolean) => void;
@@ -59,7 +59,7 @@ export function EmployeesSidebar({
   onToggleCollapse,
   collapsed = false,
   demoMode = false,
-  savedProposalEmployeeIds,
+  proposalSavedStatusByEmployeeId,
   onEmployeesLoaded,
 }: Props) {
   const [status, setStatus] = useState<CallStatus>("idle");
@@ -199,7 +199,7 @@ export function EmployeesSidebar({
     void load();
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [office, department, society, limit, offset, selectedManagerIdsKey]);
+  }, [office, department, society, limit, offset, selectedManagerIdsKey, onEmployeesLoaded]);
 
   useEffect(() => {
     if (status !== "success" || employees.length === 0) return;
@@ -325,7 +325,10 @@ export function EmployeesSidebar({
               demoMode={demoMode}
               showPhoto={showEmployeePhotos}
               selected={emp.id === selectedId}
-              hasSavedProposal={savedProposalEmployeeIds?.has(emp.id) ?? false}
+              hasSavedProposal={
+                proposalSavedStatusByEmployeeId?.get(emp.id) ??
+                Boolean(emp.has_offer)
+              }
               onSelect={(e) => {
                 setSelectedId(e.id);
                 onSelectEmployee?.(e);

@@ -11,9 +11,8 @@ export default function EmployeesPage() {
   const [selected, setSelected] = useState<EmployeeRow | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
-  const [savedProposalEmployeeIds, setSavedProposalEmployeeIds] = useState<
-    ReadonlySet<number>
-  >(new Set());
+  const [proposalSavedStatusByEmployeeId, setProposalSavedStatusByEmployeeId] =
+    useState<ReadonlyMap<number, boolean>>(new Map());
 
   const { status } = useSession();
   const started = useRef(false);
@@ -26,13 +25,15 @@ export default function EmployeesPage() {
   }, [status]);
 
   const handleEmployeesLoaded = useCallback((employees: EmployeeRow[]) => {
-    setSavedProposalEmployeeIds((current) => {
+    setProposalSavedStatusByEmployeeId((current) => {
       let changed = false;
-      const next = new Set(current);
+      const next = new Map(current);
 
       employees.forEach((employee) => {
-        if (employee.has_offer && !next.has(employee.id)) {
-          next.add(employee.id);
+        const hasOffer = Boolean(employee.has_offer);
+
+        if (next.get(employee.id) !== hasOffer) {
+          next.set(employee.id, hasOffer);
           changed = true;
         }
       });
@@ -58,7 +59,7 @@ export default function EmployeesPage() {
                 office="Barcelona"
                 collapsed={collapsed}
                 demoMode={demoMode}
-                savedProposalEmployeeIds={savedProposalEmployeeIds}
+                proposalSavedStatusByEmployeeId={proposalSavedStatusByEmployeeId}
                 onEmployeesLoaded={handleEmployeesLoaded}
                 onToggleCollapse={(c) => setCollapsed(c)}
                 department="PEOPLE & CULTURE"
@@ -97,17 +98,13 @@ export default function EmployeesPage() {
               <EmployeeView
                 employee={selected}
                 demoMode={demoMode}
-                savedProposalEmployeeIds={savedProposalEmployeeIds}
+                proposalSavedStatusByEmployeeId={proposalSavedStatusByEmployeeId}
                 onProposalSavedChange={(employeeId, isSaved) => {
-                  setSavedProposalEmployeeIds((current) => {
-                    const next = new Set(current);
+                  setProposalSavedStatusByEmployeeId((current) => {
+                    if (current.get(employeeId) === isSaved) return current;
 
-                    if (isSaved) {
-                      next.add(employeeId);
-                    } else {
-                      next.delete(employeeId);
-                    }
-
+                    const next = new Map(current);
+                    next.set(employeeId, isSaved);
                     return next;
                   });
                 }}

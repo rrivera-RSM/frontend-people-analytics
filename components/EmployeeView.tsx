@@ -47,7 +47,7 @@ type Props = {
   employee: EmployeeRow | null;
   demoMode?: boolean;
   onToggleDemoMode?: () => void;
-  savedProposalEmployeeIds?: ReadonlySet<number>;
+  proposalSavedStatusByEmployeeId?: ReadonlyMap<number, boolean>;
   onProposalSavedChange?: (employeeId: number, isSaved: boolean) => void;
 };
 
@@ -121,6 +121,14 @@ function normalizeAttritionRate(value?: number | null) {
   return value <= 1 ? value * 100 : value;
 }
 
+function calculateIncreasePercentage(
+  salaryCurrent: number,
+  proposedSalary: number,
+) {
+  if (salaryCurrent <= 0) return 0;
+  return ((proposedSalary - salaryCurrent) / salaryCurrent) * 100;
+}
+
 function formatParticipationRate(value?: number | null) {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   return `${(value * 100).toFixed(0)}%`;
@@ -190,7 +198,7 @@ export function EmployeeView({
   employee,
   demoMode = false,
   onToggleDemoMode,
-  savedProposalEmployeeIds,
+  proposalSavedStatusByEmployeeId,
   onProposalSavedChange,
 }: Props) {
   const [proposalDraft, setProposalDraft] = useState<ProposalDraft | null>(null);
@@ -210,6 +218,12 @@ export function EmployeeView({
     insightsData,
     insightsLoading,
   } = useEmployeePanelData(employee?.id);
+  const onProposalSavedChangeRef = useRef(onProposalSavedChange);
+
+  useEffect(() => {
+    onProposalSavedChangeRef.current = onProposalSavedChange;
+  }, [onProposalSavedChange]);
+
   const participationRateEnabled =
     employee?.society_id != null && employee?.office_id != null;
   const { data: onaParticipationRate } = useQuery({
@@ -444,8 +458,9 @@ export function EmployeeView({
   const demoModeLabel = demoMode ? "Desactivar modo demo" : "Activar modo demo";
   const DemoModeIcon = demoMode ? EyeOff : Eye;
   const isProposalSaved =
-    employee?.id != null && savedProposalEmployeeIds?.has(employee.id)
-      ? true
+    employee?.id != null
+      ? proposalSavedStatusByEmployeeId?.get(employee.id) ??
+        Boolean(employee.has_offer)
       : false;
 
   const handleProposalDraftChange = (nextDraft: ProposalDraft) => {
