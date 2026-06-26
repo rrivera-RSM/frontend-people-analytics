@@ -49,3 +49,27 @@ export async function fetchJsonOrNull<T>(url: string): Promise<T | null> {
 
   return res.json() as Promise<T>;
 }
+
+export async function postJson<TPayload, TResponse>(
+  url: string,
+  payload: TPayload,
+): Promise<TResponse> {
+  const res = await fetchWithSessionRefresh(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      await buildErrorMessage(
+        res,
+        `No se pudo enviar ${url} (${res.status})`,
+      ),
+    );
+  }
+
+  return res.json() as Promise<TResponse>;
+}

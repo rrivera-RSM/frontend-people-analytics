@@ -18,10 +18,12 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import {
+  AlertCircle,
   Banknote,
   Check,
   CheckCircle2,
   FlaskConical,
+  Loader2,
 } from "lucide-react";
 
 import { MoneyInput } from "@/components/MoneyInput";
@@ -128,9 +130,11 @@ const LoadingSkeleton = () => (
 type Props = {
   value: ProposalDraft | null;
   onChange: (value: ProposalDraft) => void;
-  onSave?: (value: ProposalDraft) => void;
+  onSave?: (value: ProposalDraft) => void | Promise<void>;
   onOpenSimulation: () => void;
   isSaved?: boolean;
+  isSaving?: boolean;
+  saveError?: string | null;
   demoMode?: boolean;
 };
 
@@ -205,6 +209,8 @@ export function SalaryProposalForm({
   onSave,
   onOpenSimulation,
   isSaved = false,
+  isSaving = false,
+  saveError = null,
   demoMode = false,
 }: Props) {
   const form = useForm<FormValues>({
@@ -383,8 +389,8 @@ export function SalaryProposalForm({
   );
   const hasProposedSalary = proposedSalary > 0;
 
-  const handleSave = (formValues: FormValues) => {
-    if (formValues.proposedSalary <= 0) return;
+  const handleSave = async (formValues: FormValues) => {
+    if (formValues.proposedSalary <= 0 || isSaving || isSaved) return;
 
     const nextDraft = normalizeDraft({
       ...value,
@@ -399,7 +405,7 @@ export function SalaryProposalForm({
       onChange(nextDraft);
     }
 
-    onSave?.(nextDraft);
+    await onSave?.(nextDraft);
   };
 
   return (
@@ -714,15 +720,28 @@ export function SalaryProposalForm({
                     ? "bg-[#2f7d28] shadow-[0_8px_24px_rgba(63,156,53,0.18)]"
                     : "",
                 )}
-                disabled={!hasProposedSalary}
+                disabled={!hasProposedSalary || isSaving || isSaved}
               >
-                {isSaved ? (
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : isSaved ? (
                   <CheckCircle2 className="h-4 w-4" />
                 ) : (
                   <Check className="h-4 w-4" />
                 )}
-                {isSaved ? "Propuesta guardada" : "Guardar Propuesta"}
+                {isSaving
+                  ? "Guardando..."
+                  : isSaved
+                    ? "Propuesta guardada"
+                    : "Guardar Propuesta"}
               </Button>
+
+              {saveError && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg border border-[color:rgb(var(--rsm-red-rgb)/0.25)] bg-[rgb(var(--rsm-red-rgb)/0.08)] px-3 py-2 text-sm font-medium text-[var(--rsm-red)] dark:text-[#ff9ab8]">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>{saveError}</span>
+                </div>
+              )}
             </div>
           </form>
         </Form>

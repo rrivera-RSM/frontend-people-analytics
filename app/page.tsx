@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { EmployeesSidebar } from "@/components/EmployeeSidebar";
 import type { EmployeeRow } from "@/components/EmployeeCard";
 import { useSession, signIn } from "next-auth/react";
@@ -11,9 +11,8 @@ export default function EmployeesPage() {
   const [selected, setSelected] = useState<EmployeeRow | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
-  const [savedProposalEmployeeIds, setSavedProposalEmployeeIds] = useState<
-    ReadonlySet<number>
-  >(new Set());
+  const [proposalSavedStatusByEmployeeId, setProposalSavedStatusByEmployeeId] =
+    useState<ReadonlyMap<number, boolean>>(new Map());
 
   const { status } = useSession();
   const started = useRef(false);
@@ -24,6 +23,24 @@ export default function EmployeesPage() {
       void signIn("azure-ad", { callbackUrl: "/" });
     }
   }, [status]);
+
+  const handleEmployeesLoaded = useCallback((employees: EmployeeRow[]) => {
+    setProposalSavedStatusByEmployeeId((current) => {
+      let changed = false;
+      const next = new Map(current);
+
+      employees.forEach((employee) => {
+        const hasOffer = Boolean(employee.has_offer);
+
+        if (next.get(employee.id) !== hasOffer) {
+          next.set(employee.id, hasOffer);
+          changed = true;
+        }
+      });
+
+      return changed ? next : current;
+    });
+  }, []);
 
   return (
     <main className="h-screen flex flex-col bg-[var(--exec-bg)] text-slate-900 dark:text-slate-100">
@@ -42,7 +59,8 @@ export default function EmployeesPage() {
                 office="Barcelona"
                 collapsed={collapsed}
                 demoMode={demoMode}
-                savedProposalEmployeeIds={savedProposalEmployeeIds}
+                proposalSavedStatusByEmployeeId={proposalSavedStatusByEmployeeId}
+                onEmployeesLoaded={handleEmployeesLoaded}
                 onToggleCollapse={(c) => setCollapsed(c)}
                 department="PEOPLE & CULTURE"
                 society="RSM SPAIN SERVICIOS ADMINISTRATIVOS, SL"
@@ -80,17 +98,13 @@ export default function EmployeesPage() {
               <EmployeeView
                 employee={selected}
                 demoMode={demoMode}
-                savedProposalEmployeeIds={savedProposalEmployeeIds}
+                proposalSavedStatusByEmployeeId={proposalSavedStatusByEmployeeId}
                 onProposalSavedChange={(employeeId, isSaved) => {
-                  setSavedProposalEmployeeIds((current) => {
-                    const next = new Set(current);
+                  setProposalSavedStatusByEmployeeId((current) => {
+                    if (current.get(employeeId) === isSaved) return current;
 
-                    if (isSaved) {
-                      next.add(employeeId);
-                    } else {
-                      next.delete(employeeId);
-                    }
-
+                    const next = new Map(current);
+                    next.set(employeeId, isSaved);
                     return next;
                   });
                 }}
