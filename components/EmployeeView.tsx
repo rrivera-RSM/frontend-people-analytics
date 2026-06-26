@@ -4,12 +4,14 @@ import type { EmployeeRow } from "@/components/EmployeeCard";
 import EmployeeProgressChart from "@/components/EvaluationGraph";
 import OnaRadarChart from "./ActiveOnaRadarChart";
 import { SalaryProposalForm } from "./SalaryProposalForm";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { KpiBar } from "./EmployeeKPIs";
 import { computeProposalKpis } from "@/types/kpis";
 import type {
   ProposalDraft,
+  SalaryOffer,
+  SalaryOfferPayload,
   SalaryProposalBenchmarkScope,
   SimulationResult,
 } from "@/types/compensation";
@@ -37,6 +39,7 @@ import {
 import {
   getDemoSensitiveImageClassName,
 } from "@/lib/demo-mode";
+import { fetchLatestSalaryOffer, saveSalaryOffer } from "@/lib/api/compensation";
 import { fetchWithSessionRefresh } from "@/lib/api/http";
 import { fetchOnaParticipationRate } from "@/lib/api/ona";
 
@@ -140,6 +143,49 @@ function formatMoneyCompact(value?: number | null) {
   return compactMoneyFormatter.format(value);
 }
 
+function buildInitialProposalDraft(
+  employee: EmployeeRow,
+  monetaryInfo: { salary: number; bonus: number },
+): ProposalDraft {
+  return {
+    salaryCurrent: monetaryInfo.salary,
+    currentBonus: monetaryInfo.bonus,
+    currentCategoryId: employee.category_id,
+    currentCategory: employee.category_name ?? "",
+    proposedSalary: 0,
+    bonus: monetaryInfo.bonus,
+    nextFiscalYearBonus: 0,
+    category: employee.category_name ?? "",
+    includeBonus: monetaryInfo.bonus > 0,
+    includeNextFiscalYearBonus: false,
+    includeCategory: false,
+  };
+}
+
+function mapSalaryOfferToDraft(
+  baseDraft: ProposalDraft,
+  offer: SalaryOffer,
+): ProposalDraft {
+  const proposedSalary = offer.new_salary;
+
+  return {
+    ...baseDraft,
+    proposedSalary,
+    bonus: offer.new_bonus ?? baseDraft.currentBonus ?? baseDraft.bonus,
+    nextFiscalYearBonus: offer.bonus_next_fy ?? 0,
+    category: offer.new_category ?? baseDraft.currentCategory ?? baseDraft.category,
+    includeBonus: offer.new_bonus != null,
+    includeNextFiscalYearBonus: offer.bonus_next_fy != null,
+    includeCategory: Boolean(offer.new_category?.trim()),
+    bonusPaymentMonth: offer.month_payment_bonus ?? "",
+    observations: offer.observations ?? "",
+    increasePercentage: calculateIncreasePercentage(
+      baseDraft.salaryCurrent,
+      proposedSalary,
+    ),
+  };
+}
+
 export function EmployeeView({
   employee,
   demoMode = false,
@@ -155,6 +201,8 @@ export function EmployeeView({
   const [simulationLoading, setSimulationLoading] = useState(false);
   const [simulationError, setSimulationError] = useState<string | null>(null);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [proposalSaveLoading, setProposalSaveLoading] = useState(false);
+  const [proposalSaveError, setProposalSaveError] = useState<string | null>(null);
   const {
     monetaryInfo,
     onaData,
@@ -200,6 +248,8 @@ export function EmployeeView({
       setProposalDraft(null);
       setSimulationError(null);
       setSimulationResult(null);
+      setProposalSaveLoading(false);
+      setProposalSaveError(null);
     }
   }, [employee?.id]);
 
@@ -209,19 +259,45 @@ export function EmployeeView({
       return;
     }
 
-    setProposalDraft({
-      salaryCurrent: monetaryInfo.salary,
-      currentBonus: monetaryInfo.bonus,
-      currentCategoryId: employee.category_id,
-      currentCategory: employee.category_name ?? "",
-      proposedSalary: 0,
-      bonus: monetaryInfo.bonus,
-      nextFiscalYearBonus: 0,
-      category: employee.category_name ?? "",
-      includeBonus: monetaryInfo.bonus > 0,
-      includeNextFiscalYearBonus: false,
-      includeCategory: false,
-    });
+    let cancelled = false;
+    const employeeId = employee.id;
+    const employeeHasOffer = Boolean(employee.has_offer);
+    const baseDraft = buildInitialProposalDraft(employee, monetaryInfo);
+
+    setProposalDraft(baseDraft);
+    setProposalSaveError(null);
+
+    async function loadLatestSalaryOffer() {
+      try {
+        const latestOffer = await fetchLatestSalaryOffer(employeeId);
+
+        if (cancelled) return;
+
+        if (!latestOffer) {
+          onProposalSavedChangeRef.current?.(employeeId, false);
+          return;
+        }
+
+        setProposalDraft(mapSalaryOfferToDraft(baseDraft, latestOffer));
+        onProposalSavedChangeRef.current?.(employeeId, true);
+      } catch (err) {
+        if (cancelled) return;
+
+        if (employeeHasOffer) {
+          setProposalSaveError(
+            err instanceof Error
+              ? err.message
+              : "No se pudo recuperar la propuesta guardada",
+          );
+        }
+      }
+    }
+
+    void loadLatestSalaryOffer();
+
+    return () => {
+      cancelled = true;
+    };
   }, [employee, monetaryInfo]);
 
   useEffect(() => {
@@ -374,17 +450,54 @@ export function EmployeeView({
 
   const handleProposalDraftChange = (nextDraft: ProposalDraft) => {
     setProposalDraft(nextDraft);
+    setProposalSaveError(null);
 
     if (employee?.id != null && isProposalSaved) {
       onProposalSavedChange?.(employee.id, false);
     }
   };
 
-  const handleProposalSave = (nextDraft: ProposalDraft) => {
-    setProposalDraft(nextDraft);
+  const handleProposalSave = async (nextDraft: ProposalDraft) => {
+    if (!employee?.id || proposalSaveLoading) return;
 
-    if (employee?.id != null) {
+    setProposalDraft(nextDraft);
+    setProposalSaveLoading(true);
+    setProposalSaveError(null);
+
+    const payload: SalaryOfferPayload = {
+      employee_id: employee.id,
+      new_salary: nextDraft.proposedSalary,
+      ...(nextDraft.includeBonus && nextDraft.bonus > 0
+        ? {
+            new_bonus: nextDraft.bonus,
+            month_payment_bonus: nextDraft.bonusPaymentMonth?.trim() ?? "",
+          }
+        : {}),
+      ...(nextDraft.includeNextFiscalYearBonus &&
+      nextDraft.nextFiscalYearBonus &&
+      nextDraft.nextFiscalYearBonus > 0
+        ? { bonus_next_fy: nextDraft.nextFiscalYearBonus }
+        : {}),
+      ...(nextDraft.includeCategory && nextDraft.category.trim()
+        ? { new_category: nextDraft.category.trim() }
+        : {}),
+      ...(nextDraft.observations?.trim()
+        ? { observations: nextDraft.observations.trim() }
+        : {}),
+    };
+
+    try {
+      await saveSalaryOffer(payload);
       onProposalSavedChange?.(employee.id, true);
+    } catch (err) {
+      setProposalSaveError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo guardar la propuesta",
+      );
+      onProposalSavedChange?.(employee.id, false);
+    } finally {
+      setProposalSaveLoading(false);
     }
   };
 
@@ -620,6 +733,8 @@ export function EmployeeView({
                   <SalaryProposalForm
                     demoMode={demoMode}
                     isSaved={isProposalSaved}
+                    isSaving={proposalSaveLoading}
+                    saveError={proposalSaveError}
                     value={proposalDraft}
                     onChange={handleProposalDraftChange}
                     onSave={handleProposalSave}

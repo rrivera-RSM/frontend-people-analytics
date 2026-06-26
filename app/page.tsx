@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useCallback, useState, useEffect, useRef } from "react";
 import { EmployeesSidebar } from "@/components/EmployeeSidebar";
 import type { EmployeeRow } from "@/components/EmployeeCard";
 import { useSession, signIn } from "next-auth/react";
@@ -25,6 +25,22 @@ export default function EmployeesPage() {
     }
   }, [status]);
 
+  const handleEmployeesLoaded = useCallback((employees: EmployeeRow[]) => {
+    setSavedProposalEmployeeIds((current) => {
+      let changed = false;
+      const next = new Set(current);
+
+      employees.forEach((employee) => {
+        if (employee.has_offer && !next.has(employee.id)) {
+          next.add(employee.id);
+          changed = true;
+        }
+      });
+
+      return changed ? next : current;
+    });
+  }, []);
+
   return (
     <main className="h-screen flex flex-col bg-[var(--exec-bg)] text-slate-900 dark:text-slate-100">
       {/* App frame */}
@@ -43,6 +59,7 @@ export default function EmployeesPage() {
                 collapsed={collapsed}
                 demoMode={demoMode}
                 savedProposalEmployeeIds={savedProposalEmployeeIds}
+                onEmployeesLoaded={handleEmployeesLoaded}
                 onToggleCollapse={(c) => setCollapsed(c)}
                 department="PEOPLE & CULTURE"
                 society="RSM SPAIN SERVICIOS ADMINISTRATIVOS, SL"

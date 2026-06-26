@@ -29,6 +29,7 @@ export type EmployeeRow = {
   department_name?: string;
   society_id?: number;
   society_name?: string;
+  has_offer?: boolean;
   joined_at?: string;
 };
 
