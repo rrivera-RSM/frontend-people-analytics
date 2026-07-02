@@ -16,7 +16,7 @@ import type {
   SimulationResult,
 } from "@/types/compensation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Eye, EyeOff, MoreVertical } from "lucide-react";
+import { Eye, EyeOff, Info, MoreVertical } from "lucide-react";
 import { DecisionAttritionRiskPanel } from "@/components/DecisionAttritionRiskPanel";
 import { DecisionInsightsCarousel } from "@/components/employee-insights/DecisionInsightsCarousel";
 import { OnaOrganizationGraph } from "./OnaOrganizationGraph";
@@ -60,6 +60,8 @@ const EMPTY_BENCHMARK_SCOPE: SalaryProposalBenchmarkScope = {
   office: false,
   category: false,
 };
+
+const SHORT_TENURE_METRICS_CUTOFF = new Date("2026-03-01T00:00:00.000Z");
 
 const ONA_CHART_CODES = new Set<EmployeeInsightCode>([
   "active_influence_ci",
@@ -114,6 +116,75 @@ function getTenureLabel(joinedAt?: string | null) {
   }
 
   return `${years} ${years === 1 ? "año" : "años"} en la firma`;
+}
+
+function getAgeLabel(birthDate?: string | null) {
+  const birth = parseDateSafe(birthDate);
+  if (!birth) return null;
+
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  const monthDiff = now.getMonth() - birth.getMonth();
+
+  if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < birth.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? `${age} años` : null;
+}
+
+function normalizeComparableText(value?: string | null) {
+  return value
+    ?.trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase() ?? "";
+}
+
+function isInternCategory(categoryName?: string | null) {
+  return normalizeComparableText(categoryName).includes("becario");
+}
+
+function joinedAfterShortTenureCutoff(joinedAt?: string | null) {
+  const joined = parseDateSafe(joinedAt);
+  return joined != null && joined >= SHORT_TENURE_METRICS_CUTOFF;
+}
+
+function calculateIncreasePercentage(
+  salaryCurrent: number,
+  proposedSalary: number,
+) {
+  if (salaryCurrent <= 0) return 0;
+  return ((proposedSalary - salaryCurrent) / salaryCurrent) * 100;
+}
+
+type AnalyticsUnavailableReason = {
+  title: string;
+  message: string;
+};
+
+function getAnalyticsUnavailableReason(
+  employee?: EmployeeRow | null,
+): AnalyticsUnavailableReason | null {
+  if (!employee) return null;
+
+  if (isInternCategory(employee.category_name)) {
+    return {
+      title: "Métricas no disponibles",
+      message:
+        "Los becarios no se registran para ONA, desempeño ni Decision Intelligence.",
+    };
+  }
+
+  if (joinedAfterShortTenureCutoff(employee.joined_at)) {
+    return {
+      title: "Métricas no disponibles",
+      message:
+        "Este empleado lleva demasiado poco tiempo en la compañía para tener métricas disponibles.",
+    };
+  }
+
+  return null;
 }
 
 function normalizeAttritionRate(value?: number | null) {
@@ -194,6 +265,83 @@ function mapSalaryOfferToDraft(
   };
 }
 
+async function simulateSalaryProposalImpact(
+  employeeId: number,
+  draft: ProposalDraft,
+): Promise<SimulationResult> {
+  const payload = {
+    employee_id: employeeId,
+    new_salary: draft.proposedSalary,
+    ...(draft.includeBonus ? { new_bonus: draft.bonus } : {}),
+    ...(draft.includeCategory && draft.category
+      ? { new_category: draft.category }
+      : {}),
+  };
+
+  const res = await fetchWithSessionRefresh(
+    "/api/predictive_attrition/simulate",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    },
+  );
+
+  const data = (await res.json()) as
+    | Array<{ id: number; probability: number; stays: boolean }>
+    | { detail?: string };
+
+  if (!res.ok) {
+    throw new Error(
+      typeof data === "object" && data && "detail" in data
+        ? data.detail || "Error llamando a la simulación"
+        : `Simulation failed with status ${res.status}`,
+    );
+  }
+
+  if (!Array.isArray(data) || data.length === 0) {
+    throw new Error("La simulación no devolvió resultados");
+  }
+
+  const simulationItem = data.find((item) => item.id === employeeId) ?? data[0];
+  if (typeof simulationItem.probability !== "number") {
+    throw new Error("Respuesta de simulación inválida");
+  }
+
+  return {
+    attritionProbability: simulationItem.probability,
+    simulatedSalary: draft.proposedSalary,
+    simulatedBonus: draft.includeBonus
+      ? draft.bonus
+      : draft.currentBonus ?? draft.bonus,
+    simulatedAt: new Date().toISOString(),
+  };
+}
+
+function AnalyticsUnavailableNotice({
+  reason,
+}: {
+  reason: AnalyticsUnavailableReason;
+}) {
+  return (
+    <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-dashed border-slate-300 bg-[var(--exec-card)] px-6 py-10 text-center shadow-sm dark:border-slate-700/90 dark:bg-slate-900/35">
+      <div className="max-w-md">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[color:rgb(var(--rsm-blue-rgb)/0.25)] bg-[rgb(var(--rsm-blue-rgb)/0.08)] text-[var(--rsm-blue)] dark:text-[#79d7ff]">
+          <Info className="h-5 w-5" />
+        </div>
+        <h3 className="mt-4 text-base font-semibold text-slate-950 dark:text-slate-50">
+          {reason.title}
+        </h3>
+        <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+          {reason.message}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function EmployeeView({
   employee,
   demoMode = false,
@@ -211,6 +359,7 @@ export function EmployeeView({
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [proposalSaveLoading, setProposalSaveLoading] = useState(false);
   const [proposalSaveError, setProposalSaveError] = useState<string | null>(null);
+  const onProposalSavedChangeRef = useRef(onProposalSavedChange);
   const {
     monetaryInfo,
     onaData,
@@ -249,6 +398,15 @@ export function EmployeeView({
 
   useWarmChartLibraries(Boolean(employee?.id));
 
+  useEffect(() => {
+    onProposalSavedChangeRef.current = onProposalSavedChange;
+  }, [onProposalSavedChange]);
+
+  const analyticsUnavailableReason = useMemo(
+    () => getAnalyticsUnavailableReason(employee),
+    [employee],
+  );
+
   const handleTabChange = (nextTab: EmployeeTab) => {
     if (nextTab === activeTab) return;
     const currentIndex = TAB_ORDER.indexOf(activeTab);
@@ -279,6 +437,9 @@ export function EmployeeView({
     const baseDraft = buildInitialProposalDraft(employee, monetaryInfo);
 
     setProposalDraft(baseDraft);
+    setSimulationLoading(false);
+    setSimulationError(null);
+    setSimulationResult(null);
     setProposalSaveError(null);
 
     async function loadLatestSalaryOffer() {
@@ -292,8 +453,35 @@ export function EmployeeView({
           return;
         }
 
-        setProposalDraft(mapSalaryOfferToDraft(baseDraft, latestOffer));
+        const offerDraft = mapSalaryOfferToDraft(baseDraft, latestOffer);
+        setProposalDraft(offerDraft);
         onProposalSavedChangeRef.current?.(employeeId, true);
+
+        if (analyticsUnavailableReason) return;
+
+        setSimulationLoading(true);
+        setSimulationError(null);
+
+        try {
+          const result = await simulateSalaryProposalImpact(
+            employeeId,
+            offerDraft,
+          );
+          if (cancelled) return;
+          setSimulationResult(result);
+        } catch (err) {
+          if (cancelled) return;
+          setSimulationError(
+            err instanceof Error
+              ? err.message
+              : "No se pudo ejecutar la simulación",
+          );
+          setSimulationResult(null);
+        } finally {
+          if (!cancelled) {
+            setSimulationLoading(false);
+          }
+        }
       } catch (err) {
         if (cancelled) return;
 
@@ -312,7 +500,7 @@ export function EmployeeView({
     return () => {
       cancelled = true;
     };
-  }, [employee, monetaryInfo]);
+  }, [analyticsUnavailableReason, employee, monetaryInfo]);
 
   useEffect(() => {
     if (!proposalDraft) return;
@@ -341,15 +529,16 @@ export function EmployeeView({
 
   useEffect(() => {
     setBenchmarkScope((currentScope) => {
-      const sanitizedScope = sanitizeSalaryProposalBenchmarkScope(
+      return sanitizeSalaryProposalBenchmarkScope(
         currentScope,
         availableBenchmarkScope,
       );
-
-      const hasActiveSelection = Object.values(sanitizedScope).some(Boolean);
-      return hasActiveSelection ? sanitizedScope : availableBenchmarkScope;
     });
-  }, [availableBenchmarkScope, employee?.id]);
+  }, [availableBenchmarkScope]);
+
+  useEffect(() => {
+    setBenchmarkScope(EMPTY_BENCHMARK_SCOPE);
+  }, [employee?.id]);
 
   const selectedBenchmarkScope = useMemo(() => {
     return sanitizeSalaryProposalBenchmarkScope(
@@ -430,6 +619,10 @@ export function EmployeeView({
     () => getTenureLabel(employee?.joined_at),
     [employee?.joined_at],
   );
+  const ageLabel = useMemo(
+    () => getAgeLabel(employee?.birth_date),
+    [employee?.birth_date],
+  );
 
   const attritionPct = normalizeAttritionRate(employee?.attrition_rate);
   const attritionIsHigh = attritionPct != null && attritionPct >= 34.14;
@@ -466,6 +659,8 @@ export function EmployeeView({
   const handleProposalDraftChange = (nextDraft: ProposalDraft) => {
     setProposalDraft(nextDraft);
     setProposalSaveError(null);
+    setSimulationError(null);
+    setSimulationResult(null);
 
     if (employee?.id != null && isProposalSaved) {
       onProposalSavedChange?.(employee.id, false);
@@ -517,62 +712,22 @@ export function EmployeeView({
   };
 
   const runSimulation = async () => {
-    if (!employee || !proposalDraft || simulationLoading) return;
+    if (
+      !employee ||
+      !proposalDraft ||
+      simulationLoading ||
+      analyticsUnavailableReason
+    ) {
+      return;
+    }
+
     setSimulationLoading(true);
     setSimulationError(null);
 
     try {
-      const payload = {
-        employee_id: employee.id,
-        new_salary: proposalDraft.proposedSalary,
-        ...(proposalDraft.includeBonus
-          ? { new_bonus: proposalDraft.bonus }
-          : {}),
-        ...(proposalDraft.includeCategory && proposalDraft.category
-          ? { new_category: proposalDraft.category }
-          : {}),
-      };
-
-      const res = await fetchWithSessionRefresh(
-        "/api/predictive_attrition/simulate",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        },
+      setSimulationResult(
+        await simulateSalaryProposalImpact(employee.id, proposalDraft),
       );
-
-      const data = (await res.json()) as
-        | Array<{ id: number; probability: number; stays: boolean }>
-        | { detail?: string };
-
-      if (!res.ok) {
-        throw new Error(
-          typeof data === "object" && data && "detail" in data
-            ? data.detail || "Error llamando a la simulación"
-            : `Simulation failed with status ${res.status}`,
-        );
-      }
-
-      if (!Array.isArray(data) || data.length === 0) {
-        throw new Error("La simulación no devolvió resultados");
-      }
-
-      const simulationItem = data.find((item) => item.id === employee.id) ?? data[0];
-      if (typeof simulationItem.probability !== "number") {
-        throw new Error("Respuesta de simulación inválida");
-      }
-
-      setSimulationResult({
-        attritionProbability: simulationItem.probability,
-        simulatedSalary: proposalDraft.proposedSalary,
-        simulatedBonus: proposalDraft.includeBonus
-          ? proposalDraft.bonus
-          : proposalDraft.currentBonus ?? proposalDraft.bonus,
-        simulatedAt: new Date().toISOString(),
-      });
     } catch (err) {
       setSimulationError(
         err instanceof Error ? err.message : "No se pudo ejecutar la simulación",
@@ -672,12 +827,17 @@ export function EmployeeView({
                           Seniority: {tenureLabel.replace(" en la firma", "")}
                         </span>
                       )}
+                      {!demoMode && ageLabel && (
+                        <span className="border-r border-slate-300 pr-3 last:border-r-0 dark:border-slate-700">
+                          Edad: {ageLabel}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-                  {attritionPct != null && (
+                  {!analyticsUnavailableReason && attritionPct != null && (
                     <span
                       className={[
                         "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium",
@@ -724,6 +884,7 @@ export function EmployeeView({
               </div>
             ) : (
               <div className="mx-auto flex max-w-[1280px] flex-col gap-6">
+                {!analyticsUnavailableReason && (
                 <section>
                   <KpiBar
                     currentSalary={monetaryInfo?.salary}
@@ -743,6 +904,7 @@ export function EmployeeView({
                     onBenchmarkScopeChange={setBenchmarkScope}
                   />
                 </section>
+                )}
 
                 <section className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
                   <SalaryProposalForm
@@ -757,8 +919,13 @@ export function EmployeeView({
                       handleTabChange("decision-intelligence");
                       void runSimulation();
                     }}
+                    simulationDisabled={Boolean(analyticsUnavailableReason)}
+                    simulationDisabledReason={analyticsUnavailableReason?.message}
                   />
 
+                  {analyticsUnavailableReason ? (
+                    <AnalyticsUnavailableNotice reason={analyticsUnavailableReason} />
+                  ) : (
                   <div className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-[var(--exec-card)] shadow-sm dark:border-slate-700/90 dark:bg-slate-800/60">
                     <div className="flex border-b border-slate-200 bg-slate-200/65 dark:border-slate-700/90 dark:bg-slate-900/35">
                       <button
@@ -857,6 +1024,7 @@ export function EmployeeView({
                       </AnimatePresence>
                     </div>
                   </div>
+                  )}
                 </section>
               </div>
             )}

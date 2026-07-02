@@ -165,7 +165,9 @@ type Props = {
   value: ProposalDraft | null;
   onChange: (value: ProposalDraft) => void;
   onSave?: (value: ProposalDraft) => void | Promise<void>;
-  onOpenSimulation: () => void;
+  onOpenSimulation?: () => void;
+  simulationDisabled?: boolean;
+  simulationDisabledReason?: string | null;
   isSaved?: boolean;
   isSaving?: boolean;
   saveError?: string | null;
@@ -242,6 +244,8 @@ export function SalaryProposalForm({
   onChange,
   onSave,
   onOpenSimulation,
+  simulationDisabled = false,
+  simulationDisabledReason = null,
   isSaved = false,
   isSaving = false,
   saveError = null,
@@ -422,6 +426,9 @@ export function SalaryProposalForm({
     proposedSalary,
   );
   const hasProposedSalary = proposedSalary > 0;
+  const canSimulateImpact =
+    hasProposedSalary && !simulationDisabled && Boolean(onOpenSimulation);
+  const simulationTitle = simulationDisabledReason ?? "Simular impacto";
 
   const handleSave = async (formValues: FormValues) => {
     if (formValues.proposedSalary <= 0 || isSaving || isSaved) return;
@@ -484,9 +491,9 @@ export function SalaryProposalForm({
         <button
           type="button"
           aria-label="Simular impacto"
-          title="Simular impacto"
-          onClick={onOpenSimulation}
-          disabled={!hasProposedSalary}
+          title={simulationTitle}
+          onClick={() => onOpenSimulation?.()}
+          disabled={!canSimulateImpact}
           className="inline-flex aspect-square h-16 flex-col items-center justify-center gap-1 rounded-lg bg-[var(--rsm-blue)] text-[10px] font-semibold leading-tight text-white shadow-[0_8px_24px_rgba(0,156,222,0.28)] transition-all duration-200 hover:bg-[#0086c0] disabled:cursor-not-allowed disabled:opacity-45"
         >
           <FlaskConical className="h-5 w-5" />

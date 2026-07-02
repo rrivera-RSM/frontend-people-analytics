@@ -31,6 +31,7 @@ export type EmployeeRow = {
   society_name?: string;
   has_offer?: boolean;
   joined_at?: string;
+  birth_date?: string | null;
 };
 
 type Props = {
