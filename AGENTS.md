@@ -38,14 +38,15 @@ Guia rapida para agentes que trabajen en este repositorio. Objetivo: reducir exp
 - Mantener `TypeScript` estricto: tipar props, retorno de funciones y datos externos.
 - Priorizar componentes y utilidades ya existentes antes de duplicar logica.
 - Si se agrega dependencias nuevas, justificar por que no alcanza con el stack actual.
-- Ejecutar `pnpm run lint` tras cambios relevantes y reportar resultado.
+- Ejecutar `pnpm run lint` y `pnpm run build` tras cambios relevantes y reportar resultado, para validar estabilidad de cara a deploy en produccion.
 
 ## Checklist antes de cerrar una tarea
 
-- El codigo compila o no rompe tipos de forma evidente.
+- El codigo compila y `pnpm run build` pasa cuando aplica.
 - No se rompieron imports/rutas en `app/` ni en `components/`.
 - Se mantuvo consistencia de estilos y nombres.
 - Se corrio lint cuando aplicaba.
+- Se corrio build cuando aplicaba.
 - Se documentaron supuestos si faltaba contexto.
 
 ## Notas para ahorrar tokens

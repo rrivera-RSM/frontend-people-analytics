@@ -192,14 +192,6 @@ function normalizeAttritionRate(value?: number | null) {
   return value <= 1 ? value * 100 : value;
 }
 
-function calculateIncreasePercentage(
-  salaryCurrent: number,
-  proposedSalary: number,
-) {
-  if (salaryCurrent <= 0) return 0;
-  return ((proposedSalary - salaryCurrent) / salaryCurrent) * 100;
-}
-
 function formatParticipationRate(value?: number | null) {
   if (typeof value !== "number" || !Number.isFinite(value)) return null;
   return `${(value * 100).toFixed(0)}%`;
@@ -367,7 +359,6 @@ export function EmployeeView({
     insightsData,
     insightsLoading,
   } = useEmployeePanelData(employee?.id);
-  const onProposalSavedChangeRef = useRef(onProposalSavedChange);
 
   useEffect(() => {
     onProposalSavedChangeRef.current = onProposalSavedChange;
@@ -397,10 +388,6 @@ export function EmployeeView({
   });
 
   useWarmChartLibraries(Boolean(employee?.id));
-
-  useEffect(() => {
-    onProposalSavedChangeRef.current = onProposalSavedChange;
-  }, [onProposalSavedChange]);
 
   const analyticsUnavailableReason = useMemo(
     () => getAnalyticsUnavailableReason(employee),
