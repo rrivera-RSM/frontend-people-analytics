@@ -391,9 +391,9 @@ export default function EvaluationGraph({
             </div>
           ) : selectedMissing ? (
             <div className="h-full grid place-items-center px-6 text-center text-sm text-muted-foreground">
-              El empleado seleccionado no tiene evaluación en el último
-              ejercicio, por lo que no se puede resaltar su punto en la
-              distribución.
+              Este empleado no tiene nota de evaluación puesta. La vista de
+              desempeño/ONA active no estará disponible hasta que esté
+              registrado el desempeño de este empleado.
             </div>
           ) : (
             <>
