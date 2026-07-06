@@ -6,9 +6,11 @@ import {
   AttritionGauge,
   getAttritionRiskMeta,
 } from "@/components/AttritionGauge";
+import { DecisionIntelligenceAssistantChat } from "@/components/DecisionIntelligenceAssistantChat";
 import type { SimulationResult } from "@/types/compensation";
 
 type Props = {
+  employeeId: number;
   currentProbability: number | null;
   simulationResult: SimulationResult | null;
   simulationError: string | null;
@@ -25,6 +27,7 @@ function formatDelta(value: number | null) {
 }
 
 export function DecisionAttritionRiskPanel({
+  employeeId,
   currentProbability,
   simulationResult,
   simulationError,
@@ -64,9 +67,12 @@ export function DecisionAttritionRiskPanel({
       <div className="grid min-h-[390px] grid-cols-1 lg:grid-cols-[minmax(300px,0.95fr)_minmax(0,1fr)]">
         <div className="flex flex-col justify-between border-b border-slate-200 p-5 dark:border-slate-700/80 lg:border-b-0 lg:border-r">
           <div>
-            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
-              <Activity className="h-4 w-4 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
-              Riesgo de fuga
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+                <Activity className="h-4 w-4 text-[var(--rsm-blue)] dark:text-[#79d7ff]" />
+                Riesgo de fuga
+              </div>
+              <DecisionIntelligenceAssistantChat employeeId={employeeId} />
             </div>
             <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-slate-50">
               Probabilidad estimada de salida

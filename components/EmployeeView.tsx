@@ -965,7 +965,8 @@ export function EmployeeView({
                         >
                       {activeTab === "decision-intelligence" && (
                         <div className="grid gap-5">
-                          <DecisionAttritionRiskPanel
+                          <DecisionAttritionRiskPanel
+                            employeeId={employee.id}
                             currentProbability={employee.attrition_rate ?? null}
                             simulationResult={simulationResult}
                             simulationError={simulationError}
