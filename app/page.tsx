@@ -30,10 +30,11 @@ export default function EmployeesPage() {
       const next = new Map(current);
 
       employees.forEach((employee) => {
-        const hasOffer = Boolean(employee.has_offer);
-
-        if (next.get(employee.id) !== hasOffer) {
-          next.set(employee.id, hasOffer);
+        // La lista solo inicializa el estado. EmployeeView lo confirma después
+        // consultando la última oferta y no debe perder esa respuesta por una
+        // recarga tardía de la lista (especialmente en la selección inicial).
+        if (!next.has(employee.id)) {
+          next.set(employee.id, Boolean(employee.has_offer));
           changed = true;
         }
       });
